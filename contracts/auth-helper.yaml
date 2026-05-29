@@ -1,0 +1,10 @@
+auth_helper:
+  status: skeleton
+  owns:
+    - access token attachment boundary
+    - current user context normalization input
+  must_not_own:
+    - refresh token storage
+    - membership authority
+    - entitlement authority
+    - provider identity mapping source

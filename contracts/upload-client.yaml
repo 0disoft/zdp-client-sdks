@@ -1,0 +1,10 @@
+upload_client:
+  status: skeleton
+  owns:
+    - signed upload request shape
+    - upload error mapping
+    - request_id propagation
+  must_not_own:
+    - object storage bucket names
+    - raw provider URLs as public contract
+    - file ownership decisions

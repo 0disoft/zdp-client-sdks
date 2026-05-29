@@ -1,0 +1,15 @@
+sdk_surface:
+  languages:
+    - typescript
+    - dart
+    - rust
+  required_behaviors:
+    - request_id propagation
+    - standard error envelope handling
+    - pagination handling
+    - upload handoff
+  must_not_own:
+    - API contract source
+    - refresh token storage
+    - final authorization decisions
+    - product-specific business rules
