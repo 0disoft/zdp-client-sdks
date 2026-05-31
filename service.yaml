@@ -36,7 +36,7 @@ domain:
 runtime:
   edge: null
   core: local-package
-  framework: sdk-contracts
+  framework: bun
   database: null
   cache: null
   object_storage: null
@@ -244,6 +244,7 @@ exit:
   success_criteria:
     - TypeScript, Dart, and Rust SDK surfaces are bounded by API contracts
     - SDK repository validates without live API endpoints
+    - SDK surface, auth helper, and upload client contracts are machine-validated
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -256,3 +257,4 @@ exit:
 
 notes:
   - This MVP owns SDK boundaries only; it does not publish SDK packages.
+  - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
