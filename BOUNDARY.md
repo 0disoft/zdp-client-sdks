@@ -15,6 +15,7 @@
 - SDK contract checker
 - SDK generation input source handoff
 - libs public export source handoff
+- SDK generation dry-run plan
 
 소유하지 않는다:
 
@@ -27,6 +28,8 @@
 - token vault
 - product-specific business rules
 - generated docs source of truth
+- generated SDK artifact source of truth
+- SDK package publishing
 - refresh token storage
 - final authorization decisions
 - raw provider URLs as public contract

@@ -57,6 +57,7 @@ cost:
     - generated-models
     - sdk-generation-source-checks
     - sdk-libs-export-source-checks
+    - sdk-generation-plan-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -113,6 +114,7 @@ audit:
   events:
     - sdk_surface.changed
     - sdk_generation_source.changed
+    - sdk_generation_plan.checked
     - sdk_publish.reviewed
     - sdk_auth_helper.changed
     - sdk_libs_export_source.changed
@@ -138,6 +140,7 @@ observability:
   operational_metrics:
     - sdk-contract-validation-success
     - sdk-contract-validation-failure
+    - sdk-generation-plan-validation-success
     - sdk-publish-review
   otel:
     service_name: client-sdks
@@ -253,6 +256,7 @@ exit:
     - SDK libs export source consumes zdp-libs-ts public exports without owning libs package truth
     - SDK repository validates without live API endpoints
     - SDK generation source, libs export source, SDK surface, auth helper, and upload client contracts are machine-validated
+    - SDK generation plan can be reproduced without writing SDK artifacts
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -268,3 +272,4 @@ notes:
   - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
   - SDK generation source keeps TypeScript, Dart, and Rust SDKs tied to the same API handoff contract before generator work starts.
   - Libs export source keeps generated SDKs tied to the same schema, env, event, error, and i18n export names without making SDKs the libs package source.
+  - Generation plan dry-run proves the SDK inputs are reproducible before any generated package is written or published.

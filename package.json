@@ -1,13 +1,14 @@
 {
   "name": "zdp-client-sdks",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "ZDP client SDK contract skeleton.",
   "scripts": {
-    "check": "tsc --noEmit && bun test && bun run contracts:check",
+    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run generation:plan -- --check",
     "test": "bun test",
-    "contracts:check": "bun scripts/check-client-sdk-contracts.ts"
+    "contracts:check": "bun scripts/check-client-sdk-contracts.ts",
+    "generation:plan": "bun scripts/plan-sdk-generation.ts"
   },
   "dependencies": {
     "yaml": "^2.8.1"
