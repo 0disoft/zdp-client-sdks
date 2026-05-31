@@ -59,6 +59,7 @@ cost:
     - sdk-libs-export-source-checks
     - sdk-generation-plan-checks
     - sdk-api-input-drift-checks
+    - sdk-api-export-plan-handoff-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -261,6 +262,7 @@ exit:
     - SDK generation source, libs export source, SDK surface, auth helper, and upload client contracts are machine-validated
     - SDK generation plan can be reproduced without writing SDK artifacts
     - SDK generation plan validates zdp-api-contracts sdk-generation-input drift before SDK artifacts exist
+    - SDK generation plan validates zdp-api-contracts API export dry-run plan handoff before SDK artifacts exist
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -278,3 +280,4 @@ notes:
   - Libs export source keeps generated SDKs tied to the same schema, env, event, error, and i18n export names without making SDKs the libs package source.
   - Generation plan dry-run proves the SDK inputs are reproducible before any generated package is written or published.
   - API input drift check keeps zdp-api-contracts route, error, webhook metadata aligned with SDK planning.
+  - API export plan handoff check keeps OpenAPI, SDK input, docs contract, and webhook schema planning aligned with SDK planning before generated artifacts exist.

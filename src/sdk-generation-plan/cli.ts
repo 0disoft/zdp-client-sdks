@@ -1,6 +1,9 @@
 import { join } from 'node:path';
 import { loadClientSdkContracts } from '../client-sdk-contracts/parser';
-import { loadApiSdkGenerationInput } from './api-input';
+import {
+  loadApiExportPlanHandoff,
+  loadApiSdkGenerationInput
+} from './api-input';
 import { buildSdkGenerationPlan } from './plan';
 
 export async function runSdkGenerationPlanCli(
@@ -8,9 +11,12 @@ export async function runSdkGenerationPlanCli(
 ): Promise<number> {
   const options = readOptions(argv);
   const apiInputSourceFile = 'contracts/sdk-generation-input.yaml';
+  const apiExportPlanSourceFile = 'src/api-export-plan/plan.ts';
   const result = buildSdkGenerationPlan(loadClientSdkContracts(options.root), {
     apiGenerationInput: loadApiSdkGenerationInput(options.apiContractsRoot),
-    apiInputSourceFile: join(options.apiContractsRoot, apiInputSourceFile)
+    apiExportPlan: loadApiExportPlanHandoff(options.apiContractsRoot),
+    apiInputSourceFile: join(options.apiContractsRoot, apiInputSourceFile),
+    apiExportPlanSourceFile: join(options.apiContractsRoot, apiExportPlanSourceFile)
   });
 
   if (!result.ok) {
@@ -34,6 +40,9 @@ export async function runSdkGenerationPlanCli(
   }
 
   console.log(`SDK generation plan: ${result.plan?.targets.length ?? 0} target(s)`);
+  console.log(
+    `API export plan handoff: ${result.plan?.apiExportPlanOutputKinds.join(', ') ?? 'none'}`
+  );
 
   for (const target of result.plan?.targets ?? []) {
     console.log(

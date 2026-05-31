@@ -6,6 +6,7 @@ This repository owns SDK surface contracts. It consumes API contracts and must n
 
 - Run `bun run contracts:check` after SDK surface, auth helper, or upload client contract changes.
 - Run `bun run generation:plan -- --check` after SDK generation source, API SDK generation input, or libs export source changes.
+- Inspect `bun run generation:plan -- --json` when API export planning changes; `apiExportPlanOutputKinds` must include `openapi`, `sdk_generation_input`, `webhook_schema`, and `docs_contract`.
 - Run `bun run check` before locking a TypeScript checker change.
 - Validate this repository with `zdp-architecture-linter`.
 - Keep `contracts/sdk-generation-source.yaml` pointed at `zdp-api-contracts/contracts/sdk-generation-input.yaml`.
@@ -26,6 +27,8 @@ If libs export source validation fails, stop SDK refresh. The handoff contract e
 If generation plan validation fails, do not start SDK generation. The dry-run plan exists so TypeScript, Dart, and Rust targets keep the same API source, the same `zdp-libs-ts` export source, and the same request/trace/idempotency metadata before any generated code is written.
 
 If API SDK generation input drift validation fails, fix `zdp-api-contracts/contracts/sdk-generation-input.yaml` or `contracts/sdk-generation-source.yaml` before SDK work continues. That check exists so API contracts and SDK planning do not silently disagree about route metadata, error metadata, webhook replay fields, or forbidden sensitive values.
+
+If API export plan handoff validation fails, fix `zdp-api-contracts` before SDK work continues. That check exists so OpenAPI, SDK input, docs contract, and webhook schema planning keep the same permission, audit, idempotency, request, and trace metadata. Without it, SDK generation can look green while documentation or OpenAPI silently loses `idempotency` or `trace_id`.
 
 ## Manual Review Required
 

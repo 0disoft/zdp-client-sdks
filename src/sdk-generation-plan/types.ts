@@ -16,6 +16,16 @@ export interface ApiSdkGenerationInputContract {
   readonly forbiddenValues: readonly string[];
 }
 
+export interface ApiExportPlanHandoff {
+  readonly script: string | null;
+  readonly sourceFile: string;
+  readonly outputKinds: readonly string[];
+  readonly traceFields: readonly string[];
+  readonly requiredDocsMetadata: readonly string[];
+  readonly writesArtifacts: boolean | null;
+  readonly publishesSchemas: boolean | null;
+}
+
 export interface SdkGenerationPlanTarget {
   readonly language: string;
   readonly plannedPackage: string;
@@ -37,6 +47,9 @@ export interface SdkGenerationPlan {
   readonly publishesPackages: false;
   readonly apiInputSourceFile: string | null;
   readonly apiInputSourceContracts: readonly string[];
+  readonly apiExportPlanSourceFile: string | null;
+  readonly apiExportPlanOutputKinds: readonly string[];
+  readonly apiExportPlanTraceFields: readonly string[];
   readonly targets: readonly SdkGenerationPlanTarget[];
 }
 
@@ -49,5 +62,7 @@ export interface SdkGenerationPlanResult {
 export interface SdkGenerationPlanInput {
   readonly contracts: ClientSdkContracts;
   readonly apiGenerationInput?: ApiSdkGenerationInputContract;
+  readonly apiExportPlan?: ApiExportPlanHandoff;
   readonly apiInputSourceFile?: string;
+  readonly apiExportPlanSourceFile?: string;
 }

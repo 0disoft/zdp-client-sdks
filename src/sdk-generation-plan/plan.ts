@@ -4,6 +4,7 @@ import type {
   ClientSdkContracts
 } from '../client-sdk-contracts/types';
 import type {
+  ApiExportPlanHandoff,
   ApiSdkGenerationInputContract,
   SdkGenerationPlan,
   SdkGenerationPlanResult,
@@ -11,6 +12,18 @@ import type {
 } from './types';
 
 const TARGET_ORDER = ['typescript', 'dart', 'rust'] as const;
+const REQUIRED_API_EXPORT_OUTPUT_KINDS = [
+  'openapi',
+  'sdk_generation_input',
+  'webhook_schema',
+  'docs_contract'
+] as const;
+const REQUIRED_API_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
+const REQUIRED_API_EXPORT_DOCS_METADATA = [
+  'permission_check',
+  'audit_event',
+  'idempotency'
+] as const;
 const PLANNED_PACKAGE_BY_TARGET = {
   typescript: '@zdp/client-sdk',
   dart: 'zdp_client_sdk',
@@ -21,7 +34,9 @@ export function buildSdkGenerationPlan(
   contracts: ClientSdkContracts,
   options: {
     readonly apiGenerationInput?: ApiSdkGenerationInputContract;
+    readonly apiExportPlan?: ApiExportPlanHandoff;
     readonly apiInputSourceFile?: string;
+    readonly apiExportPlanSourceFile?: string;
   } = {}
 ): SdkGenerationPlanResult {
   const contractCheck = validateClientSdkContracts(contracts);
@@ -34,7 +49,11 @@ export function buildSdkGenerationPlan(
     };
   }
 
-  const diagnostics = validatePlanInputs(contracts, options.apiGenerationInput);
+  const diagnostics = validatePlanInputs(
+    contracts,
+    options.apiGenerationInput,
+    options.apiExportPlan
+  );
 
   if (diagnostics.length > 0) {
     return {
@@ -54,6 +73,9 @@ export function buildSdkGenerationPlan(
     publishesPackages: false,
     apiInputSourceFile: options.apiInputSourceFile ?? null,
     apiInputSourceContracts: options.apiGenerationInput?.sourceContracts ?? [],
+    apiExportPlanSourceFile: options.apiExportPlanSourceFile ?? null,
+    apiExportPlanOutputKinds: options.apiExportPlan?.outputKinds ?? [],
+    apiExportPlanTraceFields: options.apiExportPlan?.traceFields ?? [],
     targets
   };
 
@@ -66,7 +88,8 @@ export function buildSdkGenerationPlan(
 
 function validatePlanInputs(
   contracts: ClientSdkContracts,
-  apiGenerationInput: ApiSdkGenerationInputContract | undefined
+  apiGenerationInput: ApiSdkGenerationInputContract | undefined,
+  apiExportPlan: ApiExportPlanHandoff | undefined
 ): readonly ClientSdkContractDiagnostic[] {
   const diagnostics: ClientSdkContractDiagnostic[] = [];
   const sdkTargets = new Set(contracts.sdkGenerationSource.generationTargets);
@@ -97,6 +120,10 @@ function validatePlanInputs(
     diagnostics.push(
       ...validateApiGenerationInput(contracts, apiGenerationInput)
     );
+  }
+
+  if (apiExportPlan !== undefined) {
+    diagnostics.push(...validateApiExportPlanHandoff(apiExportPlan));
   }
 
   return diagnostics;
@@ -167,6 +194,71 @@ function validateApiGenerationInput(
       code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_VALUE_MISSING',
       label: 'API SDK generation input forbidden values'
     })
+  ];
+}
+
+function validateApiExportPlanHandoff(
+  apiExportPlan: ApiExportPlanHandoff
+): readonly ClientSdkContractDiagnostic[] {
+  return [
+    ...(typeof apiExportPlan.script === 'string' &&
+    apiExportPlan.script.includes('plan-api-exports')
+      ? []
+      : [
+          createDiagnostic({
+            code: 'CLIENT_SDK_API_EXPORT_PLAN_SCRIPT_MISSING',
+            file: '../zdp-api-contracts/package.json',
+            path: 'scripts.export:plan',
+            message:
+              'Client SDK generation plan requires zdp-api-contracts to expose `export:plan`.'
+          })
+        ]),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'outputs.kind',
+      actual: apiExportPlan.outputKinds,
+      required: REQUIRED_API_EXPORT_OUTPUT_KINDS,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_OUTPUT_MISSING',
+      label: 'API export plan outputs'
+    }),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'traceFields',
+      actual: apiExportPlan.traceFields,
+      required: REQUIRED_API_EXPORT_TRACE_FIELDS,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_TRACE_FIELD_MISSING',
+      label: 'API export plan trace fields'
+    }),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'docs_contract.requiredMetadata',
+      actual: apiExportPlan.requiredDocsMetadata,
+      required: REQUIRED_API_EXPORT_DOCS_METADATA,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_DOCS_METADATA_MISSING',
+      label: 'API export plan docs metadata'
+    }),
+    ...(apiExportPlan.writesArtifacts === false
+      ? []
+      : [
+          createDiagnostic({
+            code: 'CLIENT_SDK_API_EXPORT_PLAN_WRITES_ARTIFACTS',
+            file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+            path: 'writesArtifacts',
+            message:
+              'API export plan consumed by SDK planning must stay dry-run and not write artifacts.'
+          })
+        ]),
+    ...(apiExportPlan.publishesSchemas === false
+      ? []
+      : [
+          createDiagnostic({
+            code: 'CLIENT_SDK_API_EXPORT_PLAN_PUBLISHES_SCHEMAS',
+            file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+            path: 'publishesSchemas',
+            message:
+              'API export plan consumed by SDK planning must not publish schemas.'
+          })
+        ])
   ];
 }
 
@@ -287,6 +379,15 @@ function validateRequiredEntries(input: {
       path: input.path,
       message: `${input.label} must include \`${entry}\`.`
     }));
+}
+
+function createDiagnostic(input: {
+  readonly code: string;
+  readonly file: string;
+  readonly path: string;
+  readonly message: string;
+}): ClientSdkContractDiagnostic {
+  return input;
 }
 
 function requireString(value: string | null, path: string): string {

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.5.1
+
+### Changed
+
+- SDK generation plan이 `zdp-api-contracts`의 API export dry-run plan handoff까지 검증하도록 했다.
+- API export plan의 `sdk_generation_input`, `openapi`, `docs_contract`, `webhook_schema`, `request_id`, `trace_id`, dry-run 보장이 깨지면 SDK 생성 계획도 실패하도록 했다.
+
+## 0.5.0
+
 ### Added
 
 - Client SDK 저장소 골격을 추가했다.

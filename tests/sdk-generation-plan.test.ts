@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'bun:test';
 import { loadClientSdkContracts } from '../src/client-sdk-contracts/parser';
-import { loadApiSdkGenerationInput } from '../src/sdk-generation-plan/api-input';
+import {
+  loadApiExportPlanHandoff,
+  loadApiSdkGenerationInput
+} from '../src/sdk-generation-plan/api-input';
 import { buildSdkGenerationPlan } from '../src/sdk-generation-plan/plan';
 
 describe('SDK generation plan', () => {
   it('builds a deterministic SDK generation plan', () => {
     const result = buildSdkGenerationPlan(loadClientSdkContracts(), {
       apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
-      apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml'
+      apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts'),
+      apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts'
     });
 
     expect(result.ok).toBe(true);
@@ -22,6 +27,14 @@ describe('SDK generation plan', () => {
         'contracts/error-envelope.yaml',
         'contracts/webhook-contract.yaml'
       ],
+      apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
+      apiExportPlanOutputKinds: [
+        'openapi',
+        'sdk_generation_input',
+        'webhook_schema',
+        'docs_contract'
+      ],
+      apiExportPlanTraceFields: ['request_id', 'trace_id'],
       targets: [
         expect.objectContaining({
           language: 'typescript',
@@ -65,7 +78,8 @@ describe('SDK generation plan', () => {
         }
       },
       {
-        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts')
+        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+        apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts')
       }
     );
 
@@ -89,7 +103,8 @@ describe('SDK generation plan', () => {
         }
       },
       {
-        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts')
+        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+        apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts')
       }
     );
 
@@ -116,6 +131,43 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_INPUT_ERROR_METADATA_DRIFT'
+    );
+  });
+
+  it('fails when API export plan no longer exposes SDK generation output', () => {
+    const contracts = loadClientSdkContracts();
+    const apiExportPlan = loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        outputKinds: apiExportPlan.outputKinds.filter(
+          (item) => item !== 'sdk_generation_input'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_OUTPUT_MISSING'
+    );
+  });
+
+  it('fails when API export plan can write artifacts before SDK generation', () => {
+    const contracts = loadClientSdkContracts();
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...loadApiExportPlanHandoff('../zdp-api-contracts'),
+        writesArtifacts: true
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_WRITES_ARTIFACTS'
     );
   });
 });
