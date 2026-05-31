@@ -1,0 +1,39 @@
+libs_export_source:
+  status: skeleton
+  source_repo: zdp-libs-ts
+  source_package: zdp-libs-ts
+  source_exports:
+    - zdp-libs-ts/schema
+    - zdp-libs-ts/env-contract
+    - zdp-libs-ts/event-contracts
+    - zdp-libs-ts/error
+    - zdp-libs-ts/i18n-contract
+  generation_targets:
+    - typescript
+    - dart
+    - rust
+  required_metadata:
+    - schema_id
+    - env_var
+    - event_type
+    - error_code
+    - message_key
+    - request_id
+    - trace_id
+    - idempotency
+  must_not_own:
+    - zdp-libs-ts package source
+    - API contract source
+    - runtime validation engine
+    - product domain models
+    - final authorization decisions
+    - translation runtime
+  forbidden_values:
+    - authorization_header
+    - cookie_header
+    - raw_customer_payload
+    - raw_provider_error
+    - provider_secret
+    - provider_token
+    - secret_value
+    - screen_component_payload

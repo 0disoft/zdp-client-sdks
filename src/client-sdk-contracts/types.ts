@@ -16,6 +16,17 @@ export interface SdkGenerationSourceContract {
   readonly forbiddenValues: readonly string[];
 }
 
+export interface LibsExportSourceContract {
+  readonly status: string | null;
+  readonly sourceRepo: string | null;
+  readonly sourcePackage: string | null;
+  readonly sourceExports: readonly string[];
+  readonly generationTargets: readonly string[];
+  readonly requiredMetadata: readonly string[];
+  readonly mustNotOwn: readonly string[];
+  readonly forbiddenValues: readonly string[];
+}
+
 export interface AuthHelperContract {
   readonly status: string | null;
   readonly owns: readonly string[];
@@ -31,6 +42,7 @@ export interface UploadClientContract {
 export interface ClientSdkContracts {
   readonly sdkSurface: SdkSurfaceContract;
   readonly sdkGenerationSource: SdkGenerationSourceContract;
+  readonly libsExportSource: LibsExportSourceContract;
   readonly authHelper: AuthHelperContract;
   readonly uploadClient: UploadClientContract;
 }

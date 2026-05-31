@@ -6,6 +6,7 @@ import type {
 
 const SDK_SURFACE_FILE = 'contracts/sdk-surface.yaml';
 const SDK_GENERATION_SOURCE_FILE = 'contracts/sdk-generation-source.yaml';
+const LIBS_EXPORT_SOURCE_FILE = 'contracts/libs-export-source.yaml';
 const AUTH_HELPER_FILE = 'contracts/auth-helper.yaml';
 const UPLOAD_CLIENT_FILE = 'contracts/upload-client.yaml';
 
@@ -71,6 +72,45 @@ const REQUIRED_SDK_GENERATION_FORBIDDEN_VALUES = [
   'provider_secret',
   'authorization_header',
   'cookie_header',
+  'screen_component_payload'
+] as const;
+
+const REQUIRED_LIBS_EXPORT_SOURCE_REPO = 'zdp-libs-ts';
+const REQUIRED_LIBS_EXPORT_SOURCE_PACKAGE = 'zdp-libs-ts';
+const REQUIRED_LIBS_SOURCE_EXPORTS = [
+  'zdp-libs-ts/schema',
+  'zdp-libs-ts/env-contract',
+  'zdp-libs-ts/event-contracts',
+  'zdp-libs-ts/error',
+  'zdp-libs-ts/i18n-contract'
+] as const;
+const REQUIRED_LIBS_SOURCE_TARGETS = ['typescript', 'dart', 'rust'] as const;
+const REQUIRED_LIBS_SOURCE_METADATA = [
+  'schema_id',
+  'env_var',
+  'event_type',
+  'error_code',
+  'message_key',
+  'request_id',
+  'trace_id',
+  'idempotency'
+] as const;
+const REQUIRED_LIBS_SOURCE_FORBIDDEN_OWNERSHIP = [
+  'zdp-libs-ts package source',
+  'API contract source',
+  'runtime validation engine',
+  'product domain models',
+  'final authorization decisions',
+  'translation runtime'
+] as const;
+const REQUIRED_LIBS_SOURCE_FORBIDDEN_VALUES = [
+  'authorization_header',
+  'cookie_header',
+  'raw_customer_payload',
+  'raw_provider_error',
+  'provider_secret',
+  'provider_token',
+  'secret_value',
   'screen_component_payload'
 ] as const;
 
@@ -194,6 +234,69 @@ export function validateClientSdkContracts(
       required: REQUIRED_SDK_GENERATION_FORBIDDEN_VALUES,
       code: 'CLIENT_SDK_GENERATION_FORBIDDEN_VALUE_MISSING',
       label: 'SDK generation forbidden values'
+    }),
+    ...validateSkeletonStatus({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.status',
+      actual: contracts.libsExportSource.status,
+      code: 'CLIENT_SDK_LIBS_EXPORT_SOURCE_STATUS_DRIFT',
+      label: 'libs export source'
+    }),
+    ...validateExactString({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.source_repo',
+      actual: contracts.libsExportSource.sourceRepo,
+      expected: REQUIRED_LIBS_EXPORT_SOURCE_REPO,
+      code: 'CLIENT_SDK_LIBS_EXPORT_SOURCE_REPO_DRIFT',
+      label: 'libs export source repo'
+    }),
+    ...validateExactString({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.source_package',
+      actual: contracts.libsExportSource.sourcePackage,
+      expected: REQUIRED_LIBS_EXPORT_SOURCE_PACKAGE,
+      code: 'CLIENT_SDK_LIBS_EXPORT_SOURCE_PACKAGE_DRIFT',
+      label: 'libs export source package'
+    }),
+    ...validateRequiredEntries({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.source_exports',
+      actual: contracts.libsExportSource.sourceExports,
+      required: REQUIRED_LIBS_SOURCE_EXPORTS,
+      code: 'CLIENT_SDK_LIBS_EXPORT_MISSING',
+      label: 'libs source exports'
+    }),
+    ...validateRequiredEntries({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.generation_targets',
+      actual: contracts.libsExportSource.generationTargets,
+      required: REQUIRED_LIBS_SOURCE_TARGETS,
+      code: 'CLIENT_SDK_LIBS_TARGET_MISSING',
+      label: 'libs source targets'
+    }),
+    ...validateRequiredEntries({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.required_metadata',
+      actual: contracts.libsExportSource.requiredMetadata,
+      required: REQUIRED_LIBS_SOURCE_METADATA,
+      code: 'CLIENT_SDK_LIBS_METADATA_MISSING',
+      label: 'libs source metadata'
+    }),
+    ...validateRequiredEntries({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.must_not_own',
+      actual: contracts.libsExportSource.mustNotOwn,
+      required: REQUIRED_LIBS_SOURCE_FORBIDDEN_OWNERSHIP,
+      code: 'CLIENT_SDK_LIBS_FORBIDDEN_OWNERSHIP_MISSING',
+      label: 'libs source forbidden ownership'
+    }),
+    ...validateRequiredEntries({
+      file: LIBS_EXPORT_SOURCE_FILE,
+      path: 'libs_export_source.forbidden_values',
+      actual: contracts.libsExportSource.forbiddenValues,
+      required: REQUIRED_LIBS_SOURCE_FORBIDDEN_VALUES,
+      code: 'CLIENT_SDK_LIBS_FORBIDDEN_VALUE_MISSING',
+      label: 'libs source forbidden values'
     }),
     ...validateSkeletonStatus({
       file: AUTH_HELPER_FILE,

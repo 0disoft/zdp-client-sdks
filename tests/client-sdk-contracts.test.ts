@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'bun:test';
 import {
   parseAuthHelperContract,
+  parseLibsExportSourceContract,
   parseSdkGenerationSourceContract,
   parseSdkSurfaceContract,
   parseUploadClientContract
@@ -161,6 +162,76 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when SDKs consume a different libs export source', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      libsExportSource: {
+        ...contracts.libsExportSource,
+        sourceRepo: 'zdp-client-sdks'
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_LIBS_EXPORT_SOURCE_REPO_DRIFT'
+    );
+  });
+
+  it('fails when libs schema export disappears from SDK generation metadata', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      libsExportSource: {
+        ...contracts.libsExportSource,
+        sourceExports: contracts.libsExportSource.sourceExports.filter(
+          (item) => item !== 'zdp-libs-ts/schema'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_LIBS_EXPORT_MISSING'
+    );
+  });
+
+  it('fails when libs trace metadata disappears from SDK generation handoff', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      libsExportSource: {
+        ...contracts.libsExportSource,
+        requiredMetadata: contracts.libsExportSource.requiredMetadata.filter(
+          (item) => item !== 'trace_id'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_LIBS_METADATA_MISSING'
+    );
+  });
+
+  it('fails when libs source allows provider tokens into SDK handoff', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      libsExportSource: {
+        ...contracts.libsExportSource,
+        forbiddenValues: contracts.libsExportSource.forbiddenValues.filter(
+          (item) => item !== 'provider_token'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_LIBS_FORBIDDEN_VALUE_MISSING'
+    );
+  });
+
   it('fails when auth helpers store refresh tokens', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({
@@ -203,6 +274,9 @@ function loadCommittedContracts(): ClientSdkContracts {
     sdkSurface: parseSdkSurfaceContract(readContract('sdk-surface.yaml')),
     sdkGenerationSource: parseSdkGenerationSourceContract(
       readContract('sdk-generation-source.yaml')
+    ),
+    libsExportSource: parseLibsExportSourceContract(
+      readContract('libs-export-source.yaml')
     ),
     authHelper: parseAuthHelperContract(readContract('auth-helper.yaml')),
     uploadClient: parseUploadClientContract(readContract('upload-client.yaml'))

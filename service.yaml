@@ -56,6 +56,7 @@ cost:
     - sdk-builds
     - generated-models
     - sdk-generation-source-checks
+    - sdk-libs-export-source-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -114,6 +115,7 @@ audit:
     - sdk_generation_source.changed
     - sdk_publish.reviewed
     - sdk_auth_helper.changed
+    - sdk_libs_export_source.changed
   sink: zdp-platform-observability
   retention_days: 365
   immutable: false
@@ -248,8 +250,9 @@ exit:
   success_criteria:
     - TypeScript, Dart, and Rust SDK surfaces are bounded by API contracts
     - SDK generation source consumes zdp-api-contracts/contracts/sdk-generation-input.yaml
+    - SDK libs export source consumes zdp-libs-ts public exports without owning libs package truth
     - SDK repository validates without live API endpoints
-    - SDK generation source, SDK surface, auth helper, and upload client contracts are machine-validated
+    - SDK generation source, libs export source, SDK surface, auth helper, and upload client contracts are machine-validated
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -264,3 +267,4 @@ notes:
   - This MVP owns SDK boundaries only; it does not publish SDK packages.
   - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
   - SDK generation source keeps TypeScript, Dart, and Rust SDKs tied to the same API handoff contract before generator work starts.
+  - Libs export source keeps generated SDKs tied to the same schema, env, event, error, and i18n export names without making SDKs the libs package source.
