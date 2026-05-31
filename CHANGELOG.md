@@ -10,3 +10,4 @@
 - SDK generation source handoff 계약과 checker 검증을 추가했다.
 - `zdp-libs-ts` public export source handoff 계약과 checker 검증을 추가했다.
 - SDK generation dry-run plan skeleton과 `generation:plan` 검증을 추가했다.
+- `generation:plan`이 `zdp-api-contracts/contracts/sdk-generation-input.yaml`을 읽고 client SDK generation source와 drift를 비교하도록 했다.

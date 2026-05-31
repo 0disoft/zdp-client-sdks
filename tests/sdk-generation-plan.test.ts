@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import { loadClientSdkContracts } from '../src/client-sdk-contracts/parser';
+import { loadApiSdkGenerationInput } from '../src/sdk-generation-plan/api-input';
 import { buildSdkGenerationPlan } from '../src/sdk-generation-plan/plan';
 
 describe('SDK generation plan', () => {
   it('builds a deterministic SDK generation plan', () => {
-    const result = buildSdkGenerationPlan(loadClientSdkContracts());
+    const result = buildSdkGenerationPlan(loadClientSdkContracts(), {
+      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml'
+    });
 
     expect(result.ok).toBe(true);
     expect(result.diagnostics).toEqual([]);
@@ -12,6 +16,12 @@ describe('SDK generation plan', () => {
       status: 'plan-only',
       writesArtifacts: false,
       publishesPackages: false,
+      apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      apiInputSourceContracts: [
+        'contracts/route-contract.yaml',
+        'contracts/error-envelope.yaml',
+        'contracts/webhook-contract.yaml'
+      ],
       targets: [
         expect.objectContaining({
           language: 'typescript',
@@ -43,16 +53,21 @@ describe('SDK generation plan', () => {
 
   it('fails when contract validation fails before planning', () => {
     const contracts = loadClientSdkContracts();
-    const result = buildSdkGenerationPlan({
-      ...contracts,
-      sdkGenerationSource: {
-        ...contracts.sdkGenerationSource,
-        requiredRouteMetadata:
-          contracts.sdkGenerationSource.requiredRouteMetadata.filter(
-            (item) => item !== 'idempotency'
-          )
+    const result = buildSdkGenerationPlan(
+      {
+        ...contracts,
+        sdkGenerationSource: {
+          ...contracts.sdkGenerationSource,
+          requiredRouteMetadata:
+            contracts.sdkGenerationSource.requiredRouteMetadata.filter(
+              (item) => item !== 'idempotency'
+            )
+        }
+      },
+      {
+        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts')
       }
-    });
+    );
 
     expect(result.ok).toBe(false);
     expect(result.plan).toBeNull();
@@ -63,12 +78,36 @@ describe('SDK generation plan', () => {
 
   it('fails when libs source does not cover an SDK generation target', () => {
     const contracts = loadClientSdkContracts();
-    const result = buildSdkGenerationPlan({
-      ...contracts,
-      libsExportSource: {
-        ...contracts.libsExportSource,
-        generationTargets: contracts.libsExportSource.generationTargets.filter(
-          (item) => item !== 'rust'
+    const result = buildSdkGenerationPlan(
+      {
+        ...contracts,
+        libsExportSource: {
+          ...contracts.libsExportSource,
+          generationTargets: contracts.libsExportSource.generationTargets.filter(
+            (item) => item !== 'rust'
+          )
+        }
+      },
+      {
+        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts')
+      }
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_LIBS_TARGET_MISSING'
+    );
+  });
+
+  it('fails when API SDK generation input drifts from client SDK source', () => {
+    const contracts = loadClientSdkContracts();
+    const apiGenerationInput = loadApiSdkGenerationInput('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: {
+        ...apiGenerationInput,
+        requiredErrorMetadata: apiGenerationInput.requiredErrorMetadata.filter(
+          (item) => item !== 'trace_id'
         )
       }
     });
@@ -76,7 +115,7 @@ describe('SDK generation plan', () => {
     expect(result.ok).toBe(false);
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
-      'CLIENT_SDK_LIBS_TARGET_MISSING'
+      'CLIENT_SDK_API_INPUT_ERROR_METADATA_DRIFT'
     );
   });
 });

@@ -5,6 +5,17 @@ import type {
 
 export type SdkGenerationPlanStatus = 'plan-only';
 
+export interface ApiSdkGenerationInputContract {
+  readonly status: string | null;
+  readonly sourceContracts: readonly string[];
+  readonly generationTargets: readonly string[];
+  readonly requiredRouteMetadata: readonly string[];
+  readonly requiredErrorMetadata: readonly string[];
+  readonly requiredWebhookMetadata: readonly string[];
+  readonly forbiddenOwnership: readonly string[];
+  readonly forbiddenValues: readonly string[];
+}
+
 export interface SdkGenerationPlanTarget {
   readonly language: string;
   readonly plannedPackage: string;
@@ -24,6 +35,8 @@ export interface SdkGenerationPlan {
   readonly status: SdkGenerationPlanStatus;
   readonly writesArtifacts: false;
   readonly publishesPackages: false;
+  readonly apiInputSourceFile: string | null;
+  readonly apiInputSourceContracts: readonly string[];
   readonly targets: readonly SdkGenerationPlanTarget[];
 }
 
@@ -35,4 +48,6 @@ export interface SdkGenerationPlanResult {
 
 export interface SdkGenerationPlanInput {
   readonly contracts: ClientSdkContracts;
+  readonly apiGenerationInput?: ApiSdkGenerationInputContract;
+  readonly apiInputSourceFile?: string;
 }

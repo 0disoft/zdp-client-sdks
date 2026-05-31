@@ -1,11 +1,17 @@
+import { join } from 'node:path';
 import { loadClientSdkContracts } from '../client-sdk-contracts/parser';
+import { loadApiSdkGenerationInput } from './api-input';
 import { buildSdkGenerationPlan } from './plan';
 
 export async function runSdkGenerationPlanCli(
   argv: readonly string[]
 ): Promise<number> {
   const options = readOptions(argv);
-  const result = buildSdkGenerationPlan(loadClientSdkContracts(options.root));
+  const apiInputSourceFile = 'contracts/sdk-generation-input.yaml';
+  const result = buildSdkGenerationPlan(loadClientSdkContracts(options.root), {
+    apiGenerationInput: loadApiSdkGenerationInput(options.apiContractsRoot),
+    apiInputSourceFile: join(options.apiContractsRoot, apiInputSourceFile)
+  });
 
   if (!result.ok) {
     for (const diagnostic of result.diagnostics) {
@@ -40,19 +46,27 @@ export async function runSdkGenerationPlanCli(
 
 function readOptions(argv: readonly string[]): {
   readonly root: string;
+  readonly apiContractsRoot: string;
   readonly check: boolean;
   readonly json: boolean;
 } {
+  const root = readRootOption(argv) ?? process.cwd();
+
   return {
-    root: readRootOption(argv) ?? process.cwd(),
+    root,
+    apiContractsRoot: readStringOption(argv, '--api-contracts-root') ?? join(root, '..', 'zdp-api-contracts'),
     check: argv.includes('--check'),
     json: argv.includes('--json')
   };
 }
 
 function readRootOption(argv: readonly string[]): string | null {
+  return readStringOption(argv, '--root');
+}
+
+function readStringOption(argv: readonly string[], optionName: string): string | null {
   for (let index = 0; index < argv.length; index += 1) {
-    if (argv[index] !== '--root') {
+    if (argv[index] !== optionName) {
       continue;
     }
 

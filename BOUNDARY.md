@@ -14,6 +14,7 @@
 - upload client handoff
 - SDK contract checker
 - SDK generation input source handoff
+- API SDK generation input drift check
 - libs public export source handoff
 - SDK generation dry-run plan
 
@@ -21,6 +22,7 @@
 
 - API 계약 원천
 - SDK generation input source of truth
+- API route/error/webhook contract source of truth
 - zdp-libs-ts package source
 - runtime validation engine
 - translation runtime
