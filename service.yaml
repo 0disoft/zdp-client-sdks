@@ -55,6 +55,7 @@ cost:
   unit_metrics:
     - sdk-builds
     - generated-models
+    - sdk-generation-source-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -96,6 +97,7 @@ access:
   object_level_auth_required: true
   permission_model: rbac
   privileged_operations:
+    - sdk-generation-source-change
     - sdk-api-surface-change
     - sdk-publish
     - auth-helper-change
@@ -109,6 +111,7 @@ audit:
   required: true
   events:
     - sdk_surface.changed
+    - sdk_generation_source.changed
     - sdk_publish.reviewed
     - sdk_auth_helper.changed
   sink: zdp-platform-observability
@@ -244,8 +247,9 @@ human_review_required:
 exit:
   success_criteria:
     - TypeScript, Dart, and Rust SDK surfaces are bounded by API contracts
+    - SDK generation source consumes zdp-api-contracts/contracts/sdk-generation-input.yaml
     - SDK repository validates without live API endpoints
-    - SDK surface, auth helper, and upload client contracts are machine-validated
+    - SDK generation source, SDK surface, auth helper, and upload client contracts are machine-validated
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -259,3 +263,4 @@ exit:
 notes:
   - This MVP owns SDK boundaries only; it does not publish SDK packages.
   - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
+  - SDK generation source keeps TypeScript, Dart, and Rust SDKs tied to the same API handoff contract before generator work starts.

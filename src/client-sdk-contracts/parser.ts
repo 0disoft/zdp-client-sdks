@@ -4,17 +4,22 @@ import { parse } from 'yaml';
 import type {
   AuthHelperContract,
   ClientSdkContracts,
+  SdkGenerationSourceContract,
   SdkSurfaceContract,
   UploadClientContract
 } from './types';
 
 const SDK_SURFACE_FILE = 'sdk-surface.yaml';
+const SDK_GENERATION_SOURCE_FILE = 'sdk-generation-source.yaml';
 const AUTH_HELPER_FILE = 'auth-helper.yaml';
 const UPLOAD_CLIENT_FILE = 'upload-client.yaml';
 
 export function loadClientSdkContracts(root: string = process.cwd()): ClientSdkContracts {
   return {
     sdkSurface: parseSdkSurfaceContract(readContract(root, SDK_SURFACE_FILE)),
+    sdkGenerationSource: parseSdkGenerationSourceContract(
+      readContract(root, SDK_GENERATION_SOURCE_FILE)
+    ),
     authHelper: parseAuthHelperContract(readContract(root, AUTH_HELPER_FILE)),
     uploadClient: parseUploadClientContract(readContract(root, UPLOAD_CLIENT_FILE))
   };
@@ -28,6 +33,37 @@ export function parseSdkSurfaceContract(source: string): SdkSurfaceContract {
     languages: readStringArray(sdkSurface, 'languages'),
     requiredBehaviors: readStringArray(sdkSurface, 'required_behaviors'),
     mustNotOwn: readStringArray(sdkSurface, 'must_not_own')
+  };
+}
+
+export function parseSdkGenerationSourceContract(
+  source: string
+): SdkGenerationSourceContract {
+  const document = parseYamlRecord(source);
+  const sdkGenerationSource = readRecord(document, 'sdk_generation_source');
+
+  return {
+    status: readString(sdkGenerationSource, 'status'),
+    sourceRepo: readString(sdkGenerationSource, 'source_repo'),
+    sourceContract: readString(sdkGenerationSource, 'source_contract'),
+    generationTargets: readStringArray(
+      sdkGenerationSource,
+      'generation_targets'
+    ),
+    requiredRouteMetadata: readStringArray(
+      sdkGenerationSource,
+      'required_route_metadata'
+    ),
+    requiredErrorMetadata: readStringArray(
+      sdkGenerationSource,
+      'required_error_metadata'
+    ),
+    requiredWebhookMetadata: readStringArray(
+      sdkGenerationSource,
+      'required_webhook_metadata'
+    ),
+    mustNotOwn: readStringArray(sdkGenerationSource, 'must_not_own'),
+    forbiddenValues: readStringArray(sdkGenerationSource, 'forbidden_values')
   };
 }
 

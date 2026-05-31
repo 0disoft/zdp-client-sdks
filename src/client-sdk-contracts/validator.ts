@@ -5,6 +5,7 @@ import type {
 } from './types';
 
 const SDK_SURFACE_FILE = 'contracts/sdk-surface.yaml';
+const SDK_GENERATION_SOURCE_FILE = 'contracts/sdk-generation-source.yaml';
 const AUTH_HELPER_FILE = 'contracts/auth-helper.yaml';
 const UPLOAD_CLIENT_FILE = 'contracts/upload-client.yaml';
 
@@ -20,6 +21,57 @@ const REQUIRED_SDK_FORBIDDEN_OWNERSHIP = [
   'refresh token storage',
   'final authorization decisions',
   'product-specific business rules'
+] as const;
+
+const REQUIRED_SDK_GENERATION_SOURCE_REPO = 'zdp-api-contracts';
+const REQUIRED_SDK_GENERATION_SOURCE_CONTRACT =
+  'contracts/sdk-generation-input.yaml';
+const REQUIRED_SDK_GENERATION_TARGETS = ['typescript', 'dart', 'rust'] as const;
+const REQUIRED_ROUTE_METADATA = [
+  'operation_id',
+  'resource',
+  'action',
+  'method',
+  'path',
+  'request_schema_ref',
+  'response_schema_ref',
+  'auth_required',
+  'permission_check',
+  'audit_event',
+  'idempotency',
+  'error_codes'
+] as const;
+const REQUIRED_ERROR_METADATA = [
+  'code',
+  'message',
+  'request_id',
+  'trace_id',
+  'retry_after_seconds',
+  'documentation_url'
+] as const;
+const REQUIRED_WEBHOOK_METADATA = [
+  'event_id',
+  'event_type',
+  'schema_version',
+  'signature_verification',
+  'idempotency_key',
+  'replay_policy',
+  'dead_letter_policy'
+] as const;
+const REQUIRED_SDK_GENERATION_FORBIDDEN_OWNERSHIP = [
+  'API contract source',
+  'generated SDK source truth',
+  'refresh token storage',
+  'final authorization decisions',
+  'provider credential storage'
+] as const;
+const REQUIRED_SDK_GENERATION_FORBIDDEN_VALUES = [
+  'raw_customer_payload',
+  'raw_provider_error',
+  'provider_secret',
+  'authorization_header',
+  'cookie_header',
+  'screen_component_payload'
 ] as const;
 
 const REQUIRED_AUTH_HELPER_OWNERSHIP = [
@@ -71,6 +123,77 @@ export function validateClientSdkContracts(
       required: REQUIRED_SDK_FORBIDDEN_OWNERSHIP,
       code: 'CLIENT_SDK_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'SDK forbidden ownership'
+    }),
+    ...validateSkeletonStatus({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.status',
+      actual: contracts.sdkGenerationSource.status,
+      code: 'CLIENT_SDK_GENERATION_SOURCE_STATUS_DRIFT',
+      label: 'SDK generation source'
+    }),
+    ...validateExactString({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.source_repo',
+      actual: contracts.sdkGenerationSource.sourceRepo,
+      expected: REQUIRED_SDK_GENERATION_SOURCE_REPO,
+      code: 'CLIENT_SDK_GENERATION_SOURCE_REPO_DRIFT',
+      label: 'SDK generation source repo'
+    }),
+    ...validateExactString({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.source_contract',
+      actual: contracts.sdkGenerationSource.sourceContract,
+      expected: REQUIRED_SDK_GENERATION_SOURCE_CONTRACT,
+      code: 'CLIENT_SDK_GENERATION_SOURCE_CONTRACT_DRIFT',
+      label: 'SDK generation source contract'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.generation_targets',
+      actual: contracts.sdkGenerationSource.generationTargets,
+      required: REQUIRED_SDK_GENERATION_TARGETS,
+      code: 'CLIENT_SDK_GENERATION_TARGET_MISSING',
+      label: 'SDK generation targets'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.required_route_metadata',
+      actual: contracts.sdkGenerationSource.requiredRouteMetadata,
+      required: REQUIRED_ROUTE_METADATA,
+      code: 'CLIENT_SDK_ROUTE_METADATA_MISSING',
+      label: 'SDK route metadata'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.required_error_metadata',
+      actual: contracts.sdkGenerationSource.requiredErrorMetadata,
+      required: REQUIRED_ERROR_METADATA,
+      code: 'CLIENT_SDK_ERROR_METADATA_MISSING',
+      label: 'SDK error metadata'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.required_webhook_metadata',
+      actual: contracts.sdkGenerationSource.requiredWebhookMetadata,
+      required: REQUIRED_WEBHOOK_METADATA,
+      code: 'CLIENT_SDK_WEBHOOK_METADATA_MISSING',
+      label: 'SDK webhook metadata'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.must_not_own',
+      actual: contracts.sdkGenerationSource.mustNotOwn,
+      required: REQUIRED_SDK_GENERATION_FORBIDDEN_OWNERSHIP,
+      code: 'CLIENT_SDK_GENERATION_FORBIDDEN_OWNERSHIP_MISSING',
+      label: 'SDK generation forbidden ownership'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.forbidden_values',
+      actual: contracts.sdkGenerationSource.forbiddenValues,
+      required: REQUIRED_SDK_GENERATION_FORBIDDEN_VALUES,
+      code: 'CLIENT_SDK_GENERATION_FORBIDDEN_VALUE_MISSING',
+      label: 'SDK generation forbidden values'
     }),
     ...validateSkeletonStatus({
       file: AUTH_HELPER_FILE,
@@ -150,6 +273,28 @@ function validateRequiredEntries(input: {
   }
 
   return diagnostics;
+}
+
+function validateExactString(input: {
+  readonly file: string;
+  readonly path: string;
+  readonly actual: string | null;
+  readonly expected: string;
+  readonly code: string;
+  readonly label: string;
+}): readonly ClientSdkContractDiagnostic[] {
+  if (input.actual === input.expected) {
+    return [];
+  }
+
+  return [
+    {
+      code: input.code,
+      file: input.file,
+      path: input.path,
+      message: `${input.label} must be \`${input.expected}\`.`
+    }
+  ];
 }
 
 function validateSkeletonStatus(input: {

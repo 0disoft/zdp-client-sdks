@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'bun:test';
 import {
   parseAuthHelperContract,
+  parseSdkGenerationSourceContract,
   parseSdkSurfaceContract,
   parseUploadClientContract
 } from '../src/client-sdk-contracts/parser';
@@ -70,6 +71,96 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when SDKs consume a different generation input source', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        sourceRepo: 'zdp-client-sdks'
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_GENERATION_SOURCE_REPO_DRIFT'
+    );
+  });
+
+  it('fails when Rust disappears from SDK generation targets', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        generationTargets: contracts.sdkGenerationSource.generationTargets.filter(
+          (item) => item !== 'rust'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_GENERATION_TARGET_MISSING'
+    );
+  });
+
+  it('fails when route idempotency metadata is dropped', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        requiredRouteMetadata:
+          contracts.sdkGenerationSource.requiredRouteMetadata.filter(
+            (item) => item !== 'idempotency'
+          )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_ROUTE_METADATA_MISSING'
+    );
+  });
+
+  it('fails when error trace metadata is dropped', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        requiredErrorMetadata:
+          contracts.sdkGenerationSource.requiredErrorMetadata.filter(
+            (item) => item !== 'trace_id'
+          )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_ERROR_METADATA_MISSING'
+    );
+  });
+
+  it('fails when raw authorization headers become allowed SDK generation values', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        forbiddenValues: contracts.sdkGenerationSource.forbiddenValues.filter(
+          (item) => item !== 'authorization_header'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_GENERATION_FORBIDDEN_VALUE_MISSING'
+    );
+  });
+
   it('fails when auth helpers store refresh tokens', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({
@@ -110,6 +201,9 @@ describe('client SDK contract checker', () => {
 function loadCommittedContracts(): ClientSdkContracts {
   return {
     sdkSurface: parseSdkSurfaceContract(readContract('sdk-surface.yaml')),
+    sdkGenerationSource: parseSdkGenerationSourceContract(
+      readContract('sdk-generation-source.yaml')
+    ),
     authHelper: parseAuthHelperContract(readContract('auth-helper.yaml')),
     uploadClient: parseUploadClientContract(readContract('upload-client.yaml'))
   };

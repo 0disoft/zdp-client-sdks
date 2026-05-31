@@ -4,6 +4,18 @@ export interface SdkSurfaceContract {
   readonly mustNotOwn: readonly string[];
 }
 
+export interface SdkGenerationSourceContract {
+  readonly status: string | null;
+  readonly sourceRepo: string | null;
+  readonly sourceContract: string | null;
+  readonly generationTargets: readonly string[];
+  readonly requiredRouteMetadata: readonly string[];
+  readonly requiredErrorMetadata: readonly string[];
+  readonly requiredWebhookMetadata: readonly string[];
+  readonly mustNotOwn: readonly string[];
+  readonly forbiddenValues: readonly string[];
+}
+
 export interface AuthHelperContract {
   readonly status: string | null;
   readonly owns: readonly string[];
@@ -18,6 +30,7 @@ export interface UploadClientContract {
 
 export interface ClientSdkContracts {
   readonly sdkSurface: SdkSurfaceContract;
+  readonly sdkGenerationSource: SdkGenerationSourceContract;
   readonly authHelper: AuthHelperContract;
   readonly uploadClient: UploadClientContract;
 }
