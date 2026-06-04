@@ -18,6 +18,7 @@ sdk_generation_source:
     - permission_check
     - audit_event
     - idempotency
+    - success_statuses
     - error_codes
   required_error_metadata:
     - code

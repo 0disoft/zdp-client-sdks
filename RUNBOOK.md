@@ -12,6 +12,7 @@ This repository owns SDK surface contracts. It consumes API contracts and must n
 - Keep `contracts/sdk-generation-source.yaml` pointed at `zdp-api-contracts/contracts/sdk-generation-input.yaml`.
 - Keep `contracts/libs-export-source.yaml` pointed at the public `zdp-libs-ts` export surface.
 - Keep SDK surface changes synchronized with `contracts/sdk-surface.yaml`.
+- Keep contract `status` values inside the shared `skeleton`, `draft`, `reviewed`, `active` lifecycle.
 - Require migration notes before breaking published SDK shapes.
 
 ## Failure Response
@@ -26,9 +27,9 @@ If libs export source validation fails, stop SDK refresh. The handoff contract e
 
 If generation plan validation fails, do not start SDK generation. The dry-run plan exists so TypeScript, Dart, and Rust targets keep the same API source, the same `zdp-libs-ts` export source, and the same request/trace/idempotency metadata before any generated code is written.
 
-If API SDK generation input drift validation fails, fix `zdp-api-contracts/contracts/sdk-generation-input.yaml` or `contracts/sdk-generation-source.yaml` before SDK work continues. That check exists so API contracts and SDK planning do not silently disagree about route metadata, error metadata, webhook replay fields, or forbidden sensitive values.
+If API SDK generation input drift validation fails, fix `zdp-api-contracts/contracts/sdk-generation-input.yaml` or `contracts/sdk-generation-source.yaml` before SDK work continues. That check exists so API contracts and SDK planning do not silently disagree about route metadata, success status metadata, error metadata, webhook replay fields, or forbidden sensitive values.
 
-If API export plan handoff validation fails, fix `zdp-api-contracts` before SDK work continues. That check exists so OpenAPI, SDK input, docs contract, and webhook schema planning keep the same permission, audit, idempotency, request, and trace metadata. Without it, SDK generation can look green while documentation or OpenAPI silently loses `idempotency` or `trace_id`.
+If API export plan handoff validation fails, fix `zdp-api-contracts` before SDK work continues. That check reads the actual API export plan result, not formatted source text, so OpenAPI, SDK input, docs contract, and webhook schema planning keep the same permission, audit, idempotency, success status, request, and trace metadata. Without it, SDK generation can look green while documentation or OpenAPI silently loses `idempotency`, `success_statuses`, or `trace_id`.
 
 ## Manual Review Required
 

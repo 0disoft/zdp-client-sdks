@@ -12,12 +12,20 @@ export async function runSdkGenerationPlanCli(
   const options = readOptions(argv);
   const apiInputSourceFile = 'contracts/sdk-generation-input.yaml';
   const apiExportPlanSourceFile = 'src/api-export-plan/plan.ts';
-  const result = buildSdkGenerationPlan(loadClientSdkContracts(options.root), {
-    apiGenerationInput: loadApiSdkGenerationInput(options.apiContractsRoot),
-    apiExportPlan: loadApiExportPlanHandoff(options.apiContractsRoot),
-    apiInputSourceFile: join(options.apiContractsRoot, apiInputSourceFile),
-    apiExportPlanSourceFile: join(options.apiContractsRoot, apiExportPlanSourceFile)
-  });
+  const result = buildSdkGenerationPlan(
+    await loadClientSdkContracts(options.root),
+    {
+      apiGenerationInput: await loadApiSdkGenerationInput(
+        options.apiContractsRoot
+      ),
+      apiExportPlan: await loadApiExportPlanHandoff(options.apiContractsRoot),
+      apiInputSourceFile: join(options.apiContractsRoot, apiInputSourceFile),
+      apiExportPlanSourceFile: join(
+        options.apiContractsRoot,
+        apiExportPlanSourceFile
+      )
+    }
+  );
 
   if (!result.ok) {
     for (const diagnostic of result.diagnostics) {
@@ -63,7 +71,9 @@ function readOptions(argv: readonly string[]): {
 
   return {
     root,
-    apiContractsRoot: readStringOption(argv, '--api-contracts-root') ?? join(root, '..', 'zdp-api-contracts'),
+    apiContractsRoot:
+      readStringOption(argv, '--api-contracts-root') ??
+      join(root, '..', 'zdp-api-contracts'),
     check: argv.includes('--check'),
     json: argv.includes('--json')
   };
@@ -73,7 +83,10 @@ function readRootOption(argv: readonly string[]): string | null {
   return readStringOption(argv, '--root');
 }
 
-function readStringOption(argv: readonly string[], optionName: string): string | null {
+function readStringOption(
+  argv: readonly string[],
+  optionName: string
+): string | null {
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] !== optionName) {
       continue;

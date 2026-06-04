@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { parse } from 'yaml';
 import type {
   AuthHelperContract,
   ClientSdkContracts,
@@ -16,17 +15,29 @@ const LIBS_EXPORT_SOURCE_FILE = 'libs-export-source.yaml';
 const AUTH_HELPER_FILE = 'auth-helper.yaml';
 const UPLOAD_CLIENT_FILE = 'upload-client.yaml';
 
-export function loadClientSdkContracts(root: string = process.cwd()): ClientSdkContracts {
+export async function loadClientSdkContracts(
+  root: string = process.cwd()
+): Promise<ClientSdkContracts> {
+  const [
+    sdkSurface,
+    sdkGenerationSource,
+    libsExportSource,
+    authHelper,
+    uploadClient
+  ] = await Promise.all([
+    readContract(root, SDK_SURFACE_FILE),
+    readContract(root, SDK_GENERATION_SOURCE_FILE),
+    readContract(root, LIBS_EXPORT_SOURCE_FILE),
+    readContract(root, AUTH_HELPER_FILE),
+    readContract(root, UPLOAD_CLIENT_FILE)
+  ]);
+
   return {
-    sdkSurface: parseSdkSurfaceContract(readContract(root, SDK_SURFACE_FILE)),
-    sdkGenerationSource: parseSdkGenerationSourceContract(
-      readContract(root, SDK_GENERATION_SOURCE_FILE)
-    ),
-    libsExportSource: parseLibsExportSourceContract(
-      readContract(root, LIBS_EXPORT_SOURCE_FILE)
-    ),
-    authHelper: parseAuthHelperContract(readContract(root, AUTH_HELPER_FILE)),
-    uploadClient: parseUploadClientContract(readContract(root, UPLOAD_CLIENT_FILE))
+    sdkSurface: parseSdkSurfaceContract(sdkSurface),
+    sdkGenerationSource: parseSdkGenerationSourceContract(sdkGenerationSource),
+    libsExportSource: parseLibsExportSourceContract(libsExportSource),
+    authHelper: parseAuthHelperContract(authHelper),
+    uploadClient: parseUploadClientContract(uploadClient)
   };
 }
 
@@ -112,12 +123,12 @@ export function parseUploadClientContract(source: string): UploadClientContract 
   };
 }
 
-function readContract(root: string, fileName: string): string {
-  return readFileSync(join(root, 'contracts', fileName), 'utf8');
+async function readContract(root: string, fileName: string): Promise<string> {
+  return await readFile(join(root, 'contracts', fileName), 'utf8');
 }
 
 function parseYamlRecord(source: string): Record<string, unknown> {
-  const parsed = parse(source) as unknown;
+  const parsed = Bun.YAML.parse(source) as unknown;
 
   if (isRecord(parsed)) {
     return parsed;

@@ -1,6 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { parse } from 'yaml';
+import { pathToFileURL } from 'node:url';
 import type {
   ApiExportPlanHandoff,
   ApiSdkGenerationInputContract
@@ -19,13 +19,14 @@ const REQUIRED_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
 const REQUIRED_EXPORT_DOCS_METADATA = [
   'permission_check',
   'audit_event',
-  'idempotency'
+  'idempotency',
+  'success_statuses'
 ] as const;
 
-export function loadApiSdkGenerationInput(
+export async function loadApiSdkGenerationInput(
   apiContractsRoot: string
-): ApiSdkGenerationInputContract {
-  const source = readFileSync(
+): Promise<ApiSdkGenerationInputContract> {
+  const source = await readFile(
     join(apiContractsRoot, SDK_GENERATION_INPUT_FILE),
     'utf8'
   );
@@ -36,6 +37,10 @@ export function loadApiSdkGenerationInput(
     status: readString(input, 'status'),
     sourceContracts: readStringArray(input, 'source_contracts'),
     generationTargets: readStringArray(input, 'generation_targets'),
+    allowedGenerationTargets: readStringArray(
+      input,
+      'allowed_generation_targets'
+    ),
     requiredRouteMetadata: readStringArray(input, 'required_route_metadata'),
     requiredErrorMetadata: readStringArray(input, 'required_error_metadata'),
     requiredWebhookMetadata: readStringArray(input, 'required_webhook_metadata'),
@@ -44,33 +49,27 @@ export function loadApiSdkGenerationInput(
   };
 }
 
-export function loadApiExportPlanHandoff(
+export async function loadApiExportPlanHandoff(
   apiContractsRoot: string
-): ApiExportPlanHandoff {
-  const packageJson = readJsonRecord(join(apiContractsRoot, PACKAGE_FILE));
+): Promise<ApiExportPlanHandoff> {
+  const packageJson = await readJsonRecord(join(apiContractsRoot, PACKAGE_FILE));
   const scripts = readRecord(packageJson, 'scripts');
-  const source = readFileSync(join(apiContractsRoot, API_EXPORT_PLAN_FILE), 'utf8');
+  const plan = await buildApiExportPlan(apiContractsRoot);
 
   return {
     script: readString(scripts, 'export:plan'),
     sourceFile: API_EXPORT_PLAN_FILE,
-    outputKinds: REQUIRED_EXPORT_PLAN_OUTPUT_KINDS.filter((kind) =>
-      source.includes(kind)
-    ),
-    traceFields: REQUIRED_EXPORT_TRACE_FIELDS.filter((field) =>
-      source.includes(field)
-    ),
-    requiredDocsMetadata: REQUIRED_EXPORT_DOCS_METADATA.filter((field) =>
-      source.includes(field)
-    ),
-    writesArtifacts: readPinnedBoolean(source, 'writesArtifacts'),
-    publishesSchemas: readPinnedBoolean(source, 'publishesSchemas')
+    outputKinds: readExportPlanOutputKinds(plan),
+    traceFields: readStringArray(plan, 'traceFields'),
+    requiredDocsMetadata: readDocsContractMetadata(plan),
+    writesArtifacts: readBoolean(plan, 'writesArtifacts'),
+    publishesSchemas: readBoolean(plan, 'publishesSchemas')
   };
 }
 
-function readJsonRecord(path: string): Record<string, unknown> {
+async function readJsonRecord(path: string): Promise<Record<string, unknown>> {
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+    const parsed = JSON.parse(await readFile(path, 'utf8')) as unknown;
     return isRecord(parsed) ? parsed : {};
   } catch {
     return {};
@@ -78,13 +77,86 @@ function readJsonRecord(path: string): Record<string, unknown> {
 }
 
 function parseYamlRecord(source: string): Record<string, unknown> {
-  const parsed = parse(source) as unknown;
+  const parsed = Bun.YAML.parse(source) as unknown;
 
   if (isRecord(parsed)) {
     return parsed;
   }
 
   return {};
+}
+
+async function buildApiExportPlan(
+  apiContractsRoot: string
+): Promise<Record<string, unknown>> {
+  const loadApiContracts = await loadSiblingFunction(
+    apiContractsRoot,
+    'src/api-contracts/parser.ts',
+    'loadApiContracts'
+  );
+  const buildPlan = await loadSiblingFunction(
+    apiContractsRoot,
+    API_EXPORT_PLAN_FILE,
+    'buildApiExportPlan'
+  );
+  const result = buildPlan(await loadApiContracts(apiContractsRoot));
+
+  if (!isRecord(result)) {
+    return {};
+  }
+
+  const plan = result.plan;
+  return isRecord(plan) ? plan : {};
+}
+
+async function loadSiblingFunction(
+  root: string,
+  fileName: string,
+  exportName: string
+): Promise<(...args: unknown[]) => unknown> {
+  const moduleUrl = pathToFileURL(join(root, fileName)).href;
+  const moduleRecord = (await import(moduleUrl)) as Record<string, unknown>;
+  const exported = moduleRecord[exportName];
+
+  if (typeof exported !== 'function') {
+    throw new Error(`${fileName} must export function \`${exportName}\`.`);
+  }
+
+  return exported as (...args: unknown[]) => unknown;
+}
+
+function readExportPlanOutputKinds(
+  plan: Record<string, unknown>
+): readonly string[] {
+  const outputs = plan.outputs;
+  if (!Array.isArray(outputs)) {
+    return [];
+  }
+
+  return REQUIRED_EXPORT_PLAN_OUTPUT_KINDS.filter((kind) =>
+    outputs.some((output) => isRecord(output) && output.kind === kind)
+  );
+}
+
+function readDocsContractMetadata(
+  plan: Record<string, unknown>
+): readonly string[] {
+  const outputs = plan.outputs;
+  if (!Array.isArray(outputs)) {
+    return [];
+  }
+
+  const docsContract = outputs.find(
+    (output) => isRecord(output) && output.kind === 'docs_contract'
+  );
+  if (!isRecord(docsContract)) {
+    return [];
+  }
+
+  const metadata = readStringArray(docsContract, 'requiredMetadata');
+  return REQUIRED_EXPORT_DOCS_METADATA.filter((field) =>
+    metadata.includes(field)
+  );
 }
 
 function readRecord(
@@ -122,16 +194,12 @@ function readStringArray(
   );
 }
 
-function readPinnedBoolean(source: string, field: string): boolean | null {
-  if (source.includes(`${field}: false`)) {
-    return false;
-  }
-
-  if (source.includes(`${field}: true`)) {
-    return true;
-  }
-
-  return null;
+function readBoolean(
+  value: Record<string, unknown>,
+  field: string
+): boolean | null {
+  const candidate = value[field];
+  return typeof candidate === 'boolean' ? candidate : null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

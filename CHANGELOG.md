@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Changed
+
+- `check:tsgo` fast typecheck 스크립트와 pinned `@typescript/native-preview` 의존성을 추가했다.
+
+## 0.6.0
+
+### Changed
+
+- API export plan handoff 검증을 TypeScript source text 검색이 아니라 실제 `buildApiExportPlan()` 결과를 읽는 방식으로 바꿨다.
+- SDK/API route handoff metadata에 `success_statuses`를 추가했다.
+- contract status 검증을 `skeleton` 고정값에서 `skeleton`/`draft`/`reviewed`/`active` 생명주기 allowlist로 완화했다.
+- YAML 파싱을 Bun 내장 `Bun.YAML.parse`로 통일하고 외부 `yaml` 의존성을 제거했다.
+- client SDK contract와 API input 로딩을 비동기 I/O로 통일했다.
+
 ## 0.5.1
 
 ### Changed

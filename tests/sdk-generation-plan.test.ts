@@ -7,10 +7,10 @@ import {
 import { buildSdkGenerationPlan } from '../src/sdk-generation-plan/plan';
 
 describe('SDK generation plan', () => {
-  it('builds a deterministic SDK generation plan', () => {
-    const result = buildSdkGenerationPlan(loadClientSdkContracts(), {
-      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
-      apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts'),
+  it('builds a deterministic SDK generation plan', async () => {
+    const result = buildSdkGenerationPlan(await loadClientSdkContracts(), {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: await loadApiExportPlanHandoff('../zdp-api-contracts'),
       apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts'
     });
@@ -25,7 +25,9 @@ describe('SDK generation plan', () => {
       apiInputSourceContracts: [
         'contracts/route-contract.yaml',
         'contracts/error-envelope.yaml',
-        'contracts/webhook-contract.yaml'
+        'contracts/webhook-contract.yaml',
+        'contracts/sdk-generation-input.yaml',
+        'contracts/apis/catalog.yaml'
       ],
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
       apiExportPlanOutputKinds: [
@@ -44,7 +46,10 @@ describe('SDK generation plan', () => {
           libsSourceRepo: 'zdp-libs-ts',
           libsSourcePackage: 'zdp-libs-ts',
           libsExports: expect.arrayContaining(['zdp-libs-ts/schema']),
-          routeMetadata: expect.arrayContaining(['idempotency']),
+          routeMetadata: expect.arrayContaining([
+            'idempotency',
+            'success_statuses'
+          ]),
           errorMetadata: expect.arrayContaining(['request_id', 'trace_id']),
           forbiddenValues: expect.arrayContaining([
             'authorization_header',
@@ -64,8 +69,8 @@ describe('SDK generation plan', () => {
     });
   });
 
-  it('fails when contract validation fails before planning', () => {
-    const contracts = loadClientSdkContracts();
+  it('fails when contract validation fails before planning', async () => {
+    const contracts = await loadClientSdkContracts();
     const result = buildSdkGenerationPlan(
       {
         ...contracts,
@@ -78,8 +83,8 @@ describe('SDK generation plan', () => {
         }
       },
       {
-        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
-        apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts')
+        apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+        apiExportPlan: await loadApiExportPlanHandoff('../zdp-api-contracts')
       }
     );
 
@@ -90,8 +95,8 @@ describe('SDK generation plan', () => {
     );
   });
 
-  it('fails when libs source does not cover an SDK generation target', () => {
-    const contracts = loadClientSdkContracts();
+  it('fails when libs source does not cover an SDK generation target', async () => {
+    const contracts = await loadClientSdkContracts();
     const result = buildSdkGenerationPlan(
       {
         ...contracts,
@@ -103,8 +108,8 @@ describe('SDK generation plan', () => {
         }
       },
       {
-        apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
-        apiExportPlan: loadApiExportPlanHandoff('../zdp-api-contracts')
+        apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+        apiExportPlan: await loadApiExportPlanHandoff('../zdp-api-contracts')
       }
     );
 
@@ -115,9 +120,9 @@ describe('SDK generation plan', () => {
     );
   });
 
-  it('fails when API SDK generation input drifts from client SDK source', () => {
-    const contracts = loadClientSdkContracts();
-    const apiGenerationInput = loadApiSdkGenerationInput('../zdp-api-contracts');
+  it('fails when API SDK generation input drifts from client SDK source', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiGenerationInput = await loadApiSdkGenerationInput('../zdp-api-contracts');
     const result = buildSdkGenerationPlan(contracts, {
       apiGenerationInput: {
         ...apiGenerationInput,
@@ -134,11 +139,11 @@ describe('SDK generation plan', () => {
     );
   });
 
-  it('fails when API export plan no longer exposes SDK generation output', () => {
-    const contracts = loadClientSdkContracts();
-    const apiExportPlan = loadApiExportPlanHandoff('../zdp-api-contracts');
+  it('fails when API export plan no longer exposes SDK generation output', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
     const result = buildSdkGenerationPlan(contracts, {
-      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
       apiExportPlan: {
         ...apiExportPlan,
         outputKinds: apiExportPlan.outputKinds.filter(
@@ -154,12 +159,12 @@ describe('SDK generation plan', () => {
     );
   });
 
-  it('fails when API export plan can write artifacts before SDK generation', () => {
-    const contracts = loadClientSdkContracts();
+  it('fails when API export plan can write artifacts before SDK generation', async () => {
+    const contracts = await loadClientSdkContracts();
     const result = buildSdkGenerationPlan(contracts, {
-      apiGenerationInput: loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
       apiExportPlan: {
-        ...loadApiExportPlanHandoff('../zdp-api-contracts'),
+        ...(await loadApiExportPlanHandoff('../zdp-api-contracts')),
         writesArtifacts: true
       }
     });

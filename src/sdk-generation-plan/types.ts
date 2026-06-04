@@ -9,6 +9,7 @@ export interface ApiSdkGenerationInputContract {
   readonly status: string | null;
   readonly sourceContracts: readonly string[];
   readonly generationTargets: readonly string[];
+  readonly allowedGenerationTargets: readonly string[];
   readonly requiredRouteMetadata: readonly string[];
   readonly requiredErrorMetadata: readonly string[];
   readonly requiredWebhookMetadata: readonly string[];

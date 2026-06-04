@@ -5,7 +5,7 @@ export async function runClientSdkContractCheckCli(
   argv: readonly string[]
 ): Promise<number> {
   const root = readRootOption(argv) ?? process.cwd();
-  const result = validateClientSdkContracts(loadClientSdkContracts(root));
+  const result = validateClientSdkContracts(await loadClientSdkContracts(root));
 
   if (result.ok) {
     console.log('Client SDK contract check passed.');

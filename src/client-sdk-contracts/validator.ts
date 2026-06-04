@@ -40,6 +40,7 @@ const REQUIRED_ROUTE_METADATA = [
   'permission_check',
   'audit_event',
   'idempotency',
+  'success_statuses',
   'error_codes'
 ] as const;
 const REQUIRED_ERROR_METADATA = [
@@ -136,6 +137,13 @@ const REQUIRED_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP = [
   'file ownership decisions'
 ] as const;
 
+const ALLOWED_CONTRACT_STATUSES = [
+  'skeleton',
+  'draft',
+  'reviewed',
+  'active'
+] as const;
+
 export function validateClientSdkContracts(
   contracts: ClientSdkContracts
 ): ClientSdkContractCheckResult {
@@ -164,7 +172,7 @@ export function validateClientSdkContracts(
       code: 'CLIENT_SDK_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'SDK forbidden ownership'
     }),
-    ...validateSkeletonStatus({
+    ...validateAllowedStatus({
       file: SDK_GENERATION_SOURCE_FILE,
       path: 'sdk_generation_source.status',
       actual: contracts.sdkGenerationSource.status,
@@ -235,7 +243,7 @@ export function validateClientSdkContracts(
       code: 'CLIENT_SDK_GENERATION_FORBIDDEN_VALUE_MISSING',
       label: 'SDK generation forbidden values'
     }),
-    ...validateSkeletonStatus({
+    ...validateAllowedStatus({
       file: LIBS_EXPORT_SOURCE_FILE,
       path: 'libs_export_source.status',
       actual: contracts.libsExportSource.status,
@@ -298,7 +306,7 @@ export function validateClientSdkContracts(
       code: 'CLIENT_SDK_LIBS_FORBIDDEN_VALUE_MISSING',
       label: 'libs source forbidden values'
     }),
-    ...validateSkeletonStatus({
+    ...validateAllowedStatus({
       file: AUTH_HELPER_FILE,
       path: 'auth_helper.status',
       actual: contracts.authHelper.status,
@@ -321,7 +329,7 @@ export function validateClientSdkContracts(
       code: 'CLIENT_SDK_AUTH_HELPER_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'auth helper forbidden ownership'
     }),
-    ...validateSkeletonStatus({
+    ...validateAllowedStatus({
       file: UPLOAD_CLIENT_FILE,
       path: 'upload_client.status',
       actual: contracts.uploadClient.status,
@@ -400,14 +408,14 @@ function validateExactString(input: {
   ];
 }
 
-function validateSkeletonStatus(input: {
+function validateAllowedStatus(input: {
   readonly file: string;
   readonly path: string;
   readonly actual: string | null;
   readonly code: string;
   readonly label: string;
 }): readonly ClientSdkContractDiagnostic[] {
-  if (input.actual === 'skeleton') {
+  if (isAllowedContractStatus(input.actual)) {
     return [];
   }
 
@@ -416,7 +424,19 @@ function validateSkeletonStatus(input: {
       code: input.code,
       file: input.file,
       path: input.path,
-      message: `${input.label} must stay skeleton until generated SDK packages exist.`
+      message: `${input.label} must be one of ${formatAllowedStatuses()}.`
     }
   ];
+}
+
+function formatAllowedStatuses(): string {
+  return ALLOWED_CONTRACT_STATUSES.map((status) => `\`${status}\``).join(', ');
+}
+
+function isAllowedContractStatus(
+  status: string | null
+): status is (typeof ALLOWED_CONTRACT_STATUSES)[number] {
+  return ALLOWED_CONTRACT_STATUSES.includes(
+    status as (typeof ALLOWED_CONTRACT_STATUSES)[number]
+  );
 }

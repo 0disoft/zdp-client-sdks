@@ -22,7 +22,8 @@ const REQUIRED_API_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
 const REQUIRED_API_EXPORT_DOCS_METADATA = [
   'permission_check',
   'audit_event',
-  'idempotency'
+  'idempotency',
+  'success_statuses'
 ] as const;
 const PLANNED_PACKAGE_BY_TARGET = {
   typescript: '@zdp/client-sdk',
@@ -134,14 +135,14 @@ function validateApiGenerationInput(
   apiGenerationInput: ApiSdkGenerationInputContract
 ): readonly ClientSdkContractDiagnostic[] {
   return [
-    ...validateExactString({
+    ...validateAllowedStatus({
       file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       path: 'sdk_generation_input.status',
       actual: apiGenerationInput.status,
-      expected: 'skeleton',
       code: 'CLIENT_SDK_API_INPUT_STATUS_DRIFT',
       label: 'API SDK generation input status'
     }),
+    ...validateTargetsAllowedByApiInput(contracts, apiGenerationInput),
     ...validateSameEntries({
       file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       path: 'sdk_generation_input.generation_targets',
@@ -181,7 +182,9 @@ function validateApiGenerationInput(
       required: [
         'contracts/route-contract.yaml',
         'contracts/error-envelope.yaml',
-        'contracts/webhook-contract.yaml'
+        'contracts/webhook-contract.yaml',
+        'contracts/sdk-generation-input.yaml',
+        'contracts/apis/catalog.yaml'
       ],
       code: 'CLIENT_SDK_API_INPUT_SOURCE_CONTRACT_MISSING',
       label: 'API SDK generation input source contracts'
@@ -314,15 +317,19 @@ function uniqueSorted(values: readonly string[]): readonly string[] {
   );
 }
 
-function validateExactString(input: {
+function validateAllowedStatus(input: {
   readonly file: string;
   readonly path: string;
   readonly actual: string | null;
-  readonly expected: string;
   readonly code: string;
   readonly label: string;
 }): readonly ClientSdkContractDiagnostic[] {
-  if (input.actual === input.expected) {
+  if (
+    input.actual === 'skeleton' ||
+    input.actual === 'draft' ||
+    input.actual === 'reviewed' ||
+    input.actual === 'active'
+  ) {
     return [];
   }
 
@@ -331,9 +338,27 @@ function validateExactString(input: {
       code: input.code,
       file: input.file,
       path: input.path,
-      message: `${input.label} must be \`${input.expected}\`.`
+      message:
+        `${input.label} must be one of ` +
+        '`skeleton`, `draft`, `reviewed`, `active`.'
     }
   ];
+}
+
+function validateTargetsAllowedByApiInput(
+  contracts: ClientSdkContracts,
+  apiGenerationInput: ApiSdkGenerationInputContract
+): readonly ClientSdkContractDiagnostic[] {
+  return contracts.sdkGenerationSource.generationTargets
+    .filter(
+      (target) => !apiGenerationInput.allowedGenerationTargets.includes(target)
+    )
+    .map((target) => ({
+      code: 'CLIENT_SDK_API_INPUT_TARGET_NOT_ALLOWED',
+      file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      path: 'sdk_generation_input.allowed_generation_targets',
+      message: `Client SDK target \`${target}\` must be allowed by API SDK generation input.`
+    }));
 }
 
 function validateSameEntries(input: {

@@ -162,6 +162,51 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('allows SDK contract sources to move through reviewed lifecycle states', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        status: 'reviewed'
+      },
+      libsExportSource: {
+        ...contracts.libsExportSource,
+        status: 'draft'
+      },
+      authHelper: {
+        ...contracts.authHelper,
+        status: 'active'
+      },
+      uploadClient: {
+        ...contracts.uploadClient,
+        status: 'reviewed'
+      }
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it('fails when route success status metadata is dropped', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        requiredRouteMetadata:
+          contracts.sdkGenerationSource.requiredRouteMetadata.filter(
+            (item) => item !== 'success_statuses'
+          )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_ROUTE_METADATA_MISSING'
+    );
+  });
+
   it('fails when SDKs consume a different libs export source', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({
