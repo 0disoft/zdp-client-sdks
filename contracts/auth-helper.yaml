@@ -5,6 +5,8 @@ auth_helper:
     - current user context normalization input
   must_not_own:
     - refresh token storage
+    - session token storage
+    - raw credential storage
     - membership authority
     - entitlement authority
     - provider identity mapping source

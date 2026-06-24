@@ -35,5 +35,7 @@ libs_export_source:
     - raw_provider_error
     - provider_secret
     - provider_token
+    - refresh_token_plaintext
     - secret_value
+    - stack_trace
     - screen_component_payload

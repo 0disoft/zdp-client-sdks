@@ -4,6 +4,8 @@ upload_client:
     - signed upload request shape
     - upload error mapping
     - request_id propagation
+    - trace_id propagation
+    - idempotency key propagation
   must_not_own:
     - object storage bucket names
     - raw provider URLs as public contract

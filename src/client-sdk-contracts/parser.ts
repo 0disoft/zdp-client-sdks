@@ -48,7 +48,12 @@ export function parseSdkSurfaceContract(source: string): SdkSurfaceContract {
   return {
     languages: readStringArray(sdkSurface, 'languages'),
     requiredBehaviors: readStringArray(sdkSurface, 'required_behaviors'),
-    mustNotOwn: readStringArray(sdkSurface, 'must_not_own')
+    mustNotOwn: readStringArray(sdkSurface, 'must_not_own'),
+    forbiddenValues: readStringArray(sdkSurface, 'forbidden_values'),
+    crossLanguageRequirements: readStringArray(
+      sdkSurface,
+      'cross_language_requirements'
+    )
   };
 }
 

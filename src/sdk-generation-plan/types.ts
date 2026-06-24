@@ -21,6 +21,7 @@ export interface ApiExportPlanHandoff {
   readonly script: string | null;
   readonly sourceFile: string;
   readonly outputKinds: readonly string[];
+  readonly forbiddenValues: readonly string[];
   readonly traceFields: readonly string[];
   readonly requiredDocsMetadata: readonly string[];
   readonly writesArtifacts: boolean | null;
@@ -50,6 +51,7 @@ export interface SdkGenerationPlan {
   readonly apiInputSourceContracts: readonly string[];
   readonly apiExportPlanSourceFile: string | null;
   readonly apiExportPlanOutputKinds: readonly string[];
+  readonly apiExportPlanForbiddenValues: readonly string[];
   readonly apiExportPlanTraceFields: readonly string[];
   readonly targets: readonly SdkGenerationPlanTarget[];
 }

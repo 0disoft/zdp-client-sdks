@@ -2,6 +2,8 @@ export interface SdkSurfaceContract {
   readonly languages: readonly string[];
   readonly requiredBehaviors: readonly string[];
   readonly mustNotOwn: readonly string[];
+  readonly forbiddenValues: readonly string[];
+  readonly crossLanguageRequirements: readonly string[];
 }
 
 export interface SdkGenerationSourceContract {

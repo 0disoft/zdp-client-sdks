@@ -12,6 +12,7 @@
 - auth token handling boundary
 - standard error handling
 - upload client handoff
+- request, trace, and idempotency propagation contract
 - SDK contract checker
 - SDK generation input source handoff
 - API SDK generation input drift check
@@ -31,8 +32,11 @@
 - product-specific business rules
 - generated docs source of truth
 - generated SDK artifact source of truth
+- SDK runtime implementation
 - SDK package publishing
 - refresh token storage
+- session token storage
+- raw credential storage
 - final authorization decisions
 - raw provider URLs as public contract
 
@@ -44,3 +48,4 @@
 - checker가 API 계약 원천 소유나 refresh token 저장을 허용해야만 통과한다.
 - SDK generation source가 `zdp-api-contracts/contracts/sdk-generation-input.yaml` 외의 입력을 원천으로 삼아야 한다.
 - libs export source가 `zdp-libs-ts` public export 외의 입력을 원천으로 삼아야 한다.
+- SDK surface가 언어별로 다른 datetime, amount, locale 표현 규칙을 요구한다.

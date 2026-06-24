@@ -154,7 +154,7 @@ audit:
     - sdk_libs_export_source.changed
   sink: zdp-platform-observability
   retention_days: 365
-  immutable: false
+  immutable: true
   redaction_policy: do not log token or customer payload fixtures
   reason_required_for_admin_access: true
   evidence_export_supported: true
@@ -312,3 +312,5 @@ notes:
   - Generation plan dry-run proves the SDK inputs are reproducible before any generated package is written or published.
   - API input drift check keeps zdp-api-contracts route, error, webhook metadata aligned with SDK planning.
   - API export plan handoff check keeps OpenAPI, SDK input, docs contract, and webhook schema planning aligned with SDK planning before generated artifacts exist.
+  - api.sdks names planned SDK generation targets only; it does not claim generated SDK artifacts exist yet.
+  - Client SDKs must preserve request_id, trace_id, idempotency, owner, tenant, session, and credential policy metadata from API contracts before code generation.

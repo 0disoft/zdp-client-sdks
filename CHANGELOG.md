@@ -2,9 +2,21 @@
 
 ## Unreleased
 
+## 0.6.3
+
+### Changed
+
+- SDK generation plan이 API forbidden ownership, API export plan forbidden values, unhandled API source contract, unhandled API export output kind drift를 실패로 잡도록 강화했다.
+- SDK generation source가 API route/webhook export forbidden values와 SDK runtime implementation 금지 경계를 반영하도록 맞췄다.
+
+## 0.6.2
+
 ### Changed
 
 - `check:tsgo` fast typecheck 스크립트와 pinned `@typescript/native-preview` 의존성을 추가했다.
+- SDK generation source를 `zdp-api-contracts`의 auth/session route metadata와 맞춰 owner, tenant, request, trace, session, credential policy metadata를 요구하도록 강화했다.
+- SDK surface, auth helper, upload client가 request/trace/idempotency propagation과 raw credential/session token 금지 경계를 잃으면 실패하도록 강화했다.
+- API input forbidden values가 `refresh_token_plaintext`와 `stack_trace` 같은 필수 금지값을 잃거나 SDK generation source로 전달되지 않으면 잡도록 했다.
 
 ## 0.6.0
 
@@ -12,7 +24,7 @@
 
 - API export plan handoff 검증을 TypeScript source text 검색이 아니라 실제 `buildApiExportPlan()` 결과를 읽는 방식으로 바꿨다.
 - SDK/API route handoff metadata에 `success_statuses`를 추가했다.
-- contract status 검증을 `skeleton` 고정값에서 `skeleton`/`draft`/`reviewed`/`active` 생명주기 allowlist로 완화했다.
+- contract status 검증을 `skeleton` 고정값에서 `skeleton`/`draft`/`reviewed` pre-release 생명주기 allowlist로 완화했다.
 - YAML 파싱을 Bun 내장 `Bun.YAML.parse`로 통일하고 외부 `yaml` 의존성을 제거했다.
 - client SDK contract와 API input 로딩을 비동기 I/O로 통일했다.
 

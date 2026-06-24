@@ -5,6 +5,8 @@ sdk_surface:
     - rust
   required_behaviors:
     - request_id propagation
+    - trace_id propagation
+    - idempotency key propagation
     - standard error envelope handling
     - pagination handling
     - upload handoff
@@ -13,3 +15,16 @@ sdk_surface:
     - refresh token storage
     - final authorization decisions
     - product-specific business rules
+  forbidden_values:
+    - raw_customer_payload
+    - raw_provider_error
+    - provider_secret
+    - authorization_header
+    - cookie_header
+    - refresh_token_plaintext
+    - stack_trace
+    - screen_component_payload
+  cross_language_requirements:
+    - UTC ISO-8601 datetime strings
+    - decimal-safe amount strings
+    - BCP 47 locale strings

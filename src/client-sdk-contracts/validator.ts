@@ -13,6 +13,8 @@ const UPLOAD_CLIENT_FILE = 'contracts/upload-client.yaml';
 const REQUIRED_SDK_LANGUAGES = ['typescript', 'dart', 'rust'] as const;
 const REQUIRED_SDK_BEHAVIORS = [
   'request_id propagation',
+  'trace_id propagation',
+  'idempotency key propagation',
   'standard error envelope handling',
   'pagination handling',
   'upload handoff'
@@ -22,6 +24,21 @@ const REQUIRED_SDK_FORBIDDEN_OWNERSHIP = [
   'refresh token storage',
   'final authorization decisions',
   'product-specific business rules'
+] as const;
+const REQUIRED_SDK_SURFACE_FORBIDDEN_VALUES = [
+  'raw_customer_payload',
+  'raw_provider_error',
+  'provider_secret',
+  'authorization_header',
+  'cookie_header',
+  'refresh_token_plaintext',
+  'stack_trace',
+  'screen_component_payload'
+] as const;
+const REQUIRED_CROSS_LANGUAGE_REQUIREMENTS = [
+  'UTC ISO-8601 datetime strings',
+  'decimal-safe amount strings',
+  'BCP 47 locale strings'
 ] as const;
 
 const REQUIRED_SDK_GENERATION_SOURCE_REPO = 'zdp-api-contracts';
@@ -40,6 +57,12 @@ const REQUIRED_ROUTE_METADATA = [
   'permission_check',
   'audit_event',
   'idempotency',
+  'owner_boundary',
+  'tenant_boundary',
+  'request_id_required',
+  'trace_id_required',
+  'session_effect',
+  'credential_policy',
   'success_statuses',
   'error_codes'
 ] as const;
@@ -63,6 +86,8 @@ const REQUIRED_WEBHOOK_METADATA = [
 const REQUIRED_SDK_GENERATION_FORBIDDEN_OWNERSHIP = [
   'API contract source',
   'generated SDK source truth',
+  'SDK runtime implementation',
+  'product-specific business rules',
   'refresh token storage',
   'final authorization decisions',
   'provider credential storage'
@@ -73,7 +98,14 @@ const REQUIRED_SDK_GENERATION_FORBIDDEN_VALUES = [
   'provider_secret',
   'authorization_header',
   'cookie_header',
-  'screen_component_payload'
+  'refresh_token_plaintext',
+  'stack_trace',
+  'screen_component_payload',
+  'provider_specific_id_as_primary_id',
+  'raw_storage_url',
+  'unversioned_payload',
+  'provider_secret_in_schema',
+  'ledger_mutation_without_money_contract'
 ] as const;
 
 const REQUIRED_LIBS_EXPORT_SOURCE_REPO = 'zdp-libs-ts';
@@ -111,7 +143,9 @@ const REQUIRED_LIBS_SOURCE_FORBIDDEN_VALUES = [
   'raw_provider_error',
   'provider_secret',
   'provider_token',
+  'refresh_token_plaintext',
   'secret_value',
+  'stack_trace',
   'screen_component_payload'
 ] as const;
 
@@ -121,6 +155,8 @@ const REQUIRED_AUTH_HELPER_OWNERSHIP = [
 ] as const;
 const REQUIRED_AUTH_HELPER_FORBIDDEN_OWNERSHIP = [
   'refresh token storage',
+  'session token storage',
+  'raw credential storage',
   'membership authority',
   'entitlement authority',
   'provider identity mapping source'
@@ -129,7 +165,9 @@ const REQUIRED_AUTH_HELPER_FORBIDDEN_OWNERSHIP = [
 const REQUIRED_UPLOAD_CLIENT_OWNERSHIP = [
   'signed upload request shape',
   'upload error mapping',
-  'request_id propagation'
+  'request_id propagation',
+  'trace_id propagation',
+  'idempotency key propagation'
 ] as const;
 const REQUIRED_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP = [
   'object storage bucket names',
@@ -140,8 +178,7 @@ const REQUIRED_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP = [
 const ALLOWED_CONTRACT_STATUSES = [
   'skeleton',
   'draft',
-  'reviewed',
-  'active'
+  'reviewed'
 ] as const;
 
 export function validateClientSdkContracts(
@@ -171,6 +208,22 @@ export function validateClientSdkContracts(
       required: REQUIRED_SDK_FORBIDDEN_OWNERSHIP,
       code: 'CLIENT_SDK_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'SDK forbidden ownership'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_SURFACE_FILE,
+      path: 'sdk_surface.forbidden_values',
+      actual: contracts.sdkSurface.forbiddenValues,
+      required: REQUIRED_SDK_SURFACE_FORBIDDEN_VALUES,
+      code: 'CLIENT_SDK_FORBIDDEN_VALUE_MISSING',
+      label: 'SDK forbidden values'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_SURFACE_FILE,
+      path: 'sdk_surface.cross_language_requirements',
+      actual: contracts.sdkSurface.crossLanguageRequirements,
+      required: REQUIRED_CROSS_LANGUAGE_REQUIREMENTS,
+      code: 'CLIENT_SDK_CROSS_LANGUAGE_REQUIREMENT_MISSING',
+      label: 'SDK cross-language requirements'
     }),
     ...validateAllowedStatus({
       file: SDK_GENERATION_SOURCE_FILE,

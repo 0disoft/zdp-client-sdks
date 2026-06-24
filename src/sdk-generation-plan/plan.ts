@@ -18,6 +18,24 @@ const REQUIRED_API_EXPORT_OUTPUT_KINDS = [
   'webhook_schema',
   'docs_contract'
 ] as const;
+const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
+  'contracts/route-contract.yaml',
+  'contracts/error-envelope.yaml',
+  'contracts/webhook-contract.yaml',
+  'contracts/sdk-generation-input.yaml',
+  'contracts/apis/catalog.yaml',
+  'contracts/apis/core-api/auth-session.yaml'
+] as const;
+const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
+  'raw_customer_payload',
+  'raw_provider_error',
+  'provider_secret',
+  'authorization_header',
+  'cookie_header',
+  'refresh_token_plaintext',
+  'stack_trace',
+  'screen_component_payload'
+] as const;
 const REQUIRED_API_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
 const REQUIRED_API_EXPORT_DOCS_METADATA = [
   'permission_check',
@@ -29,6 +47,14 @@ const PLANNED_PACKAGE_BY_TARGET = {
   typescript: '@zdp/client-sdk',
   dart: 'zdp_client_sdk',
   rust: 'zdp-client-sdk'
+} as const;
+const API_FORBIDDEN_OWNERSHIP_TO_SDK_BOUNDARY = {
+  generated_sdk_source: 'generated SDK source truth',
+  sdk_runtime_implementation: 'SDK runtime implementation',
+  product_business_logic: 'product-specific business rules',
+  refresh_token_storage: 'refresh token storage',
+  final_authorization_decision: 'final authorization decisions',
+  provider_credential_storage: 'provider credential storage'
 } as const;
 
 export function buildSdkGenerationPlan(
@@ -76,6 +102,7 @@ export function buildSdkGenerationPlan(
     apiInputSourceContracts: options.apiGenerationInput?.sourceContracts ?? [],
     apiExportPlanSourceFile: options.apiExportPlanSourceFile ?? null,
     apiExportPlanOutputKinds: options.apiExportPlan?.outputKinds ?? [],
+    apiExportPlanForbiddenValues: options.apiExportPlan?.forbiddenValues ?? [],
     apiExportPlanTraceFields: options.apiExportPlan?.traceFields ?? [],
     targets
   };
@@ -124,7 +151,7 @@ function validatePlanInputs(
   }
 
   if (apiExportPlan !== undefined) {
-    diagnostics.push(...validateApiExportPlanHandoff(apiExportPlan));
+    diagnostics.push(...validateApiExportPlanHandoff(contracts, apiExportPlan));
   }
 
   return diagnostics;
@@ -179,28 +206,40 @@ function validateApiGenerationInput(
       file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       path: 'sdk_generation_input.source_contracts',
       actual: apiGenerationInput.sourceContracts,
-      required: [
-        'contracts/route-contract.yaml',
-        'contracts/error-envelope.yaml',
-        'contracts/webhook-contract.yaml',
-        'contracts/sdk-generation-input.yaml',
-        'contracts/apis/catalog.yaml'
-      ],
+      required: REQUIRED_API_INPUT_SOURCE_CONTRACTS,
       code: 'CLIENT_SDK_API_INPUT_SOURCE_CONTRACT_MISSING',
       label: 'API SDK generation input source contracts'
     }),
+    ...validateUnexpectedEntries({
+      file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      path: 'sdk_generation_input.source_contracts',
+      actual: apiGenerationInput.sourceContracts,
+      allowed: REQUIRED_API_INPUT_SOURCE_CONTRACTS,
+      code: 'CLIENT_SDK_API_INPUT_SOURCE_CONTRACT_UNEXPECTED',
+      label: 'API SDK generation input source contracts'
+    }),
+    ...validateForbiddenOwnershipHandoff(contracts, apiGenerationInput),
     ...validateRequiredEntries({
       file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       path: 'sdk_generation_input.forbidden_values',
       actual: apiGenerationInput.forbiddenValues,
-      required: contracts.sdkGenerationSource.forbiddenValues,
-      code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_VALUE_MISSING',
+      required: REQUIRED_API_INPUT_FORBIDDEN_VALUES,
+      code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_VALUE_DRIFT',
       label: 'API SDK generation input forbidden values'
+    }),
+    ...validateRequiredEntries({
+      file: 'contracts/sdk-generation-source.yaml',
+      path: 'sdk_generation_source.forbidden_values',
+      actual: contracts.sdkGenerationSource.forbiddenValues,
+      required: apiGenerationInput.forbiddenValues,
+      code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_VALUE_DRIFT',
+      label: 'Client SDK generation source forbidden values from API input'
     })
   ];
 }
 
 function validateApiExportPlanHandoff(
+  contracts: ClientSdkContracts,
   apiExportPlan: ApiExportPlanHandoff
 ): readonly ClientSdkContractDiagnostic[] {
   return [
@@ -223,6 +262,22 @@ function validateApiExportPlanHandoff(
       required: REQUIRED_API_EXPORT_OUTPUT_KINDS,
       code: 'CLIENT_SDK_API_EXPORT_PLAN_OUTPUT_MISSING',
       label: 'API export plan outputs'
+    }),
+    ...validateUnexpectedEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'outputs.kind',
+      actual: apiExportPlan.outputKinds,
+      allowed: REQUIRED_API_EXPORT_OUTPUT_KINDS,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_OUTPUT_UNEXPECTED',
+      label: 'API export plan outputs'
+    }),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'outputs.forbiddenValues',
+      actual: contracts.sdkGenerationSource.forbiddenValues,
+      required: apiExportPlan.forbiddenValues,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_FORBIDDEN_VALUE_DRIFT',
+      label: 'SDK generation forbidden values for API export plan'
     }),
     ...validateRequiredEntries({
       file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
@@ -327,8 +382,7 @@ function validateAllowedStatus(input: {
   if (
     input.actual === 'skeleton' ||
     input.actual === 'draft' ||
-    input.actual === 'reviewed' ||
-    input.actual === 'active'
+    input.actual === 'reviewed'
   ) {
     return [];
   }
@@ -340,7 +394,7 @@ function validateAllowedStatus(input: {
       path: input.path,
       message:
         `${input.label} must be one of ` +
-        '`skeleton`, `draft`, `reviewed`, `active`.'
+        '`skeleton`, `draft`, `reviewed`.'
     }
   ];
 }
@@ -359,6 +413,63 @@ function validateTargetsAllowedByApiInput(
       path: 'sdk_generation_input.allowed_generation_targets',
       message: `Client SDK target \`${target}\` must be allowed by API SDK generation input.`
     }));
+}
+
+function validateForbiddenOwnershipHandoff(
+  contracts: ClientSdkContracts,
+  apiGenerationInput: ApiSdkGenerationInputContract
+): readonly ClientSdkContractDiagnostic[] {
+  const diagnostics: ClientSdkContractDiagnostic[] = [];
+  const knownApiOwnership = Object.keys(
+    API_FORBIDDEN_OWNERSHIP_TO_SDK_BOUNDARY
+  );
+
+  for (const ownership of apiGenerationInput.forbiddenOwnership) {
+    const sdkBoundary =
+      API_FORBIDDEN_OWNERSHIP_TO_SDK_BOUNDARY[
+        ownership as keyof typeof API_FORBIDDEN_OWNERSHIP_TO_SDK_BOUNDARY
+      ];
+
+    if (sdkBoundary === undefined) {
+      diagnostics.push({
+        code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_OWNERSHIP_UNMAPPED',
+        file: 'contracts/sdk-generation-source.yaml',
+        path: 'sdk_generation_source.must_not_own',
+        message:
+          `Client SDK generation source must map API forbidden ownership ` +
+          `\`${ownership}\` before SDK planning can consume it.`
+      });
+      continue;
+    }
+
+    if (!contracts.sdkGenerationSource.mustNotOwn.includes(sdkBoundary)) {
+      diagnostics.push({
+        code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_OWNERSHIP_DRIFT',
+        file: 'contracts/sdk-generation-source.yaml',
+        path: 'sdk_generation_source.must_not_own',
+        message:
+          `Client SDK generation source must include \`${sdkBoundary}\` ` +
+          `from API forbidden ownership \`${ownership}\`.`
+      });
+    }
+  }
+
+  for (const ownership of knownApiOwnership) {
+    if (apiGenerationInput.forbiddenOwnership.includes(ownership)) {
+      continue;
+    }
+
+    diagnostics.push({
+      code: 'CLIENT_SDK_API_INPUT_FORBIDDEN_OWNERSHIP_DRIFT',
+      file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      path: 'sdk_generation_input.forbidden_ownership',
+      message:
+        `API SDK generation input must include \`${ownership}\` ` +
+        'required by the client SDK forbidden ownership mapping.'
+    });
+  }
+
+  return diagnostics;
 }
 
 function validateSameEntries(input: {
@@ -403,6 +514,24 @@ function validateRequiredEntries(input: {
       file: input.file,
       path: input.path,
       message: `${input.label} must include \`${entry}\`.`
+    }));
+}
+
+function validateUnexpectedEntries(input: {
+  readonly file: string;
+  readonly path: string;
+  readonly actual: readonly string[];
+  readonly allowed: readonly string[];
+  readonly code: string;
+  readonly label: string;
+}): readonly ClientSdkContractDiagnostic[] {
+  return input.actual
+    .filter((entry) => !input.allowed.includes(entry))
+    .map((entry) => ({
+      code: input.code,
+      file: input.file,
+      path: input.path,
+      message: `${input.label} must not introduce unhandled entry \`${entry}\`.`
     }));
 }
 

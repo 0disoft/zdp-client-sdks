@@ -9,12 +9,6 @@ import type {
 const SDK_GENERATION_INPUT_FILE = 'contracts/sdk-generation-input.yaml';
 const PACKAGE_FILE = 'package.json';
 const API_EXPORT_PLAN_FILE = 'src/api-export-plan/plan.ts';
-const REQUIRED_EXPORT_PLAN_OUTPUT_KINDS = [
-  'openapi',
-  'sdk_generation_input',
-  'webhook_schema',
-  'docs_contract'
-] as const;
 const REQUIRED_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
 const REQUIRED_EXPORT_DOCS_METADATA = [
   'permission_check',
@@ -60,6 +54,7 @@ export async function loadApiExportPlanHandoff(
     script: readString(scripts, 'export:plan'),
     sourceFile: API_EXPORT_PLAN_FILE,
     outputKinds: readExportPlanOutputKinds(plan),
+    forbiddenValues: readExportPlanForbiddenValues(plan),
     traceFields: readStringArray(plan, 'traceFields'),
     requiredDocsMetadata: readDocsContractMetadata(plan),
     writesArtifacts: readBoolean(plan, 'writesArtifacts'),
@@ -133,8 +128,27 @@ function readExportPlanOutputKinds(
     return [];
   }
 
-  return REQUIRED_EXPORT_PLAN_OUTPUT_KINDS.filter((kind) =>
-    outputs.some((output) => isRecord(output) && output.kind === kind)
+  return outputs.flatMap((output) => {
+    if (!isRecord(output)) {
+      return [];
+    }
+
+    return readString(output, 'kind') ?? [];
+  });
+}
+
+function readExportPlanForbiddenValues(
+  plan: Record<string, unknown>
+): readonly string[] {
+  const outputs = plan.outputs;
+  if (!Array.isArray(outputs)) {
+    return [];
+  }
+
+  return uniqueSorted(
+    outputs.flatMap((output) =>
+      isRecord(output) ? readStringArray(output, 'forbiddenValues') : []
+    )
   );
 }
 
@@ -200,6 +214,12 @@ function readBoolean(
 ): boolean | null {
   const candidate = value[field];
   return typeof candidate === 'boolean' ? candidate : null;
+}
+
+function uniqueSorted(values: readonly string[]): readonly string[] {
+  return Array.from(new Set(values)).sort((left, right) =>
+    left.localeCompare(right)
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
