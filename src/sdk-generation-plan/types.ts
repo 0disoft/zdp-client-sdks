@@ -53,6 +53,7 @@ export interface SdkGenerationPlan {
   readonly apiExportPlanOutputKinds: readonly string[];
   readonly apiExportPlanForbiddenValues: readonly string[];
   readonly apiExportPlanTraceFields: readonly string[];
+  readonly apiExportPlanDocsMetadata: readonly string[];
   readonly targets: readonly SdkGenerationPlanTarget[];
 }
 

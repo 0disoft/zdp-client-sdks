@@ -61,7 +61,7 @@ bun run generation:plan -- --json
 bun scripts/plan-sdk-generation.ts --api-contracts-root ../zdp-api-contracts --json
 ```
 
-아키텍처 검증은 `zdp-architecture-linter`에서 이 저장소를 대상으로 실행한다.
+아키텍처 검증은 `zdp-architecture-linter` 저장소 루트에서 이 저장소를 대상으로 실행한다.
 
 ```bash
 bun src/cli.ts validate --architecture ../../docs/zdp-architecture --repository ../../contracts/zdp-client-sdks --json

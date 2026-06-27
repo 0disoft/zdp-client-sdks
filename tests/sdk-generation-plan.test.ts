@@ -45,6 +45,12 @@ describe('SDK generation plan', () => {
         'ledger_mutation_without_money_contract'
       ]),
       apiExportPlanTraceFields: ['request_id', 'trace_id'],
+      apiExportPlanDocsMetadata: [
+        'permission_check',
+        'audit_event',
+        'idempotency',
+        'success_statuses'
+      ],
       targets: [
         expect.objectContaining({
           language: 'typescript',
@@ -254,6 +260,26 @@ describe('SDK generation plan', () => {
     );
   });
 
+  it('fails when API export plan docs metadata is incomplete', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        requiredDocsMetadata: apiExportPlan.requiredDocsMetadata.filter(
+          (item) => item !== 'idempotency'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_DOCS_METADATA_MISSING'
+    );
+  });
+
   it('fails when API export plan no longer exposes SDK generation output', async () => {
     const contracts = await loadClientSdkContracts();
     const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
@@ -288,6 +314,23 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_EXPORT_PLAN_WRITES_ARTIFACTS'
+    );
+  });
+
+  it('fails when API export plan can publish schemas before SDK generation', async () => {
+    const contracts = await loadClientSdkContracts();
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...(await loadApiExportPlanHandoff('../zdp-api-contracts')),
+        publishesSchemas: true
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_PUBLISHES_SCHEMAS'
     );
   });
 });

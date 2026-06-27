@@ -3,6 +3,7 @@ import type {
   ClientSdkContractDiagnostic,
   ClientSdkContracts
 } from '../client-sdk-contracts/types';
+import { REQUIRED_API_EXPORT_DOCS_METADATA } from './api-input';
 import type {
   ApiExportPlanHandoff,
   ApiSdkGenerationInputContract,
@@ -37,12 +38,6 @@ const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
   'screen_component_payload'
 ] as const;
 const REQUIRED_API_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
-const REQUIRED_API_EXPORT_DOCS_METADATA = [
-  'permission_check',
-  'audit_event',
-  'idempotency',
-  'success_statuses'
-] as const;
 const PLANNED_PACKAGE_BY_TARGET = {
   typescript: '@zdp/client-sdk',
   dart: 'zdp_client_sdk',
@@ -104,6 +99,8 @@ export function buildSdkGenerationPlan(
     apiExportPlanOutputKinds: options.apiExportPlan?.outputKinds ?? [],
     apiExportPlanForbiddenValues: options.apiExportPlan?.forbiddenValues ?? [],
     apiExportPlanTraceFields: options.apiExportPlan?.traceFields ?? [],
+    apiExportPlanDocsMetadata:
+      options.apiExportPlan?.requiredDocsMetadata ?? [],
     targets
   };
 

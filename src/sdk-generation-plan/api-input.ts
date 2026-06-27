@@ -10,7 +10,7 @@ const SDK_GENERATION_INPUT_FILE = 'contracts/sdk-generation-input.yaml';
 const PACKAGE_FILE = 'package.json';
 const API_EXPORT_PLAN_FILE = 'src/api-export-plan/plan.ts';
 const REQUIRED_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
-const REQUIRED_EXPORT_DOCS_METADATA = [
+export const REQUIRED_API_EXPORT_DOCS_METADATA = [
   'permission_check',
   'audit_event',
   'idempotency',
@@ -168,7 +168,7 @@ function readDocsContractMetadata(
   }
 
   const metadata = readStringArray(docsContract, 'requiredMetadata');
-  return REQUIRED_EXPORT_DOCS_METADATA.filter((field) =>
+  return REQUIRED_API_EXPORT_DOCS_METADATA.filter((field) =>
     metadata.includes(field)
   );
 }
