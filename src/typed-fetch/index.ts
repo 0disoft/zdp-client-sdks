@@ -14,6 +14,10 @@ export {
   defineZdpOperation,
   defineZdpOperations
 } from './client';
+export {
+  createZdpGeneratedOperationDefinitions,
+  createZdpGeneratedTypedFetchClient
+} from './generated-operations';
 export type {
   EncodedZdpRequest,
   ZdpAccessTokenProvider,
@@ -31,3 +35,12 @@ export type {
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
+export type {
+  ZdpGeneratedOperationDefinition,
+  ZdpGeneratedOperationDefinitionMap,
+  ZdpGeneratedOperationDefinitions,
+  ZdpGeneratedOperationMetadata,
+  ZdpGeneratedOperationMetadataMap,
+  ZdpGeneratedOperationRequest,
+  ZdpGeneratedOperationResponse
+} from './generated-operations';

@@ -14,6 +14,7 @@ const REQUIRED_SDK_LANGUAGES = ['typescript', 'dart', 'rust'] as const;
 const REQUIRED_SDK_BEHAVIORS = [
   'typed fetch operation map',
   'typed fetch runtime foundation',
+  'generated TypeScript typed fetch operation definitions',
   'request_id propagation',
   'trace_id propagation',
   'idempotency key propagation',

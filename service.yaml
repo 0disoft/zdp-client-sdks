@@ -61,6 +61,7 @@ cost:
     - sdk-api-input-drift-checks
     - sdk-api-export-plan-handoff-checks
     - typed-fetch-runtime-checks
+    - generated-typed-fetch-operation-definition-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -340,6 +341,7 @@ exit:
     - SDK generation plan validates zdp-api-contracts API export dry-run plan handoff before SDK artifacts exist
     - SDK generation plan validates typed fetch operation map metadata from zdp-api-contracts before generated SDK artifacts exist
     - Minimal TypeScript typed fetch runtime preserves request_id, trace_id, idempotency, timeout, abort, auth attachment, and standard error envelope handling without owning API truth
+    - TypeScript generated operation definitions mirror zdp-api-contracts typed fetch operation map and connect to the typed fetch runtime without claiming schema-specific request or response model truth
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -361,3 +363,4 @@ notes:
   - api.sdks names planned SDK generation targets only; it does not claim generated SDK artifacts exist yet.
   - Client SDKs must preserve request_id, trace_id, idempotency, owner, tenant, session, and credential policy metadata from API contracts before code generation.
   - The typed fetch runtime requires caller-provided baseUrl/fetch or environment fetch, access token providers for auth-required operations, and generated or declared operation maps; it does not store refresh tokens, choose a live API base URL, or become the API contract source.
+  - Generated TypeScript operation definitions expose route metadata and passthrough encoded request envelopes only; schema-specific request and response model generation remains deferred to a later generator slice.

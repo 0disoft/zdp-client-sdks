@@ -6,6 +6,7 @@ sdk_surface:
   required_behaviors:
     - typed fetch operation map
     - typed fetch runtime foundation
+    - generated TypeScript typed fetch operation definitions
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation

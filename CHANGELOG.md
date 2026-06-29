@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## 0.9.0
+
+### Added
+
+- `zdp-api-contracts` typed fetch operation map을 checked-in TypeScript operation definitions로 노출하고 `createZdpApiClient()`로 minimal typed fetch runtime에 연결했다.
+- generated operation definitions가 API export plan handoff와 drift 나면 실패하는 테스트를 추가했다.
+
 ## 0.8.0
 
 ### Changed
