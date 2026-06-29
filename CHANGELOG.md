@@ -1,5 +1,13 @@
 # CHANGELOG.md
 
+## 0.11.0
+
+### Changed
+
+- API export plan의 `schemaModelMap`을 SDK schema model handoff의 우선 입력으로 사용하도록 바꿨다.
+- generated typed fetch operation request/response 타입을 schema model metadata에 연결했다.
+- generated typed fetch runtime이 request required field와 response required field 누락을 실패로 잡도록 강화했다.
+
 ## 0.10.0
 
 ### Added

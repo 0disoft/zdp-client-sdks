@@ -514,13 +514,27 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
 } as const satisfies ZdpGeneratedOperationMetadataMap;
 
 export const zdpTypedFetchOperations =
-  createZdpGeneratedOperationDefinitions(ZDP_TYPED_FETCH_OPERATION_MAP);
+  createZdpGeneratedOperationDefinitions(
+    ZDP_TYPED_FETCH_OPERATION_MAP,
+    ZDP_API_SCHEMA_MODEL_MAP
+  );
 
 export type ZdpApiOperationId = keyof typeof ZDP_TYPED_FETCH_OPERATION_MAP;
 
-export type ZdpApiOperationRequest = ZdpGeneratedOperationRequest;
+export type ZdpApiOperationRequest<
+  OperationId extends ZdpApiOperationId = ZdpApiOperationId
+> = ZdpGeneratedOperationRequest<
+  (typeof ZDP_TYPED_FETCH_OPERATION_MAP)[OperationId],
+  typeof ZDP_API_SCHEMA_MODEL_MAP
+>;
 
-export type ZdpApiOperationResponse = unknown;
+export type ZdpApiOperationResponse<
+  OperationId extends ZdpApiOperationId = ZdpApiOperationId
+> = (typeof zdpTypedFetchOperations)[OperationId] extends {
+  readonly decodeResponse: (response: unknown) => infer Response;
+}
+  ? Response
+  : unknown;
 
 export type ZdpApiSchemaRef = keyof typeof ZDP_API_SCHEMA_MODEL_MAP;
 
@@ -545,6 +559,7 @@ export function getZdpGeneratedSchemaPayloadFields(
 export function createZdpApiClient(options: ZdpTypedFetchClientOptions) {
   return createZdpGeneratedTypedFetchClient(
     ZDP_TYPED_FETCH_OPERATION_MAP,
+    ZDP_API_SCHEMA_MODEL_MAP,
     options
   );
 }

@@ -72,6 +72,7 @@ export async function loadApiExportPlanHandoff(
     clientRuntimeMetadata: readStringArray(plan, 'clientRuntimeMetadata'),
     operationIds: readStringArray(plan, 'operationIds'),
     typedFetchOperationMap: readTypedFetchOperationMap(plan),
+    schemaModelMap: readSchemaModelMap(plan),
     mutatingMethodsRequiringIdempotency: readStringArray(
       plan,
       'mutatingMethodsRequiringIdempotency'
@@ -89,6 +90,11 @@ export async function loadApiExportPlanHandoff(
 export async function loadApiSchemaModelHandoff(
   apiContractsRoot: string
 ): Promise<Readonly<Record<string, ApiSchemaModelHandoff>>> {
+  const exportPlan = await loadApiExportPlanHandoff(apiContractsRoot);
+  if (Object.keys(exportPlan.schemaModelMap).length > 0) {
+    return exportPlan.schemaModelMap;
+  }
+
   const apiInput = await loadApiSdkGenerationInput(apiContractsRoot);
   const schemaModels: Record<string, ApiSchemaModelHandoff> = {};
 
@@ -232,6 +238,73 @@ function readSchemaModel(input: {
     requiredFields: readStringArray(input.schema, 'required_fields'),
     secretFields: readStringArray(input.schema, 'secret_fields'),
     sessionEffect: readString(input.schema, 'session_effect')
+  };
+}
+
+function readSchemaModelMap(
+  plan: Record<string, unknown>
+): Readonly<Record<string, ApiSchemaModelHandoff>> {
+  const schemaModelMap = plan.schemaModelMap;
+  if (!isRecord(schemaModelMap)) {
+    return {};
+  }
+
+  const parsed: Record<string, ApiSchemaModelHandoff> = {};
+
+  for (const [schemaRef, value] of Object.entries(schemaModelMap)) {
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    const model = readSchemaModelHandoff(schemaRef, value);
+    if (model !== null) {
+      parsed[schemaRef] = model;
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(parsed).sort(([left], [right]) => left.localeCompare(right))
+  );
+}
+
+function readSchemaModelHandoff(
+  schemaRef: string,
+  value: Record<string, unknown>
+): ApiSchemaModelHandoff | null {
+  const declaredSchemaRef = readString(value, 'schemaRef');
+  const schemaId = readString(value, 'schemaId');
+  const sourceContract = readString(value, 'sourceContract');
+  const serviceId = readString(value, 'serviceId');
+  const ownerBoundary = readString(value, 'ownerBoundary');
+  const status = readString(value, 'status');
+  const kind = readString(value, 'kind');
+  const carriesSecretMaterial = readBoolean(value, 'carriesSecretMaterial');
+
+  if (
+    declaredSchemaRef !== schemaRef ||
+    schemaId === null ||
+    sourceContract === null ||
+    serviceId === null ||
+    ownerBoundary === null ||
+    status === null ||
+    !isApiSchemaModelKind(kind) ||
+    carriesSecretMaterial === null
+  ) {
+    return null;
+  }
+
+  return {
+    schemaRef,
+    schemaId,
+    sourceContract,
+    serviceId,
+    ownerBoundary,
+    status,
+    kind,
+    carriesSecretMaterial,
+    requiredFields: readStringArray(value, 'requiredFields'),
+    secretFields: readStringArray(value, 'secretFields'),
+    sessionEffect: readString(value, 'sessionEffect')
   };
 }
 

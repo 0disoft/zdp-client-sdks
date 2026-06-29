@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import {
   ZDP_API_SCHEMA_MODEL_MAP,
   ZDP_TYPED_FETCH_OPERATION_MAP,
+  ZdpClientConfigurationError,
+  ZdpProtocolError,
   createZdpApiClient,
   getZdpApiSchemaModel,
   getZdpGeneratedSchemaPayloadFields,
@@ -117,6 +119,65 @@ describe('generated typed fetch operations', () => {
     expect(headers.get('idempotency-key')).toBe('idem_123');
   });
 
+  it('rejects generated requests missing schema-required fields', async () => {
+    const client = createZdpApiClient({
+      baseUrl: 'https://api.example.test',
+      fetch: async () => new Response('{}'),
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call(
+        'core.auth.sessions.create',
+        {
+          // @ts-expect-error verifier is intentionally omitted to cover the runtime guard.
+          body: {
+            login_identifier: 'user@example.test'
+          }
+        },
+        {
+          idempotencyKey: 'idem_123'
+        }
+      )
+    ).rejects.toBeInstanceOf(ZdpClientConfigurationError);
+  });
+
+  it('rejects generated responses missing schema-required fields', async () => {
+    const client = createZdpApiClient({
+      baseUrl: 'https://api.example.test',
+      fetch: async () =>
+        new Response(
+          JSON.stringify({
+            session_ref: 'sess_123',
+            actor_ref: 'actor_123',
+            tenant_ref: 'tenant_123'
+          }),
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json' }
+          }
+        ),
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call(
+        'core.auth.sessions.create',
+        {
+          body: {
+            login_identifier: 'user@example.test',
+            verifier: 'opaque-verifier'
+          }
+        },
+        {
+          idempotencyKey: 'idem_123'
+        }
+      )
+    ).rejects.toBeInstanceOf(ZdpProtocolError);
+  });
+
   it('keeps path parameter expansion for generated operation metadata', async () => {
     const captured: {
       url?: URL;
@@ -126,10 +187,18 @@ describe('generated typed fetch operations', () => {
       fetch: async (input) => {
         captured.url = input instanceof URL ? input : new URL(String(input));
 
-        return new Response(JSON.stringify({ ok: true }), {
+        return new Response(
+          JSON.stringify({
+            session_ref: 'sess_123',
+            actor_ref: 'actor_123',
+            tenant_ref: 'tenant_123',
+            expires_at: '2026-06-29T00:00:00Z'
+          }),
+          {
           status: 201,
           headers: { 'content-type': 'application/json' }
-        });
+          }
+        );
       }
     });
 

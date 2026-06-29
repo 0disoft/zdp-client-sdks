@@ -27,6 +27,7 @@ export interface ApiExportPlanHandoff {
   readonly clientRuntimeMetadata: readonly string[];
   readonly operationIds: readonly string[];
   readonly typedFetchOperationMap: Readonly<Record<string, ApiTypedFetchOperationHandoff>>;
+  readonly schemaModelMap: Readonly<Record<string, ApiSchemaModelHandoff>>;
   readonly mutatingMethodsRequiringIdempotency: readonly string[];
   readonly requiredMutationIdempotencyPolicy: string | null;
   readonly requiredDocsMetadata: readonly string[];

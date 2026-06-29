@@ -57,13 +57,28 @@ export type ZdpGeneratedSchemaPayload<
   Model extends ZdpGeneratedSchemaModel
 > = Readonly<Record<Model['requiredFields'][number], unknown>>;
 
-export type ZdpGeneratedOperationRequest = EncodedZdpRequest;
+export type ZdpGeneratedOperationRequest<
+  Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
+> = EncodedZdpRequest & {
+  readonly body?: Operation['requestSchemaRef'] extends keyof SchemaModels
+    ? ZdpGeneratedSchemaPayload<SchemaModels[Operation['requestSchemaRef']]>
+    : unknown;
+};
 
-export type ZdpGeneratedOperationResponse = unknown;
+export type ZdpGeneratedOperationResponse<
+  Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
+> = Operation['responseSchemaRef'] extends keyof SchemaModels
+  ? ZdpGeneratedSchemaPayload<SchemaModels[Operation['responseSchemaRef']]>
+  : unknown;
 
-export type ZdpGeneratedOperationDefinition = ZdpOperationDefinition<
-  ZdpGeneratedOperationRequest,
-  ZdpGeneratedOperationResponse
+export type ZdpGeneratedOperationDefinition<
+  Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
+> = ZdpOperationDefinition<
+  ZdpGeneratedOperationRequest<Operation, SchemaModels>,
+  ZdpGeneratedOperationResponse<Operation, SchemaModels>
 >;
 
 export type ZdpGeneratedOperationMetadataMap = Readonly<
@@ -75,51 +90,78 @@ export type ZdpGeneratedOperationDefinitionMap = Readonly<
 >;
 
 export type ZdpGeneratedOperationDefinitions<
-  OperationMap extends ZdpGeneratedOperationMetadataMap
+  OperationMap extends ZdpGeneratedOperationMetadataMap,
+  SchemaModels extends ZdpGeneratedSchemaModelMap
 > = Readonly<{
-  readonly [OperationId in keyof OperationMap]: ZdpGeneratedOperationDefinition;
+  readonly [OperationId in keyof OperationMap]: ZdpGeneratedOperationDefinition<
+    OperationMap[OperationId],
+    SchemaModels
+  >;
 }>;
 
 export function createZdpGeneratedOperationDefinitions<
-  const OperationMap extends ZdpGeneratedOperationMetadataMap
+  const OperationMap extends ZdpGeneratedOperationMetadataMap,
+  const SchemaModels extends ZdpGeneratedSchemaModelMap
 >(
-  operationMap: OperationMap
-): ZdpGeneratedOperationDefinitions<OperationMap> {
+  operationMap: OperationMap,
+  schemaModels: SchemaModels
+): ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels> {
   const operations: Partial<
-    Record<keyof OperationMap, ZdpGeneratedOperationDefinition>
+    ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels>
   > = {};
 
-  for (const [operationId, metadata] of Object.entries(operationMap)) {
-    operations[operationId as keyof OperationMap] = createOperationDefinition(
-      operationId,
-      metadata
+  for (const operationId of Object.keys(operationMap) as (keyof OperationMap)[]) {
+    const metadata = operationMap[operationId];
+    operations[operationId] = createOperationDefinition(
+      String(operationId),
+      metadata,
+      schemaModels
     );
   }
 
   return defineZdpOperations(
-    operations as ZdpGeneratedOperationDefinitions<OperationMap>
+    operations as ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels>
   );
 }
 
 export function createZdpGeneratedTypedFetchClient<
-  const OperationMap extends ZdpGeneratedOperationMetadataMap
+  const OperationMap extends ZdpGeneratedOperationMetadataMap,
+  const SchemaModels extends ZdpGeneratedSchemaModelMap
 >(
   operationMap: OperationMap,
+  schemaModels: SchemaModels,
   options: ZdpTypedFetchClientOptions
-): ZdpTypedFetchClient<ZdpGeneratedOperationDefinitions<OperationMap>> {
+): ZdpTypedFetchClient<ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels>> {
   return createZdpTypedFetchClient(
-    createZdpGeneratedOperationDefinitions(operationMap),
+    createZdpGeneratedOperationDefinitions(operationMap, schemaModels),
     options
   );
 }
 
-function createOperationDefinition(
+function createOperationDefinition<
+  const Operation extends ZdpGeneratedOperationMetadata,
+  const SchemaModels extends ZdpGeneratedSchemaModelMap
+>(
   operationId: string,
-  metadata: ZdpGeneratedOperationMetadata
-): ZdpGeneratedOperationDefinition {
+  metadata: Operation,
+  schemaModels: SchemaModels
+): ZdpGeneratedOperationDefinition<Operation, SchemaModels> {
   validateOperationMetadata(operationId, metadata);
+  const requestSchema = readSchemaModel(
+    schemaModels,
+    metadata.requestSchemaRef,
+    'request'
+  );
+  const responseSchema = readSchemaModel(
+    schemaModels,
+    metadata.responseSchemaRef,
+    'response'
+  );
 
-  return defineZdpOperation<ZdpGeneratedOperationRequest, unknown>({
+  return defineZdpOperation<
+    ZdpGeneratedOperationRequest<Operation, SchemaModels>,
+    ZdpGeneratedOperationResponse<Operation, SchemaModels>
+  >({
     operationId: metadata.operationId,
     method: metadata.method,
     path: metadata.path,
@@ -129,8 +171,14 @@ function createOperationDefinition(
     requestIdRequired: metadata.requestIdRequired,
     traceIdRequired: metadata.traceIdRequired,
     errorCodes: [...metadata.errorCodes],
-    encodeRequest: encodeGeneratedOperationRequest,
-    decodeResponse: decodeGeneratedOperationResponse
+    encodeRequest: (request) =>
+      encodeGeneratedOperationRequest(metadata, requestSchema, request),
+    decodeResponse: (response) =>
+      decodeGeneratedOperationResponse<Operation, SchemaModels>(
+        metadata,
+        responseSchema,
+        response
+      )
   });
 }
 
@@ -170,8 +218,13 @@ function validateOperationMetadata(
   }
 }
 
-function encodeGeneratedOperationRequest(
-  request: ZdpGeneratedOperationRequest
+function encodeGeneratedOperationRequest<
+  Operation extends ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap
+>(
+  metadata: Operation,
+  requestSchema: ZdpGeneratedSchemaModel,
+  request: ZdpGeneratedOperationRequest<Operation, SchemaModels>
 ): EncodedZdpRequest {
   if (!isRecord(request)) {
     throw new ZdpClientConfigurationError(
@@ -179,18 +232,109 @@ function encodeGeneratedOperationRequest(
     );
   }
 
+  validateRequestRequiredFields(metadata, requestSchema, request);
+
   return request;
 }
 
-function decodeGeneratedOperationResponse(response: unknown): unknown {
+function decodeGeneratedOperationResponse<
+  Operation extends ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap
+>(
+  metadata: Operation,
+  responseSchema: ZdpGeneratedSchemaModel,
+  response: unknown
+): ZdpGeneratedOperationResponse<Operation, SchemaModels> {
   if (response === undefined) {
     throw new ZdpProtocolError({
       status: 0,
       message: 'Generated operation response decoder received undefined.'
     });
   }
+  if (!isRecord(response)) {
+    throw new ZdpProtocolError({
+      status: 0,
+      message:
+        `Generated operation \`${metadata.operationId}\` response must be ` +
+        `an object matching \`${responseSchema.schemaRef}\`.`
+    });
+  }
 
-  return response;
+  for (const field of responseSchema.requiredFields) {
+    if (!Object.prototype.hasOwnProperty.call(response, field)) {
+      throw new ZdpProtocolError({
+        status: 0,
+        message:
+          `Generated operation \`${metadata.operationId}\` response schema ` +
+          `\`${responseSchema.schemaRef}\` requires field \`${field}\`.`
+      });
+    }
+  }
+
+  return response as ZdpGeneratedOperationResponse<Operation, SchemaModels>;
+}
+
+function readSchemaModel(
+  schemaModels: ZdpGeneratedSchemaModelMap,
+  schemaRef: string,
+  expectedKind: ZdpGeneratedSchemaKind
+): ZdpGeneratedSchemaModel {
+  const model = schemaModels[schemaRef];
+  if (model === undefined) {
+    throw new ZdpClientConfigurationError(
+      `Generated schema model map must include \`${schemaRef}\`.`
+    );
+  }
+  if (model.kind !== expectedKind) {
+    throw new ZdpClientConfigurationError(
+      `Generated schema model \`${schemaRef}\` must be a ${expectedKind} schema.`
+    );
+  }
+
+  return model;
+}
+
+function validateRequestRequiredFields(
+  metadata: ZdpGeneratedOperationMetadata,
+  requestSchema: ZdpGeneratedSchemaModel,
+  request: EncodedZdpRequest
+): void {
+  for (const field of requestSchema.requiredFields) {
+    if (hasEncodedRequestField(request, field)) {
+      continue;
+    }
+
+    throw new ZdpClientConfigurationError(
+      `Generated operation \`${metadata.operationId}\` request schema ` +
+        `\`${requestSchema.schemaRef}\` requires field \`${field}\`.`
+    );
+  }
+}
+
+function hasEncodedRequestField(
+  request: EncodedZdpRequest,
+  field: string
+): boolean {
+  if (
+    isRecord(request.body) &&
+    Object.prototype.hasOwnProperty.call(request.body, field)
+  ) {
+    return true;
+  }
+  if (
+    request.pathParams !== undefined &&
+    Object.prototype.hasOwnProperty.call(request.pathParams, field)
+  ) {
+    return true;
+  }
+  if (
+    request.query !== undefined &&
+    Object.prototype.hasOwnProperty.call(request.query, field)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
