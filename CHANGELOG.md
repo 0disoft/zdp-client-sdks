@@ -1,5 +1,13 @@
 # CHANGELOG.md
 
+## 0.10.0
+
+### Added
+
+- `zdp-api-contracts` schema bundle을 읽는 schema model handoff reader를 추가했다.
+- generated TypeScript typed fetch surface에 API schema model metadata와 drift 검증을 추가했다.
+- SDK generation plan이 operation request/response schema refs와 schema model map 정합성을 검증하도록 강화했다.
+
 ## 0.9.0
 
 ### Added

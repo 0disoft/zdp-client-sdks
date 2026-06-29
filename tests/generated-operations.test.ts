@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  ZDP_API_SCHEMA_MODEL_MAP,
   ZDP_TYPED_FETCH_OPERATION_MAP,
   createZdpApiClient,
+  getZdpApiSchemaModel,
+  getZdpGeneratedSchemaPayloadFields,
   zdpTypedFetchOperations
 } from '../src/index';
-import { loadApiExportPlanHandoff } from '../src/sdk-generation-plan/api-input';
+import {
+  loadApiExportPlanHandoff,
+  loadApiSchemaModelHandoff
+} from '../src/sdk-generation-plan/api-input';
 import type { ZdpFetchLike } from '../src/index';
 
 describe('generated typed fetch operations', () => {
@@ -17,6 +23,33 @@ describe('generated typed fetch operations', () => {
     expect(Object.keys(zdpTypedFetchOperations).sort()).toEqual(
       [...apiExportPlan.operationIds].sort()
     );
+  });
+
+  it('mirrors the zdp-api-contracts schema model handoff', async () => {
+    const apiSchemaModels = await loadApiSchemaModelHandoff('../zdp-api-contracts');
+
+    expect(toPlainRecord(ZDP_API_SCHEMA_MODEL_MAP)).toEqual(
+      toPlainRecord(apiSchemaModels)
+    );
+
+    for (const operation of Object.values(ZDP_TYPED_FETCH_OPERATION_MAP)) {
+      expect(ZDP_API_SCHEMA_MODEL_MAP[operation.requestSchemaRef]).toBeDefined();
+      expect(ZDP_API_SCHEMA_MODEL_MAP[operation.responseSchemaRef]).toBeDefined();
+    }
+  });
+
+  it('exposes required payload fields for generated schema models', () => {
+    const model = getZdpApiSchemaModel(
+      'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest'
+    );
+
+    expect(model.kind).toBe('request');
+    expect(model.carriesSecretMaterial).toBe(true);
+    expect(model.secretFields).toEqual(['verifier']);
+    expect(getZdpGeneratedSchemaPayloadFields(model)).toEqual([
+      'login_identifier',
+      'verifier'
+    ]);
   });
 
   it('connects generated operations to the typed fetch runtime', async () => {

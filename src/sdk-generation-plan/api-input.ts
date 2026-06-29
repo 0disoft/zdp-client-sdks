@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type {
   ApiExportPlanHandoff,
+  ApiSchemaModelHandoff,
   ApiSdkGenerationInputContract,
   ApiTypedFetchOperationHandoff
 } from './types';
@@ -85,6 +86,60 @@ export async function loadApiExportPlanHandoff(
   };
 }
 
+export async function loadApiSchemaModelHandoff(
+  apiContractsRoot: string
+): Promise<Readonly<Record<string, ApiSchemaModelHandoff>>> {
+  const apiInput = await loadApiSdkGenerationInput(apiContractsRoot);
+  const schemaModels: Record<string, ApiSchemaModelHandoff> = {};
+
+  for (const sourceContract of apiInput.sourceContracts) {
+    if (!isApiSchemaContract(sourceContract)) {
+      continue;
+    }
+
+    const document = parseYamlRecord(
+      await readFile(join(apiContractsRoot, sourceContract), 'utf8')
+    );
+    const bundle = readRecord(document, 'schema_bundle');
+    const serviceId = readString(bundle, 'service_id');
+    const ownerBoundary = readString(bundle, 'owner_boundary');
+    const status = readString(bundle, 'status');
+    const schemas = bundle.schemas;
+
+    if (
+      serviceId === null ||
+      ownerBoundary === null ||
+      status === null ||
+      !Array.isArray(schemas)
+    ) {
+      continue;
+    }
+
+    for (const schema of schemas) {
+      if (!isRecord(schema)) {
+        continue;
+      }
+
+      const model = readSchemaModel({
+        schema,
+        sourceContract,
+        serviceId,
+        ownerBoundary,
+        status
+      });
+      if (model !== null) {
+        schemaModels[model.schemaRef] = model;
+      }
+    }
+  }
+
+  return Object.fromEntries(
+    Object.entries(schemaModels).sort(([left], [right]) =>
+      left.localeCompare(right)
+    )
+  );
+}
+
 async function readJsonRecord(path: string): Promise<Record<string, unknown>> {
   try {
     const parsed = JSON.parse(await readFile(path, 'utf8')) as unknown;
@@ -141,6 +196,43 @@ async function loadSiblingFunction(
   }
 
   return exported as (...args: unknown[]) => unknown;
+}
+
+function readSchemaModel(input: {
+  readonly schema: Record<string, unknown>;
+  readonly sourceContract: string;
+  readonly serviceId: string;
+  readonly ownerBoundary: string;
+  readonly status: string;
+}): ApiSchemaModelHandoff | null {
+  const schemaId = readString(input.schema, 'id');
+  const kind = readString(input.schema, 'kind');
+  const carriesSecretMaterial = readBoolean(
+    input.schema,
+    'carries_secret_material'
+  );
+
+  if (
+    schemaId === null ||
+    !isApiSchemaModelKind(kind) ||
+    carriesSecretMaterial === null
+  ) {
+    return null;
+  }
+
+  return {
+    schemaRef: `${input.sourceContract}#${schemaId}`,
+    schemaId,
+    sourceContract: input.sourceContract,
+    serviceId: input.serviceId,
+    ownerBoundary: input.ownerBoundary,
+    status: input.status,
+    kind,
+    carriesSecretMaterial,
+    requiredFields: readStringArray(input.schema, 'required_fields'),
+    secretFields: readStringArray(input.schema, 'secret_fields'),
+    sessionEffect: readString(input.schema, 'session_effect')
+  };
 }
 
 function readExportPlanOutputKinds(
@@ -329,6 +421,17 @@ function uniqueSorted(values: readonly string[]): readonly string[] {
   return Array.from(new Set(values)).sort((left, right) =>
     left.localeCompare(right)
   );
+}
+
+function isApiSchemaContract(sourceContract: string): boolean {
+  return (
+    sourceContract.startsWith('contracts/apis/') &&
+    sourceContract.endsWith('.yaml')
+  );
+}
+
+function isApiSchemaModelKind(value: string | null): value is 'request' | 'response' {
+  return value === 'request' || value === 'response';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

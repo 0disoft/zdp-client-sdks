@@ -34,6 +34,22 @@ export interface ApiExportPlanHandoff {
   readonly publishesSchemas: boolean | null;
 }
 
+export type ApiSchemaModelKind = 'request' | 'response';
+
+export interface ApiSchemaModelHandoff {
+  readonly schemaRef: string;
+  readonly schemaId: string;
+  readonly sourceContract: string;
+  readonly serviceId: string;
+  readonly ownerBoundary: string;
+  readonly status: string;
+  readonly kind: ApiSchemaModelKind;
+  readonly carriesSecretMaterial: boolean;
+  readonly requiredFields: readonly string[];
+  readonly secretFields: readonly string[];
+  readonly sessionEffect: string | null;
+}
+
 export interface ApiTypedFetchOperationHandoff {
   readonly operationId: string;
   readonly method: string;
@@ -77,6 +93,7 @@ export interface SdkGenerationPlan {
   readonly apiExportPlanClientRuntimeMetadata: readonly string[];
   readonly apiRouteOperationIds: readonly string[];
   readonly apiTypedFetchOperationMap: Readonly<Record<string, ApiTypedFetchOperationHandoff>>;
+  readonly apiSchemaModelMap: Readonly<Record<string, ApiSchemaModelHandoff>>;
   readonly mutatingMethodsRequiringIdempotency: readonly string[];
   readonly requiredMutationIdempotencyPolicy: string | null;
   readonly apiExportPlanDocsMetadata: readonly string[];

@@ -33,6 +33,30 @@ export interface ZdpGeneratedOperationMetadata {
   readonly errorCodes: readonly string[];
 }
 
+export type ZdpGeneratedSchemaKind = 'request' | 'response';
+
+export interface ZdpGeneratedSchemaModel {
+  readonly schemaRef: string;
+  readonly schemaId: string;
+  readonly sourceContract: string;
+  readonly serviceId: string;
+  readonly ownerBoundary: string;
+  readonly status: string;
+  readonly kind: ZdpGeneratedSchemaKind;
+  readonly carriesSecretMaterial: boolean;
+  readonly requiredFields: readonly string[];
+  readonly secretFields: readonly string[];
+  readonly sessionEffect: string | null;
+}
+
+export type ZdpGeneratedSchemaModelMap = Readonly<
+  Record<string, ZdpGeneratedSchemaModel>
+>;
+
+export type ZdpGeneratedSchemaPayload<
+  Model extends ZdpGeneratedSchemaModel
+> = Readonly<Record<Model['requiredFields'][number], unknown>>;
+
 export type ZdpGeneratedOperationRequest = EncodedZdpRequest;
 
 export type ZdpGeneratedOperationResponse = unknown;

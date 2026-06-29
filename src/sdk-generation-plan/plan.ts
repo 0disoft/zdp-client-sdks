@@ -6,6 +6,7 @@ import type {
 import { REQUIRED_API_EXPORT_DOCS_METADATA } from './api-input';
 import type {
   ApiExportPlanHandoff,
+  ApiSchemaModelHandoff,
   ApiSdkGenerationInputContract,
   SdkGenerationPlan,
   SdkGenerationPlanResult,
@@ -82,6 +83,7 @@ export function buildSdkGenerationPlan(
   options: {
     readonly apiGenerationInput?: ApiSdkGenerationInputContract;
     readonly apiExportPlan?: ApiExportPlanHandoff;
+    readonly apiSchemaModels?: Readonly<Record<string, ApiSchemaModelHandoff>>;
     readonly apiInputSourceFile?: string;
     readonly apiExportPlanSourceFile?: string;
   } = {}
@@ -99,7 +101,8 @@ export function buildSdkGenerationPlan(
   const diagnostics = validatePlanInputs(
     contracts,
     options.apiGenerationInput,
-    options.apiExportPlan
+    options.apiExportPlan,
+    options.apiSchemaModels
   );
 
   if (diagnostics.length > 0) {
@@ -128,6 +131,7 @@ export function buildSdkGenerationPlan(
       options.apiExportPlan?.clientRuntimeMetadata ?? [],
     apiRouteOperationIds: options.apiExportPlan?.operationIds ?? [],
     apiTypedFetchOperationMap: options.apiExportPlan?.typedFetchOperationMap ?? {},
+    apiSchemaModelMap: options.apiSchemaModels ?? {},
     mutatingMethodsRequiringIdempotency:
       options.apiExportPlan?.mutatingMethodsRequiringIdempotency ?? [],
     requiredMutationIdempotencyPolicy:
@@ -147,7 +151,8 @@ export function buildSdkGenerationPlan(
 function validatePlanInputs(
   contracts: ClientSdkContracts,
   apiGenerationInput: ApiSdkGenerationInputContract | undefined,
-  apiExportPlan: ApiExportPlanHandoff | undefined
+  apiExportPlan: ApiExportPlanHandoff | undefined,
+  apiSchemaModels: Readonly<Record<string, ApiSchemaModelHandoff>> | undefined
 ): readonly ClientSdkContractDiagnostic[] {
   const diagnostics: ClientSdkContractDiagnostic[] = [];
   const sdkTargets = new Set(contracts.sdkGenerationSource.generationTargets);
@@ -182,6 +187,62 @@ function validatePlanInputs(
 
   if (apiExportPlan !== undefined) {
     diagnostics.push(...validateApiExportPlanHandoff(contracts, apiExportPlan));
+  }
+  if (apiSchemaModels !== undefined) {
+    diagnostics.push(
+      ...validateApiSchemaModelHandoff(apiExportPlan, apiSchemaModels)
+    );
+  }
+
+  return diagnostics;
+}
+
+function validateApiSchemaModelHandoff(
+  apiExportPlan: ApiExportPlanHandoff | undefined,
+  apiSchemaModels: Readonly<Record<string, ApiSchemaModelHandoff>>
+): readonly ClientSdkContractDiagnostic[] {
+  const schemaRefs = Object.keys(apiSchemaModels);
+  const diagnostics: ClientSdkContractDiagnostic[] = [
+    ...validateNonEmptyEntries({
+      file: '../zdp-api-contracts/contracts/apis/*.yaml',
+      path: 'schema_bundle.schemas',
+      actual: schemaRefs,
+      code: 'CLIENT_SDK_API_SCHEMA_MODEL_MAP_EMPTY',
+      label: 'API schema model map'
+    })
+  ];
+
+  if (apiExportPlan === undefined) {
+    return diagnostics;
+  }
+
+  for (const operation of Object.values(apiExportPlan.typedFetchOperationMap)) {
+    if (!schemaRefs.includes(operation.requestSchemaRef)) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_SCHEMA_MODEL_REQUEST_REF_MISSING',
+          file: '../zdp-api-contracts/contracts/apis/*.yaml',
+          path: 'schema_bundle.schemas',
+          message:
+            `API schema model map must include request schema ref ` +
+            `\`${operation.requestSchemaRef}\` for operation ` +
+            `\`${operation.operationId}\`.`
+        })
+      );
+    }
+    if (!schemaRefs.includes(operation.responseSchemaRef)) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_SCHEMA_MODEL_RESPONSE_REF_MISSING',
+          file: '../zdp-api-contracts/contracts/apis/*.yaml',
+          path: 'schema_bundle.schemas',
+          message:
+            `API schema model map must include response schema ref ` +
+            `\`${operation.responseSchemaRef}\` for operation ` +
+            `\`${operation.operationId}\`.`
+        })
+      );
+    }
   }
 
   return diagnostics;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { loadClientSdkContracts } from '../src/client-sdk-contracts/parser';
 import {
   loadApiExportPlanHandoff,
+  loadApiSchemaModelHandoff,
   loadApiSdkGenerationInput
 } from '../src/sdk-generation-plan/api-input';
 import { buildSdkGenerationPlan } from '../src/sdk-generation-plan/plan';
@@ -11,6 +12,7 @@ describe('SDK generation plan', () => {
     const result = buildSdkGenerationPlan(await loadClientSdkContracts(), {
       apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
       apiExportPlan: await loadApiExportPlanHandoff('../zdp-api-contracts'),
+      apiSchemaModels: await loadApiSchemaModelHandoff('../zdp-api-contracts'),
       apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts'
     });
@@ -112,6 +114,27 @@ describe('SDK generation plan', () => {
           idempotency: 'not_required'
         })
       },
+      apiSchemaModelMap: expect.objectContaining({
+        'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest':
+          expect.objectContaining({
+            schemaId: 'AuthSessionCreateRequest',
+            kind: 'request',
+            carriesSecretMaterial: true,
+            requiredFields: ['login_identifier', 'verifier'],
+            secretFields: ['verifier']
+          }),
+        'contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetResponse':
+          expect.objectContaining({
+            schemaId: 'ReferralRewardStatusGetResponse',
+            serviceId: 'money-api',
+            ownerBoundary: 'money',
+            kind: 'response',
+            requiredFields: expect.arrayContaining([
+              'reward_status',
+              'campaign_policy_version'
+            ])
+          })
+      }),
       mutatingMethodsRequiringIdempotency: ['POST', 'PUT', 'PATCH', 'DELETE'],
       requiredMutationIdempotencyPolicy: 'required_idempotency_key',
       apiExportPlanDocsMetadata: [
@@ -521,6 +544,28 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_EXPORT_PLAN_PUBLISHES_SCHEMAS'
+    );
+  });
+
+  it('fails when API schema model handoff misses operation schema refs', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const apiSchemaModels = await loadApiSchemaModelHandoff('../zdp-api-contracts');
+    const {
+      'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest':
+        _removed,
+      ...schemaModels
+    } = apiSchemaModels;
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan,
+      apiSchemaModels: schemaModels
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_SCHEMA_MODEL_REQUEST_REF_MISSING'
     );
   });
 });

@@ -42,5 +42,9 @@ export type {
   ZdpGeneratedOperationMetadata,
   ZdpGeneratedOperationMetadataMap,
   ZdpGeneratedOperationRequest,
-  ZdpGeneratedOperationResponse
+  ZdpGeneratedOperationResponse,
+  ZdpGeneratedSchemaKind,
+  ZdpGeneratedSchemaModel,
+  ZdpGeneratedSchemaModelMap,
+  ZdpGeneratedSchemaPayload
 } from './generated-operations';
