@@ -70,6 +70,13 @@ const API_FORBIDDEN_OWNERSHIP_TO_SDK_BOUNDARY = {
   provider_credential_storage: 'provider credential storage'
 } as const;
 
+/**
+ * mf:anchor zdp.client-sdks.generation-plan
+ * purpose: Locate SDK generation planning where API handoff data becomes per-language package plans.
+ * search: SDK generation plan, API handoff, language target, package plan, dry run
+ * invariant: Plans stay dry-run and never publish packages or write generated SDK artifacts.
+ * risk: dependency, data_consistency
+ */
 export function buildSdkGenerationPlan(
   contracts: ClientSdkContracts,
   options: {

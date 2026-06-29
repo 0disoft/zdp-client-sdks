@@ -18,6 +18,13 @@ export const REQUIRED_API_EXPORT_DOCS_METADATA = [
   'success_statuses'
 ] as const;
 
+/**
+ * mf:anchor zdp.client-sdks.api-handoff-reader
+ * purpose: Locate the cross-repo reader for zdp-api-contracts SDK input and export plan data.
+ * search: API handoff, SDK input, export plan, sibling import, typed fetch map
+ * invariant: Client planning rejects missing API export metadata instead of inventing SDK runtime facts.
+ * risk: dependency, data_consistency
+ */
 export async function loadApiSdkGenerationInput(
   apiContractsRoot: string
 ): Promise<ApiSdkGenerationInputContract> {

@@ -15,6 +15,13 @@ const LIBS_EXPORT_SOURCE_FILE = 'libs-export-source.yaml';
 const AUTH_HELPER_FILE = 'auth-helper.yaml';
 const UPLOAD_CLIENT_FILE = 'upload-client.yaml';
 
+/**
+ * mf:anchor zdp.client-sdks.contract-loader
+ * purpose: Locate the loader that turns SDK YAML contracts into typed client SDK boundary objects.
+ * search: client SDK contracts, yaml load, sdk surface, auth helper, upload client
+ * invariant: Missing YAML fields become empty typed boundaries before semantic validation runs.
+ * risk: data_consistency
+ */
 export async function loadClientSdkContracts(
   root: string = process.cwd()
 ): Promise<ClientSdkContracts> {

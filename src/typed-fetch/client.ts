@@ -29,6 +29,13 @@ const AUTHORIZATION_HEADER = 'authorization';
 const JSON_CONTENT_TYPE = 'application/json';
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
 
+/**
+ * mf:anchor zdp.client-sdks.typed-fetch-runtime
+ * purpose: Locate typed fetch runtime for request metadata, auth headers, idempotency, timeout, and errors.
+ * search: typed fetch, request metadata, authorization, idempotency, timeout, error envelope
+ * invariant: request_id, trace_id, access token, and idempotency values are enforced before fetch.
+ * risk: external_request, authz, security, state
+ */
 export function defineZdpOperation<Request, Response>(
   operation: ZdpOperationDefinitionInput<Request, Response>
 ): ZdpOperationDefinitionInput<Request, Response> {

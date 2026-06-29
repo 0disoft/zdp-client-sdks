@@ -196,6 +196,13 @@ const ALLOWED_CONTRACT_STATUSES = [
   'reviewed'
 ] as const;
 
+/**
+ * mf:anchor zdp.client-sdks.semantic-validator
+ * purpose: Locate rules that keep client SDK ownership, metadata, and forbidden values aligned.
+ * search: SDK validation, ownership, forbidden values, route metadata, auth helper
+ * invariant: SDK contracts do not own API source truth, tokens, authorization, or product rules.
+ * risk: authz, security, data_consistency
+ */
 export function validateClientSdkContracts(
   contracts: ClientSdkContracts
 ): ClientSdkContractCheckResult {
