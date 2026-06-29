@@ -120,6 +120,7 @@ export function buildSdkGenerationPlan(
     apiExportPlanClientRuntimeMetadata:
       options.apiExportPlan?.clientRuntimeMetadata ?? [],
     apiRouteOperationIds: options.apiExportPlan?.operationIds ?? [],
+    apiTypedFetchOperationMap: options.apiExportPlan?.typedFetchOperationMap ?? {},
     mutatingMethodsRequiringIdempotency:
       options.apiExportPlan?.mutatingMethodsRequiringIdempotency ?? [],
     requiredMutationIdempotencyPolicy:
@@ -340,6 +341,7 @@ function validateApiExportPlanHandoff(
       code: 'CLIENT_SDK_API_EXPORT_PLAN_ROUTE_CATALOG_EMPTY',
       label: 'API export plan route catalog operation ids'
     }),
+    ...validateTypedFetchOperationMap(apiExportPlan),
     ...validateRequiredEntries({
       file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
       path: 'mutatingMethodsRequiringIdempotency',
@@ -391,6 +393,126 @@ function validateApiExportPlanHandoff(
               'API export plan consumed by SDK planning must not publish schemas.'
           })
         ])
+  ];
+}
+
+function validateTypedFetchOperationMap(
+  apiExportPlan: ApiExportPlanHandoff
+): readonly ClientSdkContractDiagnostic[] {
+  const operationIds = Object.keys(apiExportPlan.typedFetchOperationMap);
+  const diagnostics: ClientSdkContractDiagnostic[] = [
+    ...validateNonEmptyEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'typedFetchOperationMap',
+      actual: operationIds,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_MAP_EMPTY',
+      label: 'API export plan typed fetch operation map'
+    }),
+    ...validateOperationMapKeysMatchRouteOperations(apiExportPlan, operationIds)
+  ];
+
+  for (const operationId of operationIds) {
+    const operation = apiExportPlan.typedFetchOperationMap[operationId];
+    if (operation === undefined) {
+      continue;
+    }
+
+    const path = `typedFetchOperationMap.${operationId}`;
+    if (operation.operationId !== operationId) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_ID_DRIFT',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path,
+          message:
+            `Typed fetch operation map key \`${operationId}\` must match ` +
+            `operationId \`${operation.operationId}\`.`
+        })
+      );
+    }
+    if (!apiExportPlan.operationIds.includes(operation.operationId)) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_UNKNOWN',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path,
+          message:
+            `Typed fetch operation \`${operation.operationId}\` must come ` +
+            'from the API route catalog operation ids.'
+        })
+      );
+    }
+    if (operation.successStatuses.length === 0) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_SUCCESS_STATUS_MISSING',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path: `${path}.successStatuses`,
+          message:
+            `Typed fetch operation \`${operationId}\` must include at least ` +
+            'one success status.'
+        })
+      );
+    }
+    if (operation.errorCodes.length === 0) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_ERROR_CODE_MISSING',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path: `${path}.errorCodes`,
+          message:
+            `Typed fetch operation \`${operationId}\` must include at least ` +
+            'one error code.'
+        })
+      );
+    }
+    if (!apiExportPlan.clientRuntimeMetadata.includes('typed_fetch_operation_map')) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_METADATA_MISSING',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path: 'clientRuntimeMetadata',
+          message:
+            'API export plan must declare typed_fetch_operation_map metadata ' +
+            'before SDK planning can consume typed fetch operations.'
+        })
+      );
+    }
+  }
+
+  return diagnostics;
+}
+
+function validateOperationMapKeysMatchRouteOperations(
+  apiExportPlan: ApiExportPlanHandoff,
+  operationMapKeys: readonly string[]
+): readonly ClientSdkContractDiagnostic[] {
+  const file = `../zdp-api-contracts/${apiExportPlan.sourceFile}`;
+  return [
+    ...apiExportPlan.operationIds
+      .filter((operationId) => !operationMapKeys.includes(operationId))
+      .map((operationId) =>
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_MAP_DRIFT',
+          file,
+          path: 'typedFetchOperationMap',
+          message:
+            'API export plan typed fetch operation map must include route ' +
+            `catalog operation id \`${operationId}\`.`
+        })
+      ),
+    ...operationMapKeys
+      .filter((operationId) => !apiExportPlan.operationIds.includes(operationId))
+      .map((operationId) =>
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_MAP_DRIFT',
+          file,
+          path: 'typedFetchOperationMap',
+          message:
+            'API export plan typed fetch operation map must not include ' +
+            `operation id \`${operationId}\` outside the route catalog.`
+        })
+      )
   ];
 }
 

@@ -1,6 +1,11 @@
 # CHANGELOG.md
 
-## Unreleased
+## 0.8.0
+
+### Changed
+
+- SDK generation plan이 API export dry-run plan의 `typedFetchOperationMap`을 읽고 route catalog operation id와 method/path/status/auth/idempotency/schema/error metadata drift를 검증하도록 강화했다.
+- TypeScript typed fetch runtime foundation과 API export operation map handoff를 연결했다.
 
 ## 0.6.3
 

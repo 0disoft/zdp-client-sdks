@@ -26,11 +26,26 @@ export interface ApiExportPlanHandoff {
   readonly traceFields: readonly string[];
   readonly clientRuntimeMetadata: readonly string[];
   readonly operationIds: readonly string[];
+  readonly typedFetchOperationMap: Readonly<Record<string, ApiTypedFetchOperationHandoff>>;
   readonly mutatingMethodsRequiringIdempotency: readonly string[];
   readonly requiredMutationIdempotencyPolicy: string | null;
   readonly requiredDocsMetadata: readonly string[];
   readonly writesArtifacts: boolean | null;
   readonly publishesSchemas: boolean | null;
+}
+
+export interface ApiTypedFetchOperationHandoff {
+  readonly operationId: string;
+  readonly method: string;
+  readonly path: string;
+  readonly successStatuses: readonly number[];
+  readonly requestSchemaRef: string;
+  readonly responseSchemaRef: string;
+  readonly authRequired: boolean;
+  readonly idempotency: string;
+  readonly requestIdRequired: boolean;
+  readonly traceIdRequired: boolean;
+  readonly errorCodes: readonly string[];
 }
 
 export interface SdkGenerationPlanTarget {
@@ -61,6 +76,7 @@ export interface SdkGenerationPlan {
   readonly apiExportPlanTraceFields: readonly string[];
   readonly apiExportPlanClientRuntimeMetadata: readonly string[];
   readonly apiRouteOperationIds: readonly string[];
+  readonly apiTypedFetchOperationMap: Readonly<Record<string, ApiTypedFetchOperationHandoff>>;
   readonly mutatingMethodsRequiringIdempotency: readonly string[];
   readonly requiredMutationIdempotencyPolicy: string | null;
   readonly apiExportPlanDocsMetadata: readonly string[];

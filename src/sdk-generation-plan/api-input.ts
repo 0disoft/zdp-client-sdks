@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type {
   ApiExportPlanHandoff,
-  ApiSdkGenerationInputContract
+  ApiSdkGenerationInputContract,
+  ApiTypedFetchOperationHandoff
 } from './types';
 
 const SDK_GENERATION_INPUT_FILE = 'contracts/sdk-generation-input.yaml';
@@ -62,6 +63,7 @@ export async function loadApiExportPlanHandoff(
     traceFields: readStringArray(plan, 'traceFields'),
     clientRuntimeMetadata: readStringArray(plan, 'clientRuntimeMetadata'),
     operationIds: readStringArray(plan, 'operationIds'),
+    typedFetchOperationMap: readTypedFetchOperationMap(plan),
     mutatingMethodsRequiringIdempotency: readStringArray(
       plan,
       'mutatingMethodsRequiringIdempotency'
@@ -187,6 +189,77 @@ function readDocsContractMetadata(
   );
 }
 
+function readTypedFetchOperationMap(
+  plan: Record<string, unknown>
+): Readonly<Record<string, ApiTypedFetchOperationHandoff>> {
+  const operationMap = plan.typedFetchOperationMap;
+  if (!isRecord(operationMap)) {
+    return {};
+  }
+
+  const parsed: Record<string, ApiTypedFetchOperationHandoff> = {};
+
+  for (const [operationId, value] of Object.entries(operationMap)) {
+    if (!isRecord(value)) {
+      continue;
+    }
+
+    const operation = readTypedFetchOperation(operationId, value);
+    if (operation !== null) {
+      parsed[operationId] = operation;
+    }
+  }
+
+  return parsed;
+}
+
+function readTypedFetchOperation(
+  operationId: string,
+  value: Record<string, unknown>
+): ApiTypedFetchOperationHandoff | null {
+  const declaredOperationId = readString(value, 'operationId');
+  const method = readString(value, 'method');
+  const path = readString(value, 'path');
+  const requestSchemaRef = readString(value, 'requestSchemaRef');
+  const responseSchemaRef = readString(value, 'responseSchemaRef');
+  const idempotency = readString(value, 'idempotency');
+  const authRequired = readBoolean(value, 'authRequired');
+  const requestIdRequired = readBoolean(value, 'requestIdRequired');
+  const traceIdRequired = readBoolean(value, 'traceIdRequired');
+  const successStatuses = readNumberArray(value, 'successStatuses');
+  const errorCodes = readStringArray(value, 'errorCodes');
+
+  if (
+    declaredOperationId !== operationId ||
+    method === null ||
+    path === null ||
+    requestSchemaRef === null ||
+    responseSchemaRef === null ||
+    idempotency === null ||
+    authRequired === null ||
+    requestIdRequired === null ||
+    traceIdRequired === null ||
+    successStatuses.length === 0 ||
+    errorCodes.length === 0
+  ) {
+    return null;
+  }
+
+  return {
+    operationId,
+    method,
+    path,
+    successStatuses,
+    requestSchemaRef,
+    responseSchemaRef,
+    authRequired,
+    idempotency,
+    requestIdRequired,
+    traceIdRequired,
+    errorCodes
+  };
+}
+
 function readRecord(
   value: Record<string, unknown>,
   field: string
@@ -219,6 +292,21 @@ function readStringArray(
 
   return candidate.flatMap((entry) =>
     typeof entry === 'string' && entry.trim().length > 0 ? [entry.trim()] : []
+  );
+}
+
+function readNumberArray(
+  value: Record<string, unknown>,
+  field: string
+): readonly number[] {
+  const candidate = value[field];
+
+  if (!Array.isArray(candidate)) {
+    return [];
+  }
+
+  return candidate.flatMap((entry) =>
+    typeof entry === 'number' && Number.isInteger(entry) ? [entry] : []
   );
 }
 

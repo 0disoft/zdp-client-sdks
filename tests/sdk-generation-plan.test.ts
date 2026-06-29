@@ -68,6 +68,50 @@ describe('SDK generation plan', () => {
         'core.referral.uses.create',
         'money.referral_rewards.status.get'
       ],
+      apiTypedFetchOperationMap: {
+        'core.auth.registrations.create': expect.objectContaining({
+          operationId: 'core.auth.registrations.create',
+          method: 'POST',
+          path: '/v1/auth/registrations',
+          successStatuses: [202],
+          authRequired: false,
+          idempotency: 'required_idempotency_key',
+          requestIdRequired: true,
+          traceIdRequired: true
+        }),
+        'core.auth.sessions.create': expect.objectContaining({
+          operationId: 'core.auth.sessions.create',
+          method: 'POST',
+          path: '/v1/auth/sessions',
+          successStatuses: [201],
+          requestSchemaRef:
+            'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest',
+          responseSchemaRef:
+            'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateResponse',
+          authRequired: false,
+          idempotency: 'required_idempotency_key',
+          requestIdRequired: true,
+          traceIdRequired: true,
+          errorCodes: expect.arrayContaining([
+            'authentication_failed',
+            'idempotency_conflict'
+          ])
+        }),
+        'core.auth.sessions.refresh': expect.any(Object),
+        'core.auth.sessions.revoke_current': expect.any(Object),
+        'core.auth.recovery_requests.create': expect.any(Object),
+        'core.auth.passkey_challenges.create': expect.any(Object),
+        'core.auth.passkey_assertions.verify': expect.any(Object),
+        'core.auth.oauth_callbacks.accept': expect.any(Object),
+        'core.referral.uses.create': expect.any(Object),
+        'money.referral_rewards.status.get': expect.objectContaining({
+          operationId: 'money.referral_rewards.status.get',
+          method: 'GET',
+          path: '/v1/referrals/uses/{referral_use_ref}/reward-status',
+          authRequired: true,
+          idempotency: 'not_required'
+        })
+      },
       mutatingMethodsRequiringIdempotency: ['POST', 'PUT', 'PATCH', 'DELETE'],
       requiredMutationIdempotencyPolicy: 'required_idempotency_key',
       apiExportPlanDocsMetadata: [
@@ -367,6 +411,44 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_EXPORT_PLAN_ROUTE_CATALOG_EMPTY'
+    );
+  });
+
+  it('fails when API export plan no longer exposes typed fetch operation metadata', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        typedFetchOperationMap: {}
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_MAP_EMPTY'
+    );
+  });
+
+  it('fails when typed fetch operation metadata drifts from route catalog ids', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const { 'core.auth.sessions.create': _removed, ...operationMap } =
+      apiExportPlan.typedFetchOperationMap;
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        typedFetchOperationMap: operationMap
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_OPERATION_MAP_DRIFT'
     );
   });
 
