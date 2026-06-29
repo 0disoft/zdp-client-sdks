@@ -12,6 +12,7 @@
 - auth token handling boundary
 - standard error handling
 - typed fetch operation map and runtime option handoff
+- minimal TypeScript typed fetch runtime foundation
 - upload client handoff
 - request, trace, and idempotency propagation contract
 - SDK contract checker
@@ -33,7 +34,7 @@
 - product-specific business rules
 - generated docs source of truth
 - generated SDK artifact source of truth
-- SDK runtime implementation
+- language-specific generated SDK runtime implementation
 - SDK package publishing
 - refresh token storage
 - session token storage

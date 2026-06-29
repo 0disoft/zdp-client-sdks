@@ -5,6 +5,7 @@ sdk_surface:
     - rust
   required_behaviors:
     - typed fetch operation map
+    - typed fetch runtime foundation
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation

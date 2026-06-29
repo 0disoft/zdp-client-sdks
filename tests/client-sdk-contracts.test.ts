@@ -72,6 +72,24 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when SDKs stop exposing typed fetch runtime foundation', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkSurface: {
+        ...contracts.sdkSurface,
+        requiredBehaviors: contracts.sdkSurface.requiredBehaviors.filter(
+          (item) => item !== 'typed fetch runtime foundation'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_BEHAVIOR_MISSING'
+    );
+  });
+
   it('fails when SDKs stop propagating trace ids', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({

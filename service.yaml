@@ -60,6 +60,7 @@ cost:
     - sdk-generation-plan-checks
     - sdk-api-input-drift-checks
     - sdk-api-export-plan-handoff-checks
+    - typed-fetch-runtime-checks
   per_action_budget: []
   provider_cost_dimensions: []
   gross_margin_floor_percent: null
@@ -152,6 +153,7 @@ audit:
     - sdk_publish.reviewed
     - sdk_auth_helper.changed
     - sdk_libs_export_source.changed
+    - sdk_typed_fetch_runtime.changed
   sink: zdp-platform-observability
   retention_days: 365
   immutable: true
@@ -336,6 +338,7 @@ exit:
     - SDK generation plan can be reproduced without writing SDK artifacts
     - SDK generation plan validates zdp-api-contracts sdk-generation-input drift before SDK artifacts exist
     - SDK generation plan validates zdp-api-contracts API export dry-run plan handoff before SDK artifacts exist
+    - Minimal TypeScript typed fetch runtime preserves request_id, trace_id, idempotency, timeout, abort, auth attachment, and standard error envelope handling without owning API truth
   kill_criteria:
     - SDK becomes the source of API truth
     - SDK stores refresh tokens or owns final authorization decisions
@@ -347,7 +350,7 @@ exit:
   dependency_removal_checklist: []
 
 notes:
-  - This MVP owns SDK boundaries only; it does not publish SDK packages.
+  - This MVP owns SDK boundaries and the minimal TypeScript typed fetch runtime foundation only; it does not publish SDK packages.
   - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
   - SDK generation source keeps TypeScript, Dart, and Rust SDKs tied to the same API handoff contract before generator work starts.
   - Libs export source keeps generated SDKs tied to the same schema, env, event, error, and i18n export names without making SDKs the libs package source.
@@ -356,3 +359,4 @@ notes:
   - API export plan handoff check keeps OpenAPI, SDK input, docs contract, and webhook schema planning aligned with SDK planning before generated artifacts exist.
   - api.sdks names planned SDK generation targets only; it does not claim generated SDK artifacts exist yet.
   - Client SDKs must preserve request_id, trace_id, idempotency, owner, tenant, session, and credential policy metadata from API contracts before code generation.
+  - The typed fetch runtime requires caller-provided baseUrl/fetch or environment fetch, access token providers for auth-required operations, and generated or declared operation maps; it does not store refresh tokens, choose a live API base URL, or become the API contract source.

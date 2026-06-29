@@ -13,6 +13,7 @@ const UPLOAD_CLIENT_FILE = 'contracts/upload-client.yaml';
 const REQUIRED_SDK_LANGUAGES = ['typescript', 'dart', 'rust'] as const;
 const REQUIRED_SDK_BEHAVIORS = [
   'typed fetch operation map',
+  'typed fetch runtime foundation',
   'request_id propagation',
   'trace_id propagation',
   'idempotency key propagation',
