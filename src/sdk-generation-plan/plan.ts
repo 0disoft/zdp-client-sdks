@@ -25,7 +25,9 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/webhook-contract.yaml',
   'contracts/sdk-generation-input.yaml',
   'contracts/apis/catalog.yaml',
-  'contracts/apis/core-api/auth-session.yaml'
+  'contracts/apis/core-api/auth-session.yaml',
+  'contracts/apis/core-api/referral.yaml',
+  'contracts/apis/money-api/referral-reward.yaml'
 ] as const;
 const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
   'raw_customer_payload',
@@ -38,6 +40,22 @@ const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
   'screen_component_payload'
 ] as const;
 const REQUIRED_API_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
+const REQUIRED_API_EXPORT_CLIENT_RUNTIME_METADATA = [
+  'typed_fetch_operation_map',
+  'standard_error_envelope_normalization',
+  'request_id_propagation',
+  'trace_id_propagation',
+  'timeout_ms_option',
+  'abort_signal_option',
+  'idempotency_key_required_for_mutations'
+] as const;
+const REQUIRED_MUTATING_METHODS_REQUIRING_IDEMPOTENCY = [
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE'
+] as const;
+const REQUIRED_MUTATION_IDEMPOTENCY_POLICY = 'required_idempotency_key';
 const PLANNED_PACKAGE_BY_TARGET = {
   typescript: '@zdp/client-sdk',
   dart: 'zdp_client_sdk',
@@ -99,6 +117,13 @@ export function buildSdkGenerationPlan(
     apiExportPlanOutputKinds: options.apiExportPlan?.outputKinds ?? [],
     apiExportPlanForbiddenValues: options.apiExportPlan?.forbiddenValues ?? [],
     apiExportPlanTraceFields: options.apiExportPlan?.traceFields ?? [],
+    apiExportPlanClientRuntimeMetadata:
+      options.apiExportPlan?.clientRuntimeMetadata ?? [],
+    apiRouteOperationIds: options.apiExportPlan?.operationIds ?? [],
+    mutatingMethodsRequiringIdempotency:
+      options.apiExportPlan?.mutatingMethodsRequiringIdempotency ?? [],
+    requiredMutationIdempotencyPolicy:
+      options.apiExportPlan?.requiredMutationIdempotencyPolicy ?? null,
     apiExportPlanDocsMetadata:
       options.apiExportPlan?.requiredDocsMetadata ?? [],
     targets
@@ -190,6 +215,14 @@ function validateApiGenerationInput(
       right: apiGenerationInput.requiredErrorMetadata,
       code: 'CLIENT_SDK_API_INPUT_ERROR_METADATA_DRIFT',
       label: 'API error metadata'
+    }),
+    ...validateSameEntries({
+      file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
+      path: 'sdk_generation_input.required_client_runtime_metadata',
+      left: contracts.sdkGenerationSource.requiredClientRuntimeMetadata,
+      right: apiGenerationInput.requiredClientRuntimeMetadata,
+      code: 'CLIENT_SDK_API_INPUT_CLIENT_RUNTIME_METADATA_DRIFT',
+      label: 'API client runtime metadata'
     }),
     ...validateSameEntries({
       file: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
@@ -286,6 +319,50 @@ function validateApiExportPlanHandoff(
     }),
     ...validateRequiredEntries({
       file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'clientRuntimeMetadata',
+      actual: apiExportPlan.clientRuntimeMetadata,
+      required: REQUIRED_API_EXPORT_CLIENT_RUNTIME_METADATA,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_CLIENT_RUNTIME_METADATA_MISSING',
+      label: 'API export plan client runtime metadata'
+    }),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'clientRuntimeMetadata',
+      actual: apiExportPlan.clientRuntimeMetadata,
+      required: contracts.sdkGenerationSource.requiredClientRuntimeMetadata,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_CLIENT_RUNTIME_METADATA_DRIFT',
+      label: 'API export plan client runtime metadata'
+    }),
+    ...validateNonEmptyEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'operationIds',
+      actual: apiExportPlan.operationIds,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_ROUTE_CATALOG_EMPTY',
+      label: 'API export plan route catalog operation ids'
+    }),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+      path: 'mutatingMethodsRequiringIdempotency',
+      actual: apiExportPlan.mutatingMethodsRequiringIdempotency,
+      required: REQUIRED_MUTATING_METHODS_REQUIRING_IDEMPOTENCY,
+      code: 'CLIENT_SDK_API_EXPORT_PLAN_MUTATION_METHOD_MISSING',
+      label: 'API export plan mutating methods requiring idempotency'
+    }),
+    ...(apiExportPlan.requiredMutationIdempotencyPolicy ===
+    REQUIRED_MUTATION_IDEMPOTENCY_POLICY
+      ? []
+      : [
+          createDiagnostic({
+            code: 'CLIENT_SDK_API_EXPORT_PLAN_MUTATION_IDEMPOTENCY_POLICY_DRIFT',
+            file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+            path: 'requiredMutationIdempotencyPolicy',
+            message:
+              'API export plan must require mutation idempotency policy ' +
+              `\`${REQUIRED_MUTATION_IDEMPOTENCY_POLICY}\`.`
+          })
+        ]),
+    ...validateRequiredEntries({
+      file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
       path: 'docs_contract.requiredMetadata',
       actual: apiExportPlan.requiredDocsMetadata,
       required: REQUIRED_API_EXPORT_DOCS_METADATA,
@@ -343,6 +420,9 @@ function createPlanTarget(
     libsExports: [...contracts.libsExportSource.sourceExports],
     routeMetadata: [...contracts.sdkGenerationSource.requiredRouteMetadata],
     errorMetadata: [...contracts.sdkGenerationSource.requiredErrorMetadata],
+    clientRuntimeMetadata: [
+      ...contracts.sdkGenerationSource.requiredClientRuntimeMetadata
+    ],
     webhookMetadata: [...contracts.sdkGenerationSource.requiredWebhookMetadata],
     libsMetadata: [...contracts.libsExportSource.requiredMetadata],
     forbiddenValues: uniqueSorted([
@@ -530,6 +610,27 @@ function validateUnexpectedEntries(input: {
       path: input.path,
       message: `${input.label} must not introduce unhandled entry \`${entry}\`.`
     }));
+}
+
+function validateNonEmptyEntries(input: {
+  readonly file: string;
+  readonly path: string;
+  readonly actual: readonly string[];
+  readonly code: string;
+  readonly label: string;
+}): readonly ClientSdkContractDiagnostic[] {
+  if (input.actual.length > 0) {
+    return [];
+  }
+
+  return [
+    {
+      code: input.code,
+      file: input.file,
+      path: input.path,
+      message: `${input.label} must not be empty.`
+    }
+  ];
 }
 
 function createDiagnostic(input: {

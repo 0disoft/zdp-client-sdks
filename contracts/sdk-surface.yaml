@@ -4,10 +4,14 @@ sdk_surface:
     - dart
     - rust
   required_behaviors:
+    - typed fetch operation map
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation
     - standard error envelope handling
+    - error envelope normalization
+    - timeout option support
+    - abort signal support
     - pagination handling
     - upload handoff
   must_not_own:

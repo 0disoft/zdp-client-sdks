@@ -11,6 +11,7 @@
 - Rust SDK 후보 surface
 - auth token handling boundary
 - standard error handling
+- typed fetch operation map and runtime option handoff
 - upload client handoff
 - request, trace, and idempotency propagation contract
 - SDK contract checker

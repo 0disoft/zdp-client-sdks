@@ -54,6 +54,24 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when SDKs stop exposing typed fetch operation maps', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkSurface: {
+        ...contracts.sdkSurface,
+        requiredBehaviors: contracts.sdkSurface.requiredBehaviors.filter(
+          (item) => item !== 'typed fetch operation map'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_BEHAVIOR_MISSING'
+    );
+  });
+
   it('fails when SDKs stop propagating trace ids', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({
@@ -215,6 +233,25 @@ describe('client SDK contract checker', () => {
     expect(result.ok).toBe(false);
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_ERROR_METADATA_MISSING'
+    );
+  });
+
+  it('fails when typed fetch timeout metadata is dropped', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      sdkGenerationSource: {
+        ...contracts.sdkGenerationSource,
+        requiredClientRuntimeMetadata:
+          contracts.sdkGenerationSource.requiredClientRuntimeMetadata.filter(
+            (item) => item !== 'timeout_ms_option'
+          )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_CLIENT_RUNTIME_METADATA_MISSING'
     );
   });
 

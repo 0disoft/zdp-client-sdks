@@ -28,7 +28,9 @@ describe('SDK generation plan', () => {
         'contracts/webhook-contract.yaml',
         'contracts/sdk-generation-input.yaml',
         'contracts/apis/catalog.yaml',
-        'contracts/apis/core-api/auth-session.yaml'
+        'contracts/apis/core-api/auth-session.yaml',
+        'contracts/apis/core-api/referral.yaml',
+        'contracts/apis/money-api/referral-reward.yaml'
       ],
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
       apiExportPlanOutputKinds: [
@@ -45,6 +47,29 @@ describe('SDK generation plan', () => {
         'ledger_mutation_without_money_contract'
       ]),
       apiExportPlanTraceFields: ['request_id', 'trace_id'],
+      apiExportPlanClientRuntimeMetadata: [
+        'typed_fetch_operation_map',
+        'standard_error_envelope_normalization',
+        'request_id_propagation',
+        'trace_id_propagation',
+        'timeout_ms_option',
+        'abort_signal_option',
+        'idempotency_key_required_for_mutations'
+      ],
+      apiRouteOperationIds: [
+        'core.auth.registrations.create',
+        'core.auth.sessions.create',
+        'core.auth.sessions.refresh',
+        'core.auth.sessions.revoke_current',
+        'core.auth.recovery_requests.create',
+        'core.auth.passkey_challenges.create',
+        'core.auth.passkey_assertions.verify',
+        'core.auth.oauth_callbacks.accept',
+        'core.referral.uses.create',
+        'money.referral_rewards.status.get'
+      ],
+      mutatingMethodsRequiringIdempotency: ['POST', 'PUT', 'PATCH', 'DELETE'],
+      requiredMutationIdempotencyPolicy: 'required_idempotency_key',
       apiExportPlanDocsMetadata: [
         'permission_check',
         'audit_event',
@@ -71,6 +96,13 @@ describe('SDK generation plan', () => {
             'success_statuses'
           ]),
           errorMetadata: expect.arrayContaining(['request_id', 'trace_id']),
+          clientRuntimeMetadata: expect.arrayContaining([
+            'typed_fetch_operation_map',
+            'standard_error_envelope_normalization',
+            'timeout_ms_option',
+            'abort_signal_option',
+            'idempotency_key_required_for_mutations'
+          ]),
           forbiddenValues: expect.arrayContaining([
             'authorization_header',
             'provider_token',
@@ -161,6 +193,26 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_INPUT_ERROR_METADATA_DRIFT'
+    );
+  });
+
+  it('fails when API SDK generation input drops typed fetch runtime metadata', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiGenerationInput = await loadApiSdkGenerationInput('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: {
+        ...apiGenerationInput,
+        requiredClientRuntimeMetadata:
+          apiGenerationInput.requiredClientRuntimeMetadata.filter(
+            (item) => item !== 'abort_signal_option'
+          )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_INPUT_CLIENT_RUNTIME_METADATA_DRIFT'
     );
   });
 
@@ -277,6 +329,62 @@ describe('SDK generation plan', () => {
     expect(result.plan).toBeNull();
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_API_EXPORT_PLAN_DOCS_METADATA_MISSING'
+    );
+  });
+
+  it('fails when API export plan drops typed fetch client runtime metadata', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        clientRuntimeMetadata: apiExportPlan.clientRuntimeMetadata.filter(
+          (item) => item !== 'timeout_ms_option'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_CLIENT_RUNTIME_METADATA_MISSING'
+    );
+  });
+
+  it('fails when API export plan no longer exposes route catalog operations', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        operationIds: []
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_ROUTE_CATALOG_EMPTY'
+    );
+  });
+
+  it('fails when API export plan weakens mutation idempotency policy', async () => {
+    const contracts = await loadClientSdkContracts();
+    const apiExportPlan = await loadApiExportPlanHandoff('../zdp-api-contracts');
+    const result = buildSdkGenerationPlan(contracts, {
+      apiGenerationInput: await loadApiSdkGenerationInput('../zdp-api-contracts'),
+      apiExportPlan: {
+        ...apiExportPlan,
+        requiredMutationIdempotencyPolicy: 'optional_idempotency_key'
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.plan).toBeNull();
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_API_EXPORT_PLAN_MUTATION_IDEMPOTENCY_POLICY_DRIFT'
     );
   });
 

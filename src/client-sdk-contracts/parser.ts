@@ -79,6 +79,10 @@ export function parseSdkGenerationSourceContract(
       sdkGenerationSource,
       'required_error_metadata'
     ),
+    requiredClientRuntimeMetadata: readStringArray(
+      sdkGenerationSource,
+      'required_client_runtime_metadata'
+    ),
     requiredWebhookMetadata: readStringArray(
       sdkGenerationSource,
       'required_webhook_metadata'

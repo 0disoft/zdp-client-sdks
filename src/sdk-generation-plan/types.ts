@@ -12,6 +12,7 @@ export interface ApiSdkGenerationInputContract {
   readonly allowedGenerationTargets: readonly string[];
   readonly requiredRouteMetadata: readonly string[];
   readonly requiredErrorMetadata: readonly string[];
+  readonly requiredClientRuntimeMetadata: readonly string[];
   readonly requiredWebhookMetadata: readonly string[];
   readonly forbiddenOwnership: readonly string[];
   readonly forbiddenValues: readonly string[];
@@ -23,6 +24,10 @@ export interface ApiExportPlanHandoff {
   readonly outputKinds: readonly string[];
   readonly forbiddenValues: readonly string[];
   readonly traceFields: readonly string[];
+  readonly clientRuntimeMetadata: readonly string[];
+  readonly operationIds: readonly string[];
+  readonly mutatingMethodsRequiringIdempotency: readonly string[];
+  readonly requiredMutationIdempotencyPolicy: string | null;
   readonly requiredDocsMetadata: readonly string[];
   readonly writesArtifacts: boolean | null;
   readonly publishesSchemas: boolean | null;
@@ -38,6 +43,7 @@ export interface SdkGenerationPlanTarget {
   readonly libsExports: readonly string[];
   readonly routeMetadata: readonly string[];
   readonly errorMetadata: readonly string[];
+  readonly clientRuntimeMetadata: readonly string[];
   readonly webhookMetadata: readonly string[];
   readonly libsMetadata: readonly string[];
   readonly forbiddenValues: readonly string[];
@@ -53,6 +59,10 @@ export interface SdkGenerationPlan {
   readonly apiExportPlanOutputKinds: readonly string[];
   readonly apiExportPlanForbiddenValues: readonly string[];
   readonly apiExportPlanTraceFields: readonly string[];
+  readonly apiExportPlanClientRuntimeMetadata: readonly string[];
+  readonly apiRouteOperationIds: readonly string[];
+  readonly mutatingMethodsRequiringIdempotency: readonly string[];
+  readonly requiredMutationIdempotencyPolicy: string | null;
   readonly apiExportPlanDocsMetadata: readonly string[];
   readonly targets: readonly SdkGenerationPlanTarget[];
 }

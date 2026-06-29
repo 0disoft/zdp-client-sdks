@@ -12,10 +12,14 @@ const UPLOAD_CLIENT_FILE = 'contracts/upload-client.yaml';
 
 const REQUIRED_SDK_LANGUAGES = ['typescript', 'dart', 'rust'] as const;
 const REQUIRED_SDK_BEHAVIORS = [
+  'typed fetch operation map',
   'request_id propagation',
   'trace_id propagation',
   'idempotency key propagation',
   'standard error envelope handling',
+  'error envelope normalization',
+  'timeout option support',
+  'abort signal support',
   'pagination handling',
   'upload handoff'
 ] as const;
@@ -73,6 +77,15 @@ const REQUIRED_ERROR_METADATA = [
   'trace_id',
   'retry_after_seconds',
   'documentation_url'
+] as const;
+const REQUIRED_CLIENT_RUNTIME_METADATA = [
+  'typed_fetch_operation_map',
+  'standard_error_envelope_normalization',
+  'request_id_propagation',
+  'trace_id_propagation',
+  'timeout_ms_option',
+  'abort_signal_option',
+  'idempotency_key_required_for_mutations'
 ] as const;
 const REQUIRED_WEBHOOK_METADATA = [
   'event_id',
@@ -271,6 +284,14 @@ export function validateClientSdkContracts(
       required: REQUIRED_ERROR_METADATA,
       code: 'CLIENT_SDK_ERROR_METADATA_MISSING',
       label: 'SDK error metadata'
+    }),
+    ...validateRequiredEntries({
+      file: SDK_GENERATION_SOURCE_FILE,
+      path: 'sdk_generation_source.required_client_runtime_metadata',
+      actual: contracts.sdkGenerationSource.requiredClientRuntimeMetadata,
+      required: REQUIRED_CLIENT_RUNTIME_METADATA,
+      code: 'CLIENT_SDK_CLIENT_RUNTIME_METADATA_MISSING',
+      label: 'SDK client runtime metadata'
     }),
     ...validateRequiredEntries({
       file: SDK_GENERATION_SOURCE_FILE,

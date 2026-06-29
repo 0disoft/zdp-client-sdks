@@ -37,6 +37,10 @@ export async function loadApiSdkGenerationInput(
     ),
     requiredRouteMetadata: readStringArray(input, 'required_route_metadata'),
     requiredErrorMetadata: readStringArray(input, 'required_error_metadata'),
+    requiredClientRuntimeMetadata: readStringArray(
+      input,
+      'required_client_runtime_metadata'
+    ),
     requiredWebhookMetadata: readStringArray(input, 'required_webhook_metadata'),
     forbiddenOwnership: readStringArray(input, 'forbidden_ownership'),
     forbiddenValues: readStringArray(input, 'forbidden_values')
@@ -56,6 +60,16 @@ export async function loadApiExportPlanHandoff(
     outputKinds: readExportPlanOutputKinds(plan),
     forbiddenValues: readExportPlanForbiddenValues(plan),
     traceFields: readStringArray(plan, 'traceFields'),
+    clientRuntimeMetadata: readStringArray(plan, 'clientRuntimeMetadata'),
+    operationIds: readStringArray(plan, 'operationIds'),
+    mutatingMethodsRequiringIdempotency: readStringArray(
+      plan,
+      'mutatingMethodsRequiringIdempotency'
+    ),
+    requiredMutationIdempotencyPolicy: readString(
+      plan,
+      'requiredMutationIdempotencyPolicy'
+    ),
     requiredDocsMetadata: readDocsContractMetadata(plan),
     writesArtifacts: readBoolean(plan, 'writesArtifacts'),
     publishesSchemas: readBoolean(plan, 'publishesSchemas')

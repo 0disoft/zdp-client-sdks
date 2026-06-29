@@ -13,6 +13,7 @@ export interface SdkGenerationSourceContract {
   readonly generationTargets: readonly string[];
   readonly requiredRouteMetadata: readonly string[];
   readonly requiredErrorMetadata: readonly string[];
+  readonly requiredClientRuntimeMetadata: readonly string[];
   readonly requiredWebhookMetadata: readonly string[];
   readonly mustNotOwn: readonly string[];
   readonly forbiddenValues: readonly string[];
