@@ -1,3 +1,8 @@
+# mf:anchor zdp.client-sdks.service-contract
+# purpose: Locate SDK generation input, auth helper, error handling, and upload client boundary contract.
+# search: client SDKs, generation input, auth helper, error envelope, upload client
+# invariant: SDKs consume zdp-api-contracts and cannot own API truth, token storage, refresh policy, permission decisions, or product business rules.
+# risk: authz, security, data_consistency
 contract:
   schema_version: 2
   contract_version: 1
