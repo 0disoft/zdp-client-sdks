@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## 0.11.1
+
+### Changed
+
+- public npm package surface에 `SECURITY.md`를 포함해 SDK 계약 저장소의 토큰, 세션, provider credential 금지 경계를 명시했다.
+
 ## 0.11.0
 
 ### Changed
