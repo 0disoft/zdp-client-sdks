@@ -7,7 +7,7 @@
   "description": "ZDP client SDK contract skeleton.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/0disoft/zdp-client-sdks.git"
+    "url": "git+https://github.com/0disoft/zdp-client-sdks.git"
   },
   "bugs": {
     "url": "https://github.com/0disoft/zdp-client-sdks/issues"
