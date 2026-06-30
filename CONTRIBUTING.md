@@ -13,4 +13,4 @@
 
 ## 릴리스
 
-아직 SDK 릴리스는 없다. public SDK가 생기면 `CHANGELOG.md`에 언어별 호환성 영향을 기록한다.
+패키지 메타데이터와 파일 whitelist는 public npm package 후보로 유지한다. 실제 npm publish 실행은 별도 승인 뒤 진행한다. public SDK가 생기면 `CHANGELOG.md`에 언어별 호환성 영향을 기록한다.

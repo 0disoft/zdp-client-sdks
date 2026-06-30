@@ -30,6 +30,21 @@ sdk_surface:
     - refresh_token_plaintext
     - stack_trace
     - screen_component_payload
+  error_envelope:
+    required_fields:
+      - error
+      - code
+      - message
+      - request_id
+      - trace_id
+    forbidden_fields:
+      - raw_customer_payload
+      - raw_provider_error
+      - provider_secret
+      - authorization_header
+      - cookie_header
+      - refresh_token_plaintext
+      - stack_trace
   cross_language_requirements:
     - UTC ISO-8601 datetime strings
     - decimal-safe amount strings

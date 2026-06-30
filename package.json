@@ -1,22 +1,48 @@
 {
   "name": "zdp-client-sdks",
   "version": "0.11.0",
-  "private": true,
+  "private": false,
+  "license": "MIT",
   "type": "module",
   "description": "ZDP client SDK contract skeleton.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0disoft/zdp-client-sdks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/0disoft/zdp-client-sdks/issues"
+  },
+  "homepage": "https://github.com/0disoft/zdp-client-sdks#readme",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "import": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./typed-fetch": {
+      "types": "./src/typed-fetch/index.ts",
+      "import": "./src/typed-fetch/index.ts",
+      "default": "./src/typed-fetch/index.ts"
+    },
+    "./typed-fetch/api-operations": {
+      "types": "./src/typed-fetch/api-operations.ts",
+      "import": "./src/typed-fetch/api-operations.ts",
+      "default": "./src/typed-fetch/api-operations.ts"
     }
   },
+  "types": "./src/index.ts",
   "files": [
     "src/",
     "contracts/",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "BOUNDARY.md",
+    "RUNBOOK.md",
+    "service.yaml",
+    "LICENSE"
   ],
+  "sideEffects": false,
   "scripts": {
     "check": "tsc --noEmit && bun test && bun run contracts:check && bun run generation:plan -- --check",
     "check:tsgo": "tsgo --noEmit",
