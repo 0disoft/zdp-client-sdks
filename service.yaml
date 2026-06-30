@@ -267,11 +267,12 @@ release:
 
 automation:
   ci:
-    required: false
-    provider: null
-    workflow_names: []
+    required: true
+    provider: github-actions
+    workflow_names:
+      - CI
     required_status_checks: []
-    missing_reason: GitHub Actions workflow is not committed yet; SDK contract validation is covered by live architecture repository validation until generated SDK code and package release automation are adopted.
+    missing_reason: null
     private_dependency_token_required: false
     required_secrets: []
   dependency_updates:

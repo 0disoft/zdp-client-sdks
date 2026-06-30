@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: projects/zdp-platforms/contracts/zdp-client-sdks
+
+    steps:
+      - name: Checkout client SDKs
+        uses: actions/checkout@v7
+        with:
+          path: projects/zdp-platforms/contracts/zdp-client-sdks
+
+      - name: Checkout API contracts
+        uses: actions/checkout@v7
+        with:
+          repository: 0disoft/zdp-api-contracts
+          path: projects/zdp-platforms/contracts/zdp-api-contracts
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install API contracts dependencies
+        working-directory: projects/zdp-platforms/contracts/zdp-api-contracts
+        run: bun install --frozen-lockfile
+
+      - name: Install client SDK dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check
+        run: bun run check
