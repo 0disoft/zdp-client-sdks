@@ -1,5 +1,23 @@
 # AGENTS.md
 
+## 읽는 순서
+
+1. `AGENTS.md`
+2. `service.yaml`
+3. `BOUNDARY.md`
+4. `SECURITY.md`
+5. `CHECKLIST.md`
+6. `VALIDATION.md`
+7. `.agents/README.md`
+8. `.agents/context-map.md`
+9. `README.md`
+10. `RUNBOOK.md`
+11. `docs/README.md`
+12. 작업 범위에 맞는 `.agents/checklists/*.md`
+13. 작업 범위에 맞는 `.agents/skills/*/SKILL.md`
+14. 작업 범위에 맞는 `.agents/validations/*.md`
+15. 관련 `contracts/**`, `src/**`, `scripts/**`, `tests/**`, `package.json`
+
 ## 역할
 
 이 저장소는 ZDP client SDK 산출물의 경계를 소유한다. 초기 범위는 TypeScript, Dart, Rust SDK의 생성 입력, 인증 헬퍼, 표준 오류 처리, 업로드 클라이언트 계약이다.
@@ -21,4 +39,11 @@
 
 ## 검증
 
-초기 검증은 `zdp-architecture-linter`에서 이 저장소 루트를 대상으로 수행한다. 언어별 build/test는 실제 SDK 코드가 추가될 때 연결한다.
+Agent가 실행하는 검증은 root mustflow command contract에 등록된 intent만 사용한다.
+
+- 저장소 architecture contract: `zdp_architecture_validate_client_sdks_repository`
+- SDK surface, typed fetch, auth helper, upload client, generation plan: `zdp_client_sdks_check`
+- npm package contents 또는 release readiness: `zdp_client_sdks_npm_pack_dry_run`
+- 명시적 release approval과 token/network gate가 있는 publish dry-run: `zdp_client_sdks_npm_publish_dry_run`
+
+Raw package-manager, install, publish, generation, watcher, server 명령은 `VALIDATION.md`에 manual-only 또는 missing coverage로 표시된 경계를 따른다.

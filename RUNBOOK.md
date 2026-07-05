@@ -4,17 +4,18 @@ This repository owns SDK surface contracts. It consumes API contracts and must n
 
 ## Normal Checks
 
-- Run `bun run contracts:check` after SDK surface, auth helper, or upload client contract changes.
-- Run `bun run generation:plan -- --check` after SDK generation source, API SDK generation input, or libs export source changes.
-- Inspect `bun run generation:plan -- --json` when API export planning changes; `apiExportPlanOutputKinds` must include `openapi`, `sdk_generation_input`, `webhook_schema`, and `docs_contract`.
-- Run `bun run check` before locking a TypeScript checker change.
-- Validate this repository with `zdp-architecture-linter`.
+- Use `zdp_architecture_validate_client_sdks_repository` for repository architecture policy validation.
+- Use `zdp_client_sdks_check` after SDK surface, auth helper, upload client, typed fetch, checker, SDK generation source, API SDK generation input, or libs export source changes.
+- Use `zdp_client_sdks_npm_pack_dry_run` for npm package contents or release-readiness evidence.
+- Use `zdp_client_sdks_npm_publish_dry_run` only after explicit release approval and token/network gate review.
+- Treat generation-plan evidence as covered by `zdp_client_sdks_check`; inspect generated planning details only through configured checks or human/manual context.
 - Keep `contracts/sdk-generation-source.yaml` pointed at `zdp-api-contracts/contracts/sdk-generation-input.yaml`.
 - Keep `contracts/libs-export-source.yaml` pointed at the public `zdp-libs-ts` export surface.
 - Keep SDK surface changes synchronized with `contracts/sdk-surface.yaml`.
 - Keep contract `status` values inside the pre-release `skeleton`, `draft`, `reviewed` lifecycle until generated SDK packages exist.
 - Keep SDK request, trace, and idempotency propagation aligned across SDK surface, upload client, API route metadata, and generation plan checks.
 - Require migration notes before breaking published SDK shapes.
+- Treat raw package-manager, install, publish, generation, server, and watcher commands as manual-only or missing command-contract coverage unless the root mustflow command contract exposes an eligible oneshot intent.
 
 ## Failure Response
 

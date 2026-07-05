@@ -305,10 +305,11 @@ automation:
       - sdk
     security_issue_auto_close_allowed: false
   templates:
-    issue_forms_secret_warning: false
-    pr_template_secret_warning: false
+    issue_forms_secret_warning: true
+    pr_template_secret_warning: true
     forbidden_submission_classes:
       - secrets
+      - payment payloads
       - authorization headers
       - refresh tokens
       - customer raw data
