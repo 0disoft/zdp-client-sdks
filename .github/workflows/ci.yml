@@ -24,18 +24,20 @@ jobs:
 
     steps:
       - name: Checkout client SDKs
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
+          persist-credentials: false
           path: projects/zdp-platforms/contracts/zdp-client-sdks
 
       - name: Checkout API contracts
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
+          persist-credentials: false
           repository: 0disoft/zdp-api-contracts
           path: projects/zdp-platforms/contracts/zdp-api-contracts
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
 
       - name: Install API contracts dependencies
         working-directory: projects/zdp-platforms/contracts/zdp-api-contracts
