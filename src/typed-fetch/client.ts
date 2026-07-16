@@ -18,6 +18,7 @@ import type {
   ZdpOperationResponse,
   ZdpPathValue,
   ZdpQueryValue,
+  ZdpResponseContext,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
@@ -319,10 +320,11 @@ async function decodeResponse<Operation extends AnyZdpOperationDefinition>(
 
   try {
     const decode = operation.decodeResponse as (
-      value: unknown
+      value: unknown,
+      context: ZdpResponseContext
     ) => ZdpOperationResponse<Operation>;
 
-    return decode(payload);
+    return decode(payload, { status: response.status });
   } catch (error) {
     throw new ZdpProtocolError({
       status: response.status,
@@ -444,6 +446,7 @@ export type {
   ZdpOperationMap,
   ZdpOperationRequest,
   ZdpOperationResponse,
+  ZdpResponseContext,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';

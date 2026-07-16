@@ -18,7 +18,8 @@
 
 ## Typed Fetch And Auth
 
-- Typed fetch는 operation id, request id, trace id, timeout, abort signal, idempotency key, pagination, standard error envelope를 보존한다.
+- Typed fetch는 operation id, request id, trace id, timeout, abort signal, idempotency key, pagination metadata, standard error envelope를 보존한다.
+- HTTP 204 success는 body schema required field를 가장하지 않고 `undefined`로 디코딩한다.
 - Generated schema model은 required field와 optional field를 구분하고 API handoff에서 빠뜨리지 않는다.
 - Auth helper는 access token attachment boundary만 소유한다.
 - Credential, refresh, session lifecycle은 consuming app이나 core/auth boundary가 소유한다.

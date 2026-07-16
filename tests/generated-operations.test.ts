@@ -196,6 +196,30 @@ describe('generated typed fetch operations', () => {
     ).rejects.toBeInstanceOf(ZdpProtocolError);
   });
 
+  it('returns undefined for generated HTTP 204 responses', async () => {
+    const client = createZdpApiClient({
+      baseUrl: 'https://api.example.test',
+      fetch: async () => new Response(null, { status: 204 }),
+      getAccessToken: () => 'access_123',
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call(
+        'core.auth.sessions.revoke_current',
+        {
+          body: {
+            session_ref: 'sess_123'
+          }
+        },
+        {
+          idempotencyKey: 'idem_123'
+        }
+      )
+    ).resolves.toBeUndefined();
+  });
+
   it('keeps path parameter expansion for generated operation metadata', async () => {
     const captured: {
       url?: URL;

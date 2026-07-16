@@ -8,6 +8,7 @@ import type {
   ZdpHttpMethod,
   ZdpIdempotencyPolicy,
   ZdpOperationDefinition,
+  ZdpResponseContext,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
@@ -70,12 +71,23 @@ export type ZdpGeneratedOperationRequest<
     : unknown;
 };
 
-export type ZdpGeneratedOperationResponse<
+type ZdpGeneratedOperationResponsePayload<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
   SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
 > = Operation['responseSchemaRef'] extends keyof SchemaModels
   ? ZdpGeneratedSchemaPayload<SchemaModels[Operation['responseSchemaRef']]>
   : unknown;
+
+export type ZdpGeneratedOperationResponse<
+  Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
+  SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
+> = number extends Operation['successStatuses'][number]
+  ? ZdpGeneratedOperationResponsePayload<Operation, SchemaModels>
+  : 204 extends Operation['successStatuses'][number]
+    ? Exclude<Operation['successStatuses'][number], 204> extends never
+      ? undefined
+      : ZdpGeneratedOperationResponsePayload<Operation, SchemaModels> | undefined
+    : ZdpGeneratedOperationResponsePayload<Operation, SchemaModels>;
 
 export type ZdpGeneratedOperationDefinition<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
@@ -177,11 +189,12 @@ function createOperationDefinition<
     errorCodes: [...metadata.errorCodes],
     encodeRequest: (request) =>
       encodeGeneratedOperationRequest(metadata, requestSchema, request),
-    decodeResponse: (response) =>
+    decodeResponse: (response, context) =>
       decodeGeneratedOperationResponse<Operation, SchemaModels>(
         metadata,
         responseSchema,
-        response
+        response,
+        context
       )
   });
 }
@@ -247,17 +260,31 @@ function decodeGeneratedOperationResponse<
 >(
   metadata: Operation,
   responseSchema: ZdpGeneratedSchemaModel,
-  response: unknown
+  response: unknown,
+  context: ZdpResponseContext
 ): ZdpGeneratedOperationResponse<Operation, SchemaModels> {
+  if (context.status === 204) {
+    if (response !== null) {
+      throw new ZdpProtocolError({
+        status: context.status,
+        message:
+          `Generated operation \`${metadata.operationId}\` received a response ` +
+          'body for HTTP 204.'
+      });
+    }
+
+    return undefined as ZdpGeneratedOperationResponse<Operation, SchemaModels>;
+  }
+
   if (response === undefined) {
     throw new ZdpProtocolError({
-      status: 0,
+      status: context.status,
       message: 'Generated operation response decoder received undefined.'
     });
   }
   if (!isRecord(response)) {
     throw new ZdpProtocolError({
-      status: 0,
+      status: context.status,
       message:
         `Generated operation \`${metadata.operationId}\` response must be ` +
         `an object matching \`${responseSchema.schemaRef}\`.`
@@ -267,7 +294,7 @@ function decodeGeneratedOperationResponse<
   for (const field of responseSchema.requiredFields) {
     if (!Object.prototype.hasOwnProperty.call(response, field)) {
       throw new ZdpProtocolError({
-        status: 0,
+        status: context.status,
         message:
           `Generated operation \`${metadata.operationId}\` response schema ` +
           `\`${responseSchema.schemaRef}\` requires field \`${field}\`.`

@@ -251,6 +251,54 @@ describe('typed fetch client', () => {
     ).rejects.toBeInstanceOf(ZdpProtocolError);
   });
 
+  it('rejects non-JSON error bodies as protocol errors with the response status', async () => {
+    const client = createZdpTypedFetchClient(operations, {
+      baseUrl: 'https://api.example.test',
+      fetch: async () =>
+        new Response('<html>Bad gateway</html>', {
+          status: 502,
+          headers: { 'content-type': 'text/html' }
+        }),
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    try {
+      await client.call(
+        'core.auth.sessions.create',
+        {
+          accountId: 'acct_123',
+          email: 'user@example.test'
+        },
+        { idempotencyKey: 'idem_123' }
+      );
+      throw new Error('Expected call to fail.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(ZdpProtocolError);
+      expect((error as ZdpProtocolError).status).toBe(502);
+    }
+  });
+
+  it('rejects empty error bodies as invalid error envelopes', async () => {
+    const client = createZdpTypedFetchClient(operations, {
+      baseUrl: 'https://api.example.test',
+      fetch: async () => new Response(null, { status: 503 }),
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call(
+        'core.auth.sessions.create',
+        {
+          accountId: 'acct_123',
+          email: 'user@example.test'
+        },
+        { idempotencyKey: 'idem_123' }
+      )
+    ).rejects.toBeInstanceOf(ZdpProtocolError);
+  });
+
   it('maps timeout aborts to timeout errors', async () => {
     const client = createZdpTypedFetchClient(operations, {
       baseUrl: 'https://api.example.test',

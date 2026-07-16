@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.13.0
+
+### Changed
+
+- generated typed fetch의 HTTP 204 success response 타입을 `undefined`로 명시해 body schema와 충돌하지 않게 했다.
+- SDK surface의 `pagination handling`이 현재 단계에서는 metadata handoff를 뜻하며 자동 페이지 순회는 포함하지 않는다고 문서에 명확히 했다.
+
+### Fixed
+
+- `core.auth.sessions.revoke_current`의 정상적인 빈 204 응답이 response schema required field 오류로 바뀌던 문제를 고쳤다.
+- 빈 error body와 non-JSON error body의 protocol error 동작을 회귀 테스트로 고정했다.
+
 ## 0.12.0
 
 ### Added

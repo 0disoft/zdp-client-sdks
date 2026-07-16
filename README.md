@@ -56,8 +56,9 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - error metadata의 `request_id`, `trace_id`는 사용자가 겪은 실패를 서버 로그와 연결할 수 있게 해준다.
 - libs metadata의 `schema_id`, `error_code`, `message_key`, `request_id`, `trace_id`는 SDK 생성기가 스키마 이름, 에러 코드, 번역 키, 추적 식별자를 언어별로 따로 지어내지 않게 해준다.
 - webhook metadata의 `idempotency_key`, `replay_policy`, `dead_letter_policy`는 중복 이벤트와 실패 이벤트를 SDK 표면에서 숨기지 않게 해준다.
-- SDK는 typed fetch operation map, `request_id`, `trace_id`, idempotency key 전파, 표준 error envelope 정규화, timeout option, abort signal, pagination, upload handoff 기준을 유지한다.
+- SDK는 typed fetch operation map, `request_id`, `trace_id`, idempotency key 전파, 표준 error envelope 정규화, timeout option, abort signal, pagination metadata handoff, upload handoff 기준을 유지한다. 자동 페이지 순회는 현재 runtime 범위가 아니다.
 - SDK는 API export plan handoff에서 검증한 operation metadata를 TypeScript typed fetch runtime에 연결 가능한 operation definitions로 노출한다. 또한 API schema bundle의 `required_fields`, `secret_fields`, `session_effect`를 generated schema model metadata로 노출하고, generated typed fetch runtime에서 request/response required field 누락을 실패로 잡는다. 이 단계는 schema별 encoder/decoder나 언어별 구현 타입을 생성하지 않으므로 API 계약 원천을 소유하지 않는다.
+- HTTP 204 success response는 body가 없는 HTTP 의미를 보존해 `undefined`로 반환하며, body를 가질 수 있는 success response에만 generated response required field 검증을 적용한다.
 - SDK는 API contract source가 아니다.
 - auth helper는 access token 부착 경계만 소유하고 refresh token storage, session token storage, raw credential storage, membership authority, entitlement authority를 소유하지 않는다.
 - upload client는 signed upload request shape, error mapping, request/trace/idempotency propagation을 소유하지만 bucket name, raw provider URL, file ownership decision을 공개 계약으로 만들지 않는다.

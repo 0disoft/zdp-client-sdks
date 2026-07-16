@@ -32,6 +32,7 @@ export type {
   ZdpOperationResponse,
   ZdpPathValue,
   ZdpQueryValue,
+  ZdpResponseContext,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';

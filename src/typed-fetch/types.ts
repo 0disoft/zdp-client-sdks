@@ -33,7 +33,14 @@ export interface ZdpOperationDefinition<Request, Response> {
   readonly traceIdRequired: boolean;
   readonly errorCodes: readonly string[];
   readonly encodeRequest: (request: Request) => EncodedZdpRequest;
-  readonly decodeResponse: (response: unknown) => Response;
+  readonly decodeResponse: (
+    response: unknown,
+    context: ZdpResponseContext
+  ) => Response;
+}
+
+export interface ZdpResponseContext {
+  readonly status: number;
 }
 
 export type AnyZdpOperationDefinition = ZdpOperationDefinition<never, unknown>;
