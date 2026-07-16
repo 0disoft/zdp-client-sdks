@@ -47,6 +47,7 @@ export interface ApiSchemaModelHandoff {
   readonly kind: ApiSchemaModelKind;
   readonly carriesSecretMaterial: boolean;
   readonly requiredFields: readonly string[];
+  readonly optionalFields: readonly string[];
   readonly secretFields: readonly string[];
   readonly sessionEffect: string | null;
 }

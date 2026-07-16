@@ -26,7 +26,9 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/webhook-contract.yaml',
   'contracts/sdk-generation-input.yaml',
   'contracts/apis/catalog.yaml',
+  'contracts/apis/core-api/auth-session-consumer.yaml',
   'contracts/apis/core-api/auth-session.yaml',
+  'contracts/apis/core-api/product-link.yaml',
   'contracts/apis/core-api/referral.yaml',
   'contracts/apis/money-api/referral-reward.yaml'
 ] as const;

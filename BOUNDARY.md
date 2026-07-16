@@ -12,6 +12,7 @@
 - auth token handling boundary
 - standard error handling
 - typed fetch operation map and runtime option handoff
+- schema required/optional field metadata handoff
 - minimal TypeScript typed fetch runtime foundation
 - upload client handoff
 - request, trace, and idempotency propagation contract

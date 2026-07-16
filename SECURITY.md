@@ -4,11 +4,14 @@
 
 `zdp-client-sdks`는 SDK 생성 입력, typed fetch runtime, 표준 오류 처리, auth helper와 upload client 계약을 소유한다. 이 저장소는 session 발급, refresh 정책, 권한 판단, credential vault, provider token 저장소의 소유자가 아니다.
 
+Product-link `proof_verifier`는 exchange 요청의 input-only secret이다. SDK는 호출 중 전달만 할 수 있고 저장, 재사용, 로그, 오류 세부정보, generated fixture의 원문 값으로 남기면 안 된다.
+
 ## 금지 항목
 
 다음 값은 SDK source, 계약, 테스트 fixture, 문서, package output에 넣지 않는다.
 
 - 실제 access token, refresh token, session token, session cookie
+- 실제 product-link proof verifier
 - Authorization header 원문
 - OAuth provider secret, webhook secret, storage signed URL 원문
 - passkey challenge, assertion, attestation 원문
@@ -29,4 +32,3 @@
 ## 신고 방법
 
 공개 issue에는 secret이나 실제 고객 데이터를 쓰지 않는다. 재현에는 synthetic value를 사용하고, 민감값이 포함된 사고는 maintainer에게 비공개 채널로 먼저 전달한다.
-

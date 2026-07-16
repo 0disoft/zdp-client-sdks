@@ -12,6 +12,36 @@ import type {
 import type { ZdpTypedFetchClientOptions } from './types';
 
 export const ZDP_API_SCHEMA_MODEL_MAP = {
+  'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest': {
+    schemaRef:
+      'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest',
+    schemaId: 'AuthSessionCurrentGetRequest',
+    sourceContract: 'contracts/apis/core-api/auth-session-consumer.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'request',
+    carriesSecretMaterial: false,
+    requiredFields: [],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: null
+  },
+  'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetResponse': {
+    schemaRef:
+      'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetResponse',
+    schemaId: 'AuthSessionCurrentGetResponse',
+    sourceContract: 'contracts/apis/core-api/auth-session-consumer.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'response',
+    carriesSecretMaterial: false,
+    requiredFields: ['session_ref', 'actor_ref', 'tenant_ref', 'expires_at'],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: 'none'
+  },
   'contracts/apis/core-api/auth-session.yaml#AuthRegistrationCreateRequest': {
     schemaRef:
       'contracts/apis/core-api/auth-session.yaml#AuthRegistrationCreateRequest',
@@ -23,6 +53,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['email_or_external_identity', 'locale', 'terms_consent_ref'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -37,6 +68,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['registration_request_id', 'next_step'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'none'
   },
@@ -51,6 +83,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: true,
     requiredFields: ['login_identifier', 'verifier'],
+    optionalFields: [],
     secretFields: ['verifier'],
     sessionEffect: null
   },
@@ -65,6 +98,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['session_ref', 'actor_ref', 'tenant_ref', 'expires_at'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'issue'
   },
@@ -79,6 +113,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: true,
     requiredFields: ['session_ref', 'rotation_proof'],
+    optionalFields: [],
     secretFields: ['rotation_proof'],
     sessionEffect: null
   },
@@ -93,6 +128,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['session_ref', 'expires_at'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'refresh'
   },
@@ -107,6 +143,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['session_ref'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -121,6 +158,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['revoked'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'revoke'
   },
@@ -135,6 +173,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['login_identifier', 'locale'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -149,6 +188,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['recovery_request_id', 'next_step'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'none'
   },
@@ -163,6 +203,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['ceremony', 'login_identifier'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -177,6 +218,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['challenge_ref', 'public_key_options_ref', 'expires_at'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'none'
   },
@@ -191,6 +233,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: true,
     requiredFields: ['challenge_ref', 'assertion'],
+    optionalFields: [],
     secretFields: ['assertion'],
     sessionEffect: null
   },
@@ -205,6 +248,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['session_ref', 'actor_ref', 'tenant_ref', 'expires_at'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'issue'
   },
@@ -219,6 +263,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: true,
     requiredFields: ['provider', 'state_ref', 'callback_code'],
+    optionalFields: [],
     secretFields: ['callback_code'],
     sessionEffect: null
   },
@@ -233,8 +278,119 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'response',
     carriesSecretMaterial: false,
     requiredFields: ['session_ref', 'actor_ref', 'tenant_ref', 'expires_at'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'issue'
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest',
+    schemaId: 'ProductLinkChallengeCompleteRequest',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'request',
+    carriesSecretMaterial: false,
+    requiredFields: ['challenge_ref', 'approval_decision'],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: null
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse',
+    schemaId: 'ProductLinkChallengeCompleteResponse',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'response',
+    carriesSecretMaterial: false,
+    requiredFields: ['challenge_ref', 'state', 'expires_at'],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: 'none'
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest',
+    schemaId: 'ProductLinkChallengeCreateRequest',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'request',
+    carriesSecretMaterial: false,
+    requiredFields: [
+      'product_ref',
+      'client_instance_ref',
+      'client_correlation_ref',
+      'proof_challenge',
+      'requested_scope_refs'
+    ],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: null
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateResponse': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateResponse',
+    schemaId: 'ProductLinkChallengeCreateResponse',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'response',
+    carriesSecretMaterial: false,
+    requiredFields: [
+      'challenge_ref',
+      'verification_uri',
+      'expires_at',
+      'poll_interval_seconds'
+    ],
+    optionalFields: [],
+    secretFields: [],
+    sessionEffect: 'none'
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeRequest': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeRequest',
+    schemaId: 'ProductLinkChallengeExchangeRequest',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'request',
+    carriesSecretMaterial: true,
+    requiredFields: [
+      'challenge_ref',
+      'client_correlation_ref',
+      'proof_verifier'
+    ],
+    optionalFields: [],
+    secretFields: ['proof_verifier'],
+    sessionEffect: null
+  },
+  'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse': {
+    schemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse',
+    schemaId: 'ProductLinkChallengeExchangeResponse',
+    sourceContract: 'contracts/apis/core-api/product-link.yaml',
+    serviceId: 'core-api',
+    ownerBoundary: 'identity',
+    status: 'contract-only',
+    kind: 'response',
+    carriesSecretMaterial: false,
+    requiredFields: [
+      'link_receipt_ref',
+      'subject_ref',
+      'consent_receipt_ref',
+      'verified_at'
+    ],
+    optionalFields: ['workspace_ref'],
+    secretFields: [],
+    sessionEffect: 'none'
   },
   'contracts/apis/core-api/referral.yaml#ReferralUseCreateRequest': {
     schemaRef: 'contracts/apis/core-api/referral.yaml#ReferralUseCreateRequest',
@@ -246,6 +402,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['referral_code', 'campaign_ref', 'referred_account_ref'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -264,6 +421,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       'reward_status',
       'money_reward_status_ref'
     ],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'none'
   },
@@ -278,6 +436,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     kind: 'request',
     carriesSecretMaterial: false,
     requiredFields: ['referral_use_ref'],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: null
   },
@@ -302,6 +461,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       'campaign_policy_version',
       'referral_reward_confirmation_ref'
     ],
+    optionalFields: [],
     secretFields: [],
     sessionEffect: 'none'
   }
@@ -392,6 +552,98 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       'session_revoked',
       'session_expired',
       'session_compromised',
+      'idempotency_conflict'
+    ]
+  },
+  'core.auth.sessions.get_current': {
+    operationId: 'core.auth.sessions.get_current',
+    method: 'GET',
+    path: '/v1/auth/sessions/current',
+    successStatuses: [200],
+    requestSchemaRef:
+      'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest',
+    responseSchemaRef:
+      'contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetResponse',
+    authRequired: true,
+    idempotency: 'not_required',
+    requestIdRequired: true,
+    traceIdRequired: true,
+    errorCodes: [
+      'authentication_failed',
+      'session_revoked',
+      'session_expired',
+      'session_compromised',
+      'account_restricted'
+    ]
+  },
+  'core.auth.product_link_challenges.create': {
+    operationId: 'core.auth.product_link_challenges.create',
+    method: 'POST',
+    path: '/v1/auth/product-link-challenges',
+    successStatuses: [201],
+    requestSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest',
+    responseSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateResponse',
+    authRequired: false,
+    idempotency: 'required_idempotency_key',
+    requestIdRequired: true,
+    traceIdRequired: true,
+    errorCodes: [
+      'validation_failed',
+      'product_not_allowed',
+      'scope_not_allowed',
+      'rate_limited',
+      'idempotency_conflict'
+    ]
+  },
+  'core.auth.product_link_challenges.complete': {
+    operationId: 'core.auth.product_link_challenges.complete',
+    method: 'POST',
+    path: '/v1/auth/product-link-challenges/{challenge_ref}/complete',
+    successStatuses: [200],
+    requestSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest',
+    responseSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse',
+    authRequired: true,
+    idempotency: 'required_idempotency_key',
+    requestIdRequired: true,
+    traceIdRequired: true,
+    errorCodes: [
+      'authentication_failed',
+      'challenge_invalid',
+      'challenge_expired',
+      'challenge_already_consumed',
+      'account_restricted',
+      'consent_required',
+      'workspace_access_denied',
+      'idempotency_conflict'
+    ]
+  },
+  'core.auth.product_link_challenges.exchange': {
+    operationId: 'core.auth.product_link_challenges.exchange',
+    method: 'POST',
+    path: '/v1/auth/product-link-challenges/{challenge_ref}/exchange',
+    successStatuses: [200],
+    requestSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeRequest',
+    responseSchemaRef:
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse',
+    authRequired: false,
+    idempotency: 'required_idempotency_key',
+    requestIdRequired: true,
+    traceIdRequired: true,
+    errorCodes: [
+      'authorization_pending',
+      'access_denied',
+      'challenge_invalid',
+      'challenge_expired',
+      'challenge_already_consumed',
+      'proof_verifier_mismatch',
+      'correlation_mismatch',
+      'slow_down',
+      'rate_limited',
       'idempotency_conflict'
     ]
   },
@@ -554,6 +806,12 @@ export function getZdpGeneratedSchemaPayloadFields(
   model: ZdpGeneratedSchemaModel
 ): readonly string[] {
   return model.requiredFields;
+}
+
+export function getZdpGeneratedSchemaOptionalPayloadFields(
+  model: ZdpGeneratedSchemaModel
+): readonly string[] {
+  return model.optionalFields;
 }
 
 export function createZdpApiClient(options: ZdpTypedFetchClientOptions) {

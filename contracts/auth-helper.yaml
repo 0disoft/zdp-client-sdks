@@ -7,6 +7,7 @@ auth_helper:
     - refresh token storage
     - session token storage
     - raw credential storage
+    - product link proof verifier storage
     - membership authority
     - entitlement authority
     - provider identity mapping source

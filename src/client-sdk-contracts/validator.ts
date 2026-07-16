@@ -15,6 +15,7 @@ const REQUIRED_SDK_BEHAVIORS = [
   'typed fetch operation map',
   'typed fetch runtime foundation',
   'generated TypeScript typed fetch operation definitions',
+  'generated schema required and optional field metadata',
   'request_id propagation',
   'trace_id propagation',
   'idempotency key propagation',
@@ -172,6 +173,7 @@ const REQUIRED_AUTH_HELPER_FORBIDDEN_OWNERSHIP = [
   'refresh token storage',
   'session token storage',
   'raw credential storage',
+  'product link proof verifier storage',
   'membership authority',
   'entitlement authority',
   'provider identity mapping source'

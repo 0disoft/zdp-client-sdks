@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.12.0
+
+### Added
+
+- current-session 조회와 desktop product-link create·complete·exchange operation을 API export plan에서 가져온 checked-in typed fetch map에 추가했다.
+- generated schema model에 `optionalFields`를 추가하고 product-link exchange의 선택적 `workspace_ref`를 TypeScript payload type에 보존했다.
+
+### Changed
+
+- SDK generation plan이 auth-session consumer와 product-link 계약을 필수 API 입력으로 검증한다.
+- auth helper가 product-link proof verifier를 저장소 책임으로 가져가지 못하도록 계약 검증을 강화했다.
+
 ## 0.11.1
 
 ### Changed

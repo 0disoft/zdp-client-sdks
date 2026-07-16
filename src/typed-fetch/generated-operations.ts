@@ -45,6 +45,7 @@ export interface ZdpGeneratedSchemaModel {
   readonly kind: ZdpGeneratedSchemaKind;
   readonly carriesSecretMaterial: boolean;
   readonly requiredFields: readonly string[];
+  readonly optionalFields: readonly string[];
   readonly secretFields: readonly string[];
   readonly sessionEffect: string | null;
 }
@@ -55,7 +56,10 @@ export type ZdpGeneratedSchemaModelMap = Readonly<
 
 export type ZdpGeneratedSchemaPayload<
   Model extends ZdpGeneratedSchemaModel
-> = Readonly<Record<Model['requiredFields'][number], unknown>>;
+> = Readonly<
+  Record<Model['requiredFields'][number], unknown> &
+    Partial<Record<Model['optionalFields'][number], unknown>>
+>;
 
 export type ZdpGeneratedOperationRequest<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,

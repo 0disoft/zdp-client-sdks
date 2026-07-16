@@ -236,6 +236,7 @@ function readSchemaModel(input: {
     kind,
     carriesSecretMaterial,
     requiredFields: readStringArray(input.schema, 'required_fields'),
+    optionalFields: readStringArray(input.schema, 'optional_fields'),
     secretFields: readStringArray(input.schema, 'secret_fields'),
     sessionEffect: readString(input.schema, 'session_effect')
   };
@@ -303,6 +304,7 @@ function readSchemaModelHandoff(
     kind,
     carriesSecretMaterial,
     requiredFields: readStringArray(value, 'requiredFields'),
+    optionalFields: readStringArray(value, 'optionalFields'),
     secretFields: readStringArray(value, 'secretFields'),
     sessionEffect: readString(value, 'sessionEffect')
   };

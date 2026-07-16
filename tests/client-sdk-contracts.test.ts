@@ -530,6 +530,24 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when auth helpers store product-link proof verifiers', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      authHelper: {
+        ...contracts.authHelper,
+        mustNotOwn: contracts.authHelper.mustNotOwn.filter(
+          (item) => item !== 'product link proof verifier storage'
+        )
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_AUTH_HELPER_FORBIDDEN_OWNERSHIP_MISSING'
+    );
+  });
+
   it('fails when upload clients drop idempotency key propagation', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({

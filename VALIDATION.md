@@ -33,6 +33,7 @@
 - API export dry-run plan handoff must not claim artifact writes or schema publishing.
 - TypeScript, Dart, and Rust targets must not diverge on route metadata or forbidden sensitive values.
 - Typed fetch operation definitions must stay derived from API catalog data, not hand-authored product shortcuts.
+- Schema model metadata must preserve both required and optional fields from the API export plan.
 - Auth helper must not gain refresh/session/credential storage.
 - Package exports must not expose generated artifacts or internal implementation-only paths.
 

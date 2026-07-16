@@ -30,7 +30,9 @@ describe('SDK generation plan', () => {
         'contracts/webhook-contract.yaml',
         'contracts/sdk-generation-input.yaml',
         'contracts/apis/catalog.yaml',
+        'contracts/apis/core-api/auth-session-consumer.yaml',
         'contracts/apis/core-api/auth-session.yaml',
+        'contracts/apis/core-api/product-link.yaml',
         'contracts/apis/core-api/referral.yaml',
         'contracts/apis/money-api/referral-reward.yaml'
       ],
@@ -63,6 +65,10 @@ describe('SDK generation plan', () => {
         'core.auth.sessions.create',
         'core.auth.sessions.refresh',
         'core.auth.sessions.revoke_current',
+        'core.auth.sessions.get_current',
+        'core.auth.product_link_challenges.create',
+        'core.auth.product_link_challenges.complete',
+        'core.auth.product_link_challenges.exchange',
         'core.auth.recovery_requests.create',
         'core.auth.passkey_challenges.create',
         'core.auth.passkey_assertions.verify',
@@ -101,6 +107,29 @@ describe('SDK generation plan', () => {
         }),
         'core.auth.sessions.refresh': expect.any(Object),
         'core.auth.sessions.revoke_current': expect.any(Object),
+        'core.auth.sessions.get_current': expect.objectContaining({
+          operationId: 'core.auth.sessions.get_current',
+          method: 'GET',
+          path: '/v1/auth/sessions/current',
+          authRequired: true,
+          idempotency: 'not_required'
+        }),
+        'core.auth.product_link_challenges.create': expect.objectContaining({
+          operationId: 'core.auth.product_link_challenges.create',
+          method: 'POST',
+          path: '/v1/auth/product-link-challenges',
+          authRequired: false,
+          idempotency: 'required_idempotency_key'
+        }),
+        'core.auth.product_link_challenges.complete': expect.any(Object),
+        'core.auth.product_link_challenges.exchange': expect.objectContaining({
+          requestSchemaRef:
+            'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeRequest',
+          responseSchemaRef:
+            'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse',
+          authRequired: false,
+          idempotency: 'required_idempotency_key'
+        }),
         'core.auth.recovery_requests.create': expect.any(Object),
         'core.auth.passkey_challenges.create': expect.any(Object),
         'core.auth.passkey_assertions.verify': expect.any(Object),
@@ -121,7 +150,20 @@ describe('SDK generation plan', () => {
             kind: 'request',
             carriesSecretMaterial: true,
             requiredFields: ['login_identifier', 'verifier'],
+            optionalFields: [],
             secretFields: ['verifier']
+          }),
+        'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse':
+          expect.objectContaining({
+            schemaId: 'ProductLinkChallengeExchangeResponse',
+            kind: 'response',
+            requiredFields: [
+              'link_receipt_ref',
+              'subject_ref',
+              'consent_receipt_ref',
+              'verified_at'
+            ],
+            optionalFields: ['workspace_ref']
           }),
         'contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetResponse':
           expect.objectContaining({

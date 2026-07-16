@@ -7,6 +7,7 @@ sdk_surface:
     - typed fetch operation map
     - typed fetch runtime foundation
     - generated TypeScript typed fetch operation definitions
+    - generated schema required and optional field metadata
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation

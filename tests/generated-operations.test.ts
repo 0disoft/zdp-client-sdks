@@ -6,6 +6,7 @@ import {
   ZdpProtocolError,
   createZdpApiClient,
   getZdpApiSchemaModel,
+  getZdpGeneratedSchemaOptionalPayloadFields,
   getZdpGeneratedSchemaPayloadFields,
   zdpTypedFetchOperations
 } from '../src/index';
@@ -51,6 +52,23 @@ describe('generated typed fetch operations', () => {
     expect(getZdpGeneratedSchemaPayloadFields(model)).toEqual([
       'login_identifier',
       'verifier'
+    ]);
+    expect(getZdpGeneratedSchemaOptionalPayloadFields(model)).toEqual([]);
+  });
+
+  it('preserves optional product-link exchange response fields', () => {
+    const model = getZdpApiSchemaModel(
+      'contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse'
+    );
+
+    expect(getZdpGeneratedSchemaPayloadFields(model)).toEqual([
+      'link_receipt_ref',
+      'subject_ref',
+      'consent_receipt_ref',
+      'verified_at'
+    ]);
+    expect(getZdpGeneratedSchemaOptionalPayloadFields(model)).toEqual([
+      'workspace_ref'
     ]);
   });
 
