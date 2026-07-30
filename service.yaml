@@ -276,6 +276,7 @@ automation:
     provider: github-actions
     workflow_names:
       - CI
+      - Publish npm package
     required_status_checks: []
     missing_reason: null
     private_dependency_token_required: false
@@ -289,9 +290,9 @@ automation:
     required_status_checks: []
     admin_bypass_policy: manual owner review required before package publish or branch protection
   release_helper:
-    enabled: false
+    enabled: true
     version_source_of_truth: package.json
-    changelog_policy: manual changelog until SDK release automation is adopted
+    changelog_policy: exact package version section required before release tag
   auto_merge:
     enabled: false
     required_checks: []
@@ -360,7 +361,7 @@ exit:
   dependency_removal_checklist: []
 
 notes:
-  - This MVP owns SDK boundaries and the minimal TypeScript typed fetch runtime foundation only; it does not publish SDK packages.
+  - This MVP owns SDK boundaries, the minimal TypeScript typed fetch runtime foundation, and the public source-package release chain; it does not publish generated language-specific SDK artifacts.
   - The local checker reads committed contract YAML only; it does not generate or publish SDK artifacts.
   - SDK generation source keeps TypeScript, Dart, and Rust SDKs tied to the same API handoff contract before generator work starts.
   - Libs export source keeps generated SDKs tied to the same schema, env, event, error, and i18n export names without making SDKs the libs package source.

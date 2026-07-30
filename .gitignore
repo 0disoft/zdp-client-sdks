@@ -7,3 +7,6 @@ dist/
 generated/
 coverage/
 *.log
+*.tgz
+/release-artifact.json
+/release-notes.md

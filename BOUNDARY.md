@@ -21,6 +21,7 @@
 - API SDK generation input drift check
 - libs public export source handoff
 - SDK generation dry-run plan
+- npm package release metadata and Trusted Publisher workflow
 
 소유하지 않는다:
 
@@ -36,7 +37,7 @@
 - generated docs source of truth
 - generated SDK artifact source of truth
 - language-specific generated SDK runtime implementation
-- SDK package publishing
+- language-specific generated SDK artifact publishing
 - refresh token storage
 - session token storage
 - raw credential storage

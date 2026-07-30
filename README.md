@@ -18,6 +18,7 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - current-session 조회와 desktop product-link create·complete·exchange typed fetch handoff
 - signed upload client handoff 기준
 - npm package metadata, MIT license, public export map, package file whitelist
+- npm Trusted Publisher release workflow, immutable release artifact manifest, packed/published consumer smoke
 - 계약 파일을 읽는 one-shot checker
 - SDK generation dry-run plan
 - `zdp-api-contracts` API export dry-run plan handoff 검증
@@ -28,7 +29,7 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - 언어별 request/response 구현 타입 산출물
 - 언어별 generated SDK runtime implementation
 - SDK 파일 쓰기
-- 실제 npm publish 실행
+- 로컬 npm token publish와 수동 publish 우회
 - live API base URL
 - refresh token 보관
 - 제품별 business rule
@@ -39,7 +40,11 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 
 루트 `service.yaml`이 이 저장소의 서비스 계약이다. `contracts/` 아래 파일은 실제 SDK 구현이 생기기 전에 public surface와 금지선을 고정하는 skeleton이다.
 
-패키지 표면은 source package skeleton이다. root export는 `src/index.ts`이고, 하위 export는 `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`만 허용한다. `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다. live base URL, refresh token storage, provider secret, generated language-specific SDK artifact는 이 패키지에 포함하지 않는다.
+패키지 표면은 Bun과 TypeScript bundler 소비자를 위한 source package다. root export는 `src/index.ts`이고, 하위 export는 `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`만 허용한다. `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다. live base URL, refresh token storage, provider secret, generated language-specific SDK artifact는 이 패키지에 포함하지 않는다.
+
+공개 릴리스는 `package.json` 버전과 같은 `v<version>` tag가 `main`에 포함된 커밋을 가리킬 때만 실행된다. GitHub Actions의 npm Trusted Publisher가 OIDC로 정확한 tarball을 공개하며, 장기 npm token이나 로컬 `npm publish`는 사용하지 않는다. 같은 tarball은 publish 전에 빈 소비자에서 설치되고, publish 뒤에는 npm `gitHead`, integrity, registry signature, SLSA provenance, GitHub Release 자산까지 같은 커밋을 가리키는지 확인한다.
+
+`contracts/api-contracts.lock.json`은 이 package version의 checked-in operation map과 schema metadata를 만든 `zdp-api-contracts` full Git SHA를 고정한다. 일반 CI와 release workflow는 같은 revision을 checkout한다. 최신 API main과의 호환성 확인은 lock 갱신과 generated operation 동기화를 포함한 별도 SDK 변경으로 처리하며, 이미 준비된 release의 입력을 암묵적으로 바꾸지 않는다.
 
 ## 검증
 

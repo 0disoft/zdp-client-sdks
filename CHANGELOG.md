@@ -1,5 +1,20 @@
 # CHANGELOG.md
 
+## 0.13.1
+
+### Added
+
+- npm Trusted Publisher를 사용하는 태그 기반 공개 릴리스 workflow를 추가했다.
+- 공개 패키지가 소비한 `zdp-api-contracts` revision을 full Git SHA로 잠그는 계약을 추가했다.
+- 공개할 정확한 tarball을 packed consumer로 검증하고 npm `gitHead`, integrity, provenance, registry signature, published consumer를 확인하는 릴리스 검사를 추가했다.
+- 같은 tarball, release manifest, release notes를 GitHub Release 자산으로 보존하고 재실행 시 상태와 바이트 일치를 확인하도록 했다.
+
+### Changed
+
+- 로컬 장기 npm token 공개 경로를 릴리스 계약에서 제거하고, 공개 작업은 GitHub Actions OIDC 경로만 허용하도록 명시했다.
+- 릴리스 도구 체인을 Node 24.18.0, npm 11.16.0, Bun 1.3.14로 고정하고 registry 오류는 명시적 `E404`만 미공개 버전으로 인정하도록 fail-closed 처리했다.
+- npm 공개 전후 장애를 버전 재사용이나 tag 이동 없이 복구하는 절차를 RUNBOOK에 추가했다.
+
 ## 0.13.0
 
 ### Changed

@@ -44,6 +44,6 @@ Agent가 실행하는 검증은 root mustflow command contract에 등록된 inte
 - 저장소 architecture contract: `zdp_architecture_validate_client_sdks_repository`
 - SDK surface, typed fetch, auth helper, upload client, generation plan: `zdp_client_sdks_check`
 - npm package contents 또는 release readiness: `zdp_client_sdks_npm_pack_dry_run`
-- 명시적 release approval과 token/network gate가 있는 publish dry-run: `zdp_client_sdks_npm_publish_dry_run`
+- release 준비 후 network gate가 있는 tokenless publish dry-run: `zdp_client_sdks_npm_publish_dry_run`
 
-Raw package-manager, install, publish, generation, watcher, server 명령은 `VALIDATION.md`에 manual-only 또는 missing coverage로 표시된 경계를 따른다.
+Raw package-manager, install, publish, generation, watcher, server 명령은 `VALIDATION.md`에 manual-only 또는 missing coverage로 표시된 경계를 따른다. 실제 public publish는 로컬 intent가 아니라 exact version tag와 npm Trusted Publisher workflow만 사용한다.

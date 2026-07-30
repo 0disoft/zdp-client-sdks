@@ -36,3 +36,8 @@
 - `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다.
 - Generated language-specific SDK runtime artifact는 package에 포함하지 않는다.
 - Package publish 전에는 check와 npm pack dry-run evidence가 필요하다.
+- 공개 릴리스는 `package.json` 버전과 같은 `v<version>` 태그, `main` 포함 관계, npm Trusted Publisher의 OIDC 권한을 모두 요구한다.
+- publish 대상 tarball은 packed consumer가 검증한 동일 파일이어야 하며 npm `gitHead`와 integrity가 tag SHA와 release manifest에 일치해야 한다.
+- 공개 후에는 빈 registry consumer, `npm audit signatures`, SLSA provenance, GitHub Release 자산 일치를 확인한다.
+- `contracts/api-contracts.lock.json`, CI checkout, release checkout은 동일한 full API contract Git SHA를 가리킨다.
+- 로컬 npm token publish, 이미 공개된 버전 재사용, tag 이동은 허용하지 않는다.

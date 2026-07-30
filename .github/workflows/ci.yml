@@ -34,6 +34,7 @@ jobs:
         with:
           persist-credentials: false
           repository: 0disoft/zdp-api-contracts
+          ref: ff872c4946c4ac7db7ec695a7b9ec5aa88fe206c
           path: projects/zdp-platforms/contracts/zdp-api-contracts
 
       - name: Setup Bun

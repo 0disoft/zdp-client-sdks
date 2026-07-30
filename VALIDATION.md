@@ -8,11 +8,12 @@
 | --- | --- |
 | SDK surface, typed fetch, auth helper, upload client, generation plan | `zdp_client_sdks_check` |
 | npm package contents or release readiness | `zdp_client_sdks_npm_pack_dry_run` |
+| tokenless npm publish metadata dry-run | `zdp_client_sdks_npm_publish_dry_run` |
 | repository architecture contract | `zdp_architecture_validate_client_sdks_repository` |
 | architecture catalog or linter rule changes | `zdp_architecture_validate_fast` |
 | agent docs only | `docs_validate_fast` |
 
-`zdp_client_sdks_install_frozen`은 dependencies가 없거나 package metadata 변경으로 install evidence가 필요할 때만 쓴다. Publish dry-run과 public publish는 명시적 release approval과 token/network gate가 필요하다.
+`zdp_client_sdks_install_frozen`은 dependencies가 없거나 package metadata 변경으로 install evidence가 필요할 때만 쓴다. Publish dry-run은 npm token을 제거한 임시 userconfig로 package metadata만 검증한다. 실제 public publish는 로컬 intent로 실행하지 않고, 승인된 exact version tag가 시작하는 GitHub Actions Trusted Publisher workflow만 사용한다.
 
 ## Source Of Truth Checks
 
@@ -36,6 +37,9 @@
 - Schema model metadata must preserve both required and optional fields from the API export plan.
 - Auth helper must not gain refresh/session/credential storage.
 - Package exports must not expose generated artifacts or internal implementation-only paths.
+- Release workflow must not reference `NODE_AUTH_TOKEN`, `NPM_TOKEN`, or repository secrets.
+- Release artifact manifest, packed tarball, npm `gitHead`, npm integrity, and GitHub Release assets must describe the same version and commit.
+- CI and release workflows must checkout the exact API contract revision in `contracts/api-contracts.lock.json`; latest API compatibility is a separate lock-update check, not an implicit release input.
 
 ## Version Impact
 

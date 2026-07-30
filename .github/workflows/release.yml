@@ -1,0 +1,196 @@
+name: Publish npm package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+concurrency:
+  group: npm-release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+
+    defaults:
+      run:
+        working-directory: projects/zdp-platforms/contracts/zdp-client-sdks
+
+    steps:
+      - name: Checkout client SDKs
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          path: projects/zdp-platforms/contracts/zdp-client-sdks
+
+      - name: Checkout API contracts
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+          repository: 0disoft/zdp-api-contracts
+          ref: ff872c4946c4ac7db7ec695a7b9ec5aa88fe206c
+          path: projects/zdp-platforms/contracts/zdp-api-contracts
+
+      - name: Verify tagged commit is on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"; then
+            echo "::error::Release tag must point to a commit contained in origin/main."
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "24.18.0"
+          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+          no-cache: true
+
+      - name: Verify trusted publishing runtime
+        run: |
+          npm_version="$(npm --version)"
+          if [ "$npm_version" != "11.16.0" ]; then
+            echo "::error::Release packaging requires npm 11.16.0, received ${npm_version}."
+            exit 1
+          fi
+
+      - name: Verify release tag
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="v${package_version}"
+          if [ "$GITHUB_REF_NAME" != "$expected_tag" ]; then
+            echo "::error::Release tag ${GITHUB_REF_NAME} does not match package.json version ${package_version}."
+            exit 1
+          fi
+
+      - name: Check npm registry state
+        id: npm_state
+        run: >-
+          bun scripts/check-registry-release-state.ts
+          --git-head "$GITHUB_SHA"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Install API contracts dependencies
+        working-directory: projects/zdp-platforms/contracts/zdp-api-contracts
+        run: bun install --frozen-lockfile
+
+      - name: Install client SDK dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify package contracts
+        run: bun run check
+
+      - name: Build package artifact
+        id: package_artifact
+        run: >-
+          bun scripts/build-release-artifact.ts
+          --git-head "$GITHUB_SHA"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Verify packed consumer
+        run: >-
+          bun scripts/smoke-packed-package.ts
+          --tarball "${{ steps.package_artifact.outputs.tarball }}"
+
+      - name: Publish package
+        if: steps.npm_state.outputs.already_published != 'true'
+        run: >-
+          npm publish "${{ steps.package_artifact.outputs.tarball }}"
+          --access public
+          --provenance
+
+      - name: Verify npm registry result
+        run: |
+          package_name="$(node -p "require('./package.json').name")"
+          package_version="$(node -p "require('./package.json').version")"
+          max_attempts=12
+          attempt=1
+
+          while [ "$attempt" -le "$max_attempts" ]; do
+            published_version="$(npm view "${package_name}@${package_version}" version 2>/dev/null || true)"
+            published_git_head="$(npm view "${package_name}@${package_version}" gitHead 2>/dev/null || true)"
+            published_integrity="$(npm view "${package_name}@${package_version}" dist.integrity 2>/dev/null || true)"
+            if [ "$published_version" = "$package_version" ] && [ "$published_git_head" = "$GITHUB_SHA" ] && [ "$published_integrity" = "${{ steps.package_artifact.outputs.integrity }}" ]; then
+              npm view "${package_name}@${package_version}" dist.tarball
+              exit 0
+            fi
+
+            if [ "$published_version" = "$package_version" ] && [ -n "$published_git_head" ] && [ "$published_git_head" != "$GITHUB_SHA" ]; then
+              echo "::error::Published npm gitHead ${published_git_head} does not match release tag SHA ${GITHUB_SHA}."
+              exit 1
+            fi
+            if [ "$published_version" = "$package_version" ] && [ -n "$published_integrity" ] && [ "$published_integrity" != "${{ steps.package_artifact.outputs.integrity }}" ]; then
+              echo "::error::Published npm integrity ${published_integrity} does not match packed artifact integrity ${{ steps.package_artifact.outputs.integrity }}."
+              exit 1
+            fi
+
+            echo "npm metadata is not ready for ${package_name}@${package_version}; retrying (${attempt}/${max_attempts})."
+            sleep 5
+            attempt=$((attempt + 1))
+          done
+
+          echo "::error::npm did not expose ${package_name}@${package_version} after ${max_attempts} attempts."
+          exit 1
+
+      - name: Verify published consumer and provenance
+        run: >-
+          bun scripts/smoke-published-package.ts
+          --git-head "$GITHUB_SHA"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_MANIFEST: ${{ steps.package_artifact.outputs.manifest }}
+          RELEASE_NOTES: ${{ steps.package_artifact.outputs.notes }}
+          RELEASE_TARBALL: ${{ steps.package_artifact.outputs.tarball }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            release_assets="$(mktemp -d)"
+            trap 'rm -rf "$release_assets"' EXIT
+            gh release view "$GITHUB_REF_NAME" \
+              --json tagName,name,isDraft,isPrerelease,body \
+              > "$release_assets/release.json"
+            node --input-type=commonjs - "$GITHUB_REF_NAME" "$release_assets/release.json" "$release_assets/release-body.md" <<'NODE'
+          const fs = require('node:fs');
+          const [tag, source, bodyPath] = process.argv.slice(2);
+          const release = JSON.parse(fs.readFileSync(source, 'utf8'));
+          if (release.tagName !== tag || release.name !== tag || release.isDraft || release.isPrerelease) {
+            throw new Error('Existing GitHub Release state does not match the final release contract.');
+          }
+          fs.writeFileSync(bodyPath, `${release.body.trim()}\n`, 'utf8');
+          NODE
+            gh release download "$GITHUB_REF_NAME" \
+              --pattern "$RELEASE_TARBALL" \
+              --pattern "$RELEASE_MANIFEST" \
+              --pattern "$RELEASE_NOTES" \
+              --dir "$release_assets"
+            cmp "$RELEASE_TARBALL" "$release_assets/$RELEASE_TARBALL"
+            cmp "$RELEASE_MANIFEST" "$release_assets/$RELEASE_MANIFEST"
+            cmp "$RELEASE_NOTES" "$release_assets/$RELEASE_NOTES"
+            cmp "$RELEASE_NOTES" "$release_assets/release-body.md"
+            echo "Release ${GITHUB_REF_NAME} and its package assets already match."
+            exit 0
+          fi
+
+          gh release create "$GITHUB_REF_NAME" \
+            "$RELEASE_TARBALL#npm package tarball" \
+            "$RELEASE_MANIFEST#npm release artifact manifest" \
+            "$RELEASE_NOTES#release notes source" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "$RELEASE_NOTES"
