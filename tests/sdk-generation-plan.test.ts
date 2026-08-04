@@ -30,11 +30,18 @@ describe('SDK generation plan', () => {
         'contracts/webhook-contract.yaml',
         'contracts/sdk-generation-input.yaml',
         'contracts/apis/catalog.yaml',
+        'contracts/apis/core-api/access-decision.yaml',
         'contracts/apis/core-api/auth-session-consumer.yaml',
         'contracts/apis/core-api/auth-session.yaml',
+        'contracts/apis/core-api/oidc-client-registry.yaml',
+        'contracts/apis/core-api/oidc-product-session.yaml',
+        'contracts/apis/core-api/oidc-provider-runtime.yaml',
         'contracts/apis/core-api/product-link.yaml',
         'contracts/apis/core-api/referral.yaml',
-        'contracts/apis/money-api/referral-reward.yaml'
+        'contracts/apis/core-api/sensitive-action-authorization.yaml',
+        'contracts/apis/money-api/referral-reward.yaml',
+        'contracts/apis/money-api/credit-purchase.yaml',
+        'contracts/apis/money-api/credit-purchase-read.yaml'
       ],
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
       apiExportPlanOutputKinds: [
@@ -58,7 +65,8 @@ describe('SDK generation plan', () => {
         'trace_id_propagation',
         'timeout_ms_option',
         'abort_signal_option',
-        'idempotency_key_required_for_mutations'
+        'idempotency_key_required_for_mutations',
+        'no_content_response_body_handling'
       ],
       apiRouteOperationIds: [
         'core.auth.registrations.create',
@@ -66,6 +74,7 @@ describe('SDK generation plan', () => {
         'core.auth.sessions.refresh',
         'core.auth.sessions.revoke_current',
         'core.auth.sessions.get_current',
+        'core.access.authorization_decisions.create',
         'core.auth.product_link_challenges.create',
         'core.auth.product_link_challenges.complete',
         'core.auth.product_link_challenges.exchange',
@@ -74,9 +83,13 @@ describe('SDK generation plan', () => {
         'core.auth.passkey_assertions.verify',
         'core.auth.oauth_callbacks.accept',
         'core.referral.uses.create',
-        'money.referral_rewards.status.get'
+        'money.referral_rewards.status.get',
+        'money.credit_pack_catalog_projections.get',
+        'money.credit_checkout_intents.create',
+        'money.credit_checkout_intents.status.get',
+        'money.credit_checkout_return_receipts.exchange'
       ],
-      apiTypedFetchOperationMap: {
+      apiTypedFetchOperationMap: expect.objectContaining({
         'core.auth.registrations.create': expect.objectContaining({
           operationId: 'core.auth.registrations.create',
           method: 'POST',
@@ -106,7 +119,11 @@ describe('SDK generation plan', () => {
           ])
         }),
         'core.auth.sessions.refresh': expect.any(Object),
-        'core.auth.sessions.revoke_current': expect.any(Object),
+        'core.auth.sessions.revoke_current': expect.objectContaining({
+          successStatuses: [204],
+          responseSchemaRef: null,
+          responseBodyMode: 'none'
+        }),
         'core.auth.sessions.get_current': expect.objectContaining({
           operationId: 'core.auth.sessions.get_current',
           method: 'GET',
@@ -141,8 +158,22 @@ describe('SDK generation plan', () => {
           path: '/v1/referrals/uses/{referral_use_ref}/reward-status',
           authRequired: true,
           idempotency: 'not_required'
-        })
-      },
+        }),
+        'money.credit_checkout_intents.create': expect.objectContaining({
+          method: 'POST',
+          path: '/v1/credit-checkout-intents',
+          responseBodyMode: 'schema',
+          authRequired: true,
+          idempotency: 'required_idempotency_key'
+        }),
+        'money.credit_checkout_return_receipts.exchange':
+          expect.objectContaining({
+            requestSchemaRef:
+              'contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutReturnReceiptExchangeRequest',
+            authRequired: true,
+            idempotency: 'required_idempotency_key'
+          })
+      }),
       apiSchemaModelMap: expect.objectContaining({
         'contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest':
           expect.objectContaining({
@@ -174,6 +205,18 @@ describe('SDK generation plan', () => {
             requiredFields: expect.arrayContaining([
               'reward_status',
               'campaign_policy_version'
+            ])
+          }),
+        'contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutIntentCreateResponse':
+          expect.objectContaining({
+            schemaId: 'CreditCheckoutIntentCreateResponse',
+            serviceId: 'money-api',
+            ownerBoundary: 'money',
+            requiredFields: expect.arrayContaining([
+              'price_snapshot_ref',
+              'tax_snapshot_ref',
+              'benefit_snapshot_ref',
+              'wallet_handoff_ref'
             ])
           })
       }),
@@ -210,7 +253,8 @@ describe('SDK generation plan', () => {
             'standard_error_envelope_normalization',
             'timeout_ms_option',
             'abort_signal_option',
-            'idempotency_key_required_for_mutations'
+            'idempotency_key_required_for_mutations',
+            'no_content_response_body_handling'
           ]),
           forbiddenValues: expect.arrayContaining([
             'authorization_header',

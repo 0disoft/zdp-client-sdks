@@ -26,7 +26,8 @@ export interface ZdpGeneratedOperationMetadata {
   readonly path: string;
   readonly successStatuses: readonly number[];
   readonly requestSchemaRef: string;
-  readonly responseSchemaRef: string;
+  readonly responseSchemaRef: string | null;
+  readonly responseBodyMode: 'schema' | 'none';
   readonly authRequired: boolean;
   readonly idempotency: ZdpIdempotencyPolicy;
   readonly requestIdRequired: boolean;
@@ -74,20 +75,16 @@ export type ZdpGeneratedOperationRequest<
 type ZdpGeneratedOperationResponsePayload<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
   SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
-> = Operation['responseSchemaRef'] extends keyof SchemaModels
-  ? ZdpGeneratedSchemaPayload<SchemaModels[Operation['responseSchemaRef']]>
-  : unknown;
+> = Operation['responseBodyMode'] extends 'none'
+  ? undefined
+  : Operation['responseSchemaRef'] extends keyof SchemaModels
+    ? ZdpGeneratedSchemaPayload<SchemaModels[Operation['responseSchemaRef']]>
+    : unknown;
 
 export type ZdpGeneratedOperationResponse<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
   SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
-> = number extends Operation['successStatuses'][number]
-  ? ZdpGeneratedOperationResponsePayload<Operation, SchemaModels>
-  : 204 extends Operation['successStatuses'][number]
-    ? Exclude<Operation['successStatuses'][number], 204> extends never
-      ? undefined
-      : ZdpGeneratedOperationResponsePayload<Operation, SchemaModels> | undefined
-    : ZdpGeneratedOperationResponsePayload<Operation, SchemaModels>;
+> = ZdpGeneratedOperationResponsePayload<Operation, SchemaModels>;
 
 export type ZdpGeneratedOperationDefinition<
   Operation extends ZdpGeneratedOperationMetadata = ZdpGeneratedOperationMetadata,
@@ -168,11 +165,10 @@ function createOperationDefinition<
     metadata.requestSchemaRef,
     'request'
   );
-  const responseSchema = readSchemaModel(
-    schemaModels,
-    metadata.responseSchemaRef,
-    'response'
-  );
+  const responseSchema =
+    metadata.responseSchemaRef === null
+      ? null
+      : readSchemaModel(schemaModels, metadata.responseSchemaRef, 'response');
 
   return defineZdpOperation<
     ZdpGeneratedOperationRequest<Operation, SchemaModels>,
@@ -233,6 +229,16 @@ function validateOperationMetadata(
       `Generated operation \`${operationId}\` must include error codes.`
     );
   }
+  if (
+    (metadata.responseBodyMode === 'none' &&
+      metadata.responseSchemaRef !== null) ||
+    (metadata.responseBodyMode === 'schema' &&
+      metadata.responseSchemaRef === null)
+  ) {
+    throw new ZdpClientConfigurationError(
+      `Generated operation \`${operationId}\` response body mode must match its response schema reference.`
+    );
+  }
 }
 
 function encodeGeneratedOperationRequest<
@@ -259,21 +265,27 @@ function decodeGeneratedOperationResponse<
   SchemaModels extends ZdpGeneratedSchemaModelMap
 >(
   metadata: Operation,
-  responseSchema: ZdpGeneratedSchemaModel,
+  responseSchema: ZdpGeneratedSchemaModel | null,
   response: unknown,
   context: ZdpResponseContext
 ): ZdpGeneratedOperationResponse<Operation, SchemaModels> {
-  if (context.status === 204) {
+  if (metadata.responseBodyMode === 'none') {
     if (response !== null) {
       throw new ZdpProtocolError({
         status: context.status,
         message:
           `Generated operation \`${metadata.operationId}\` received a response ` +
-          'body for HTTP 204.'
+          `body for bodyless HTTP ${context.status}.`
       });
     }
 
     return undefined as ZdpGeneratedOperationResponse<Operation, SchemaModels>;
+  }
+
+  if (responseSchema === null) {
+    throw new ZdpClientConfigurationError(
+      `Generated operation \`${metadata.operationId}\` requires a response schema.`
+    );
   }
 
   if (response === undefined) {

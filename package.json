@@ -1,6 +1,6 @@
 {
   "name": "zdp-client-sdks",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "private": false,
   "license": "MIT",
   "type": "module",
@@ -45,12 +45,14 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run generation:plan -- --check && bun run release:artifact:check",
+    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run generation:plan -- --check && bun run release:artifact:check",
     "check:tsgo": "tsgo --noEmit",
     "test": "bun test",
     "contracts:check": "bun scripts/check-client-sdk-contracts.ts",
     "generation:plan": "bun scripts/plan-sdk-generation.ts --api-contracts-root ../zdp-api-contracts",
     "api-contracts-lock:check": "bun scripts/check-api-contracts-lock.ts",
+    "api-operations:sync": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts",
+    "api-operations:check": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts --check",
     "release:artifact:check": "bun scripts/build-release-artifact.ts --check",
     "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run release:artifact:check && bun run smoke:package",
     "smoke:package": "bun scripts/smoke-packed-package.ts",

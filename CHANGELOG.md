@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.14.0
+
+### Added
+
+- credit pack catalog 조회, checkout intent 생성·상태 조회, 일회용 return receipt 교환 operation을 generated typed fetch 공개 표면에 추가했다.
+- API export plan에서 schema model과 operation metadata를 결정적으로 동기화하는 `api-operations:sync` 경로를 추가했다.
+
+### Changed
+
+- `zdp-api-contracts@0.22.0`의 정확한 Git revision으로 API 입력을 갱신하고 access decision, OIDC, sensitive-action authorization, credit purchase 계약을 generation plan에 포함했다.
+- CI와 Trusted Publisher release가 동일한 API revision을 checkout하고, 체크인 operation metadata가 export plan과 일치하는지 기본 검사에서 확인하도록 강화했다.
+
 ## 0.13.1
 
 ### Added

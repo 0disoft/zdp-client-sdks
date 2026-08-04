@@ -58,7 +58,8 @@ export interface ApiTypedFetchOperationHandoff {
   readonly path: string;
   readonly successStatuses: readonly number[];
   readonly requestSchemaRef: string;
-  readonly responseSchemaRef: string;
+  readonly responseSchemaRef: string | null;
+  readonly responseBodyMode: 'schema' | 'none';
   readonly authRequired: boolean;
   readonly idempotency: string;
   readonly requestIdRequired: boolean;

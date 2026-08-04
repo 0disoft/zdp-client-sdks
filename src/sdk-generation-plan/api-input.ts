@@ -395,7 +395,18 @@ function readTypedFetchOperation(
   const method = readString(value, 'method');
   const path = readString(value, 'path');
   const requestSchemaRef = readString(value, 'requestSchemaRef');
-  const responseSchemaRef = readString(value, 'responseSchemaRef');
+  const responseSchemaRefValue = value.responseSchemaRef;
+  const responseSchemaRef =
+    responseSchemaRefValue === null
+      ? null
+      : typeof responseSchemaRefValue === 'string'
+        ? responseSchemaRefValue
+        : undefined;
+  const responseBodyModeValue = value.responseBodyMode;
+  const responseBodyMode =
+    responseBodyModeValue === 'schema' || responseBodyModeValue === 'none'
+      ? responseBodyModeValue
+      : null;
   const idempotency = readString(value, 'idempotency');
   const authRequired = readBoolean(value, 'authRequired');
   const requestIdRequired = readBoolean(value, 'requestIdRequired');
@@ -408,7 +419,10 @@ function readTypedFetchOperation(
     method === null ||
     path === null ||
     requestSchemaRef === null ||
-    responseSchemaRef === null ||
+    responseSchemaRef === undefined ||
+    responseBodyMode === null ||
+    (responseBodyMode === 'schema' && responseSchemaRef === null) ||
+    (responseBodyMode === 'none' && responseSchemaRef !== null) ||
     idempotency === null ||
     authRequired === null ||
     requestIdRequired === null ||
@@ -426,6 +440,7 @@ function readTypedFetchOperation(
     successStatuses,
     requestSchemaRef,
     responseSchemaRef,
+    responseBodyMode,
     authRequired,
     idempotency,
     requestIdRequired,

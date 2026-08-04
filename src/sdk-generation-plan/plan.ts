@@ -26,11 +26,18 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/webhook-contract.yaml',
   'contracts/sdk-generation-input.yaml',
   'contracts/apis/catalog.yaml',
+  'contracts/apis/core-api/access-decision.yaml',
   'contracts/apis/core-api/auth-session-consumer.yaml',
   'contracts/apis/core-api/auth-session.yaml',
+  'contracts/apis/core-api/oidc-client-registry.yaml',
+  'contracts/apis/core-api/oidc-product-session.yaml',
+  'contracts/apis/core-api/oidc-provider-runtime.yaml',
   'contracts/apis/core-api/product-link.yaml',
   'contracts/apis/core-api/referral.yaml',
-  'contracts/apis/money-api/referral-reward.yaml'
+  'contracts/apis/core-api/sensitive-action-authorization.yaml',
+  'contracts/apis/money-api/referral-reward.yaml',
+  'contracts/apis/money-api/credit-purchase.yaml',
+  'contracts/apis/money-api/credit-purchase-read.yaml'
 ] as const;
 const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
   'raw_customer_payload',
@@ -50,7 +57,8 @@ const REQUIRED_API_EXPORT_CLIENT_RUNTIME_METADATA = [
   'trace_id_propagation',
   'timeout_ms_option',
   'abort_signal_option',
-  'idempotency_key_required_for_mutations'
+  'idempotency_key_required_for_mutations',
+  'no_content_response_body_handling'
 ] as const;
 const REQUIRED_MUTATING_METHODS_REQUIRING_IDEMPOTENCY = [
   'POST',
@@ -232,7 +240,10 @@ function validateApiSchemaModelHandoff(
         })
       );
     }
-    if (!schemaRefs.includes(operation.responseSchemaRef)) {
+    if (
+      operation.responseSchemaRef !== null &&
+      !schemaRefs.includes(operation.responseSchemaRef)
+    ) {
       diagnostics.push(
         createDiagnostic({
           code: 'CLIENT_SDK_API_SCHEMA_MODEL_RESPONSE_REF_MISSING',
@@ -521,6 +532,23 @@ function validateTypedFetchOperationMap(
           message:
             `Typed fetch operation \`${operationId}\` must include at least ` +
             'one success status.'
+        })
+      );
+    }
+    if (
+      (operation.responseBodyMode === 'none' &&
+        operation.responseSchemaRef !== null) ||
+      (operation.responseBodyMode === 'schema' &&
+        operation.responseSchemaRef === null)
+    ) {
+      diagnostics.push(
+        createDiagnostic({
+          code: 'CLIENT_SDK_API_EXPORT_PLAN_TYPED_FETCH_RESPONSE_BODY_DRIFT',
+          file: `../zdp-api-contracts/${apiExportPlan.sourceFile}`,
+          path: `${path}.responseBodyMode`,
+          message:
+            `Typed fetch operation \`${operationId}\` response body mode must ` +
+            'match its nullable response schema reference.'
         })
       );
     }

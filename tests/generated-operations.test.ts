@@ -5,6 +5,7 @@ import {
   ZdpClientConfigurationError,
   ZdpProtocolError,
   createZdpApiClient,
+  createZdpGeneratedTypedFetchClient,
   getZdpApiSchemaModel,
   getZdpGeneratedSchemaOptionalPayloadFields,
   getZdpGeneratedSchemaPayloadFields,
@@ -37,7 +38,12 @@ describe('generated typed fetch operations', () => {
 
     for (const operation of Object.values(ZDP_TYPED_FETCH_OPERATION_MAP)) {
       expect(ZDP_API_SCHEMA_MODEL_MAP[operation.requestSchemaRef]).toBeDefined();
-      expect(ZDP_API_SCHEMA_MODEL_MAP[operation.responseSchemaRef]).toBeDefined();
+      if (operation.responseSchemaRef === null) {
+        expect(operation.responseBodyMode).toBe('none');
+      } else {
+        expect(ZDP_API_SCHEMA_MODEL_MAP[operation.responseSchemaRef]).toBeDefined();
+        expect(operation.responseBodyMode).toBe('schema');
+      }
     }
   });
 
@@ -197,21 +203,55 @@ describe('generated typed fetch operations', () => {
   });
 
   it('returns undefined for generated HTTP 204 responses', async () => {
-    const client = createZdpApiClient({
+    const schemaModels = {
+      'test/no-content.yaml#NoContentRequest': {
+        schemaRef: 'test/no-content.yaml#NoContentRequest',
+        schemaId: 'NoContentRequest',
+        sourceContract: 'test/no-content.yaml',
+        serviceId: 'test-api',
+        ownerBoundary: 'test',
+        status: 'contract-only',
+        kind: 'request',
+        carriesSecretMaterial: false,
+        requiredFields: [],
+        optionalFields: [],
+        secretFields: [],
+        sessionEffect: null
+      },
+    } as const;
+    const operationMap = {
+      'test.resources.delete': {
+        operationId: 'test.resources.delete',
+        method: 'DELETE',
+        path: '/v1/test-resources/{resource_ref}',
+        successStatuses: [204],
+        requestSchemaRef: 'test/no-content.yaml#NoContentRequest',
+        responseSchemaRef: null,
+        responseBodyMode: 'none',
+        authRequired: true,
+        idempotency: 'required_idempotency_key',
+        requestIdRequired: true,
+        traceIdRequired: true,
+        errorCodes: ['not_found']
+      }
+    } as const;
+    const client = createZdpGeneratedTypedFetchClient(
+      operationMap,
+      schemaModels,
+      {
       baseUrl: 'https://api.example.test',
       fetch: async () => new Response(null, { status: 204 }),
       getAccessToken: () => 'access_123',
       requestIdFactory: () => 'req_123',
       traceIdFactory: () => 'trace_123'
-    });
+      }
+    );
 
     await expect(
       client.call(
-        'core.auth.sessions.revoke_current',
+        'test.resources.delete',
         {
-          body: {
-            session_ref: 'sess_123'
-          }
+          pathParams: { resource_ref: 'resource_123' }
         },
         {
           idempotencyKey: 'idem_123'
