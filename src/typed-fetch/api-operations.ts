@@ -644,7 +644,10 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "updated_at",
       "expires_at"
     ],
-    "optionalFields": [],
+    "optionalFields": [
+      "payment_attempt_ref",
+      "ledger_issuance_ref"
+    ],
     "secretFields": [],
     "sessionEffect": "none"
   },
@@ -732,6 +735,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "checkout_status",
       "payment_status",
       "credit_issuance_status",
+      "return_receipt_status",
       "catalog_version",
       "price_snapshot_ref",
       "tax_snapshot_ref",
@@ -780,6 +784,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "checkout_status",
       "payment_status",
       "credit_issuance_status",
+      "return_receipt_status",
       "balance_refresh_required",
       "consumed_at"
     ],

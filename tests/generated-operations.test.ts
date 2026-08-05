@@ -78,6 +78,29 @@ describe('generated typed fetch operations', () => {
     ]);
   });
 
+  it('preserves separated Money completion and return receipt fields', () => {
+    const statusModel = getZdpApiSchemaModel(
+      'contracts/apis/money-api/credit-purchase-read.yaml#CreditCheckoutIntentStatusGetResponse'
+    );
+    const createModel = getZdpApiSchemaModel(
+      'contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutIntentCreateResponse'
+    );
+    const exchangeModel = getZdpApiSchemaModel(
+      'contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutReturnReceiptExchangeResponse'
+    );
+
+    expect(getZdpGeneratedSchemaOptionalPayloadFields(statusModel)).toEqual([
+      'payment_attempt_ref',
+      'ledger_issuance_ref'
+    ]);
+    expect(getZdpGeneratedSchemaPayloadFields(createModel)).toContain(
+      'return_receipt_status'
+    );
+    expect(getZdpGeneratedSchemaPayloadFields(exchangeModel)).toContain(
+      'return_receipt_status'
+    );
+  });
+
   it('connects generated operations to the typed fetch runtime', async () => {
     const captured: {
       url?: URL;

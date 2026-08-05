@@ -1,5 +1,13 @@
 # CHANGELOG.md
 
+## 0.15.0
+
+### Changed
+
+- `zdp-api-contracts@0.23.0`의 정확한 Git revision으로 API 입력 잠금과 CI·Trusted Publisher checkout을 갱신했다.
+- credit checkout status와 return receipt exchange schema model에 분리된 `return_receipt_status`를 반영하고, status 조회의 선택적 `payment_attempt_ref`·`ledger_issuance_ref`를 보존한다.
+- provider 결제 성공과 ledger 지급 완료를 별개로 다루는 Money 계약을 generated typed fetch metadata에 동기화했다.
+
 ## 0.14.0
 
 ### Added

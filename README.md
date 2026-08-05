@@ -16,6 +16,7 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - zdp-api-contracts API catalog 기반 generated TypeScript typed fetch operation definitions
 - zdp-api-contracts schema bundle 기반 generated TypeScript schema model required/optional field metadata
 - current-session 조회와 desktop product-link create·complete·exchange typed fetch handoff
+- credit pack 조회, checkout intent·상태 조회와 일회용 return receipt 교환의 분리된 payment·credit issuance·receipt 상태 handoff
 - signed upload client handoff 기준
 - npm package metadata, MIT license, public export map, package file whitelist
 - npm Trusted Publisher release workflow, immutable release artifact manifest, packed/published consumer smoke
