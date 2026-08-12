@@ -30,9 +30,12 @@ describe('SDK generation plan', () => {
         'contracts/webhook-contract.yaml',
         'contracts/sdk-generation-input.yaml',
         'contracts/apis/catalog.yaml',
+        'contracts/apis/abuse-api/challenge.yaml',
+        'contracts/apis/abuse-api/health.yaml',
         'contracts/apis/core-api/access-decision.yaml',
         'contracts/apis/core-api/auth-session-consumer.yaml',
         'contracts/apis/core-api/auth-session.yaml',
+        'contracts/apis/core-api/customer-policy-registry.yaml',
         'contracts/apis/core-api/oidc-client-registry.yaml',
         'contracts/apis/core-api/oidc-product-session.yaml',
         'contracts/apis/core-api/oidc-provider-runtime.yaml',
@@ -69,6 +72,7 @@ describe('SDK generation plan', () => {
         'no_content_response_body_handling'
       ],
       apiRouteOperationIds: [
+        'core.consent.policy_sets.resolve',
         'core.auth.registrations.create',
         'core.auth.sessions.create',
         'core.auth.sessions.refresh',
@@ -87,7 +91,11 @@ describe('SDK generation plan', () => {
         'money.credit_pack_catalog_projections.get',
         'money.credit_checkout_intents.create',
         'money.credit_checkout_intents.status.get',
-        'money.credit_checkout_return_receipts.exchange'
+        'money.credit_checkout_return_receipts.exchange',
+        'platform.abuse.challenges.issue',
+        'platform.abuse.challenges.redeem',
+        'platform.abuse.verifications.verify',
+        'platform.abuse.health.get'
       ],
       apiTypedFetchOperationMap: expect.objectContaining({
         'core.auth.registrations.create': expect.objectContaining({

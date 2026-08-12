@@ -12,6 +12,163 @@ import type {
 import type { ZdpTypedFetchClientOptions } from './types';
 
 export const ZDP_API_SCHEMA_MODEL_MAP = {
+  "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest",
+    "schemaId": "AbuseChallengeIssueRequest",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "product_ref",
+      "environment",
+      "action"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueResponse": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueResponse",
+    "schemaId": "AbuseChallengeIssueResponse",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "challenge_ref",
+      "challenge_kind",
+      "widget_bootstrap",
+      "expires_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemRequest": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemRequest",
+    "schemaId": "AbuseChallengeRedeemRequest",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "product_ref",
+      "environment",
+      "action",
+      "challenge_response"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "challenge_response"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemResponse": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemResponse",
+    "schemaId": "AbuseChallengeRedeemResponse",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "verification_ref",
+      "product_ref",
+      "environment",
+      "action",
+      "verified_at",
+      "expires_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyRequest": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyRequest",
+    "schemaId": "AbuseVerificationVerifyRequest",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "verification_ref",
+      "consumer_operation_ref",
+      "product_ref",
+      "environment",
+      "action"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "verification_ref"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyResponse": {
+    "schemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyResponse",
+    "schemaId": "AbuseVerificationVerifyResponse",
+    "sourceContract": "contracts/apis/abuse-api/challenge.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "verification_state",
+      "product_ref",
+      "environment",
+      "action",
+      "verified_at"
+    ],
+    "optionalFields": [
+      "consumed_at",
+      "safe_reason_code"
+    ],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/abuse-api/health.yaml#AbuseHealthGetRequest": {
+    "schemaRef": "contracts/apis/abuse-api/health.yaml#AbuseHealthGetRequest",
+    "schemaId": "AbuseHealthGetRequest",
+    "sourceContract": "contracts/apis/abuse-api/health.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/abuse-api/health.yaml#AbuseHealthGetResponse": {
+    "schemaRef": "contracts/apis/abuse-api/health.yaml#AbuseHealthGetResponse",
+    "schemaId": "AbuseHealthGetResponse",
+    "sourceContract": "contracts/apis/abuse-api/health.yaml",
+    "serviceId": "abuse-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "status",
+      "checked_at",
+      "adapter_status",
+      "state_store_status"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
   "contracts/apis/core-api/access-decision.yaml#AccessAuthorizationDecisionCreateRequest": {
     "schemaRef": "contracts/apis/core-api/access-decision.yaml#AccessAuthorizationDecisionCreateRequest",
     "schemaId": "AccessAuthorizationDecisionCreateRequest",
@@ -144,7 +301,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "requiredFields": [
       "login_id",
       "password",
-      "terms_consent_ref"
+      "policy_set_resolution_ref"
     ],
     "optionalFields": [
       "locale"
@@ -367,6 +524,143 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "requiredFields": [
       "challenge_ref",
       "public_key_options_ref",
+      "expires_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyDocumentProjectionGetResponse": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyDocumentProjectionGetResponse",
+    "schemaId": "CustomerPolicyDocumentProjectionGetResponse",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "policy_document_id",
+      "policy_revision_id",
+      "document_kind",
+      "locale",
+      "title",
+      "canonical_path",
+      "content_digest",
+      "published_at",
+      "effective_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptCreateRequest": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptCreateRequest",
+    "schemaId": "CustomerPolicyReceiptCreateRequest",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "policy_set_resolution_ref",
+      "decision",
+      "source_surface"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptCreateResponse": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptCreateResponse",
+    "schemaId": "CustomerPolicyReceiptCreateResponse",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "policy_receipt_ref",
+      "subject_ref",
+      "policy_set_id",
+      "policy_set_revision",
+      "ordered_document_revision_ids",
+      "ordered_content_digests",
+      "decision",
+      "recorded_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptGetResponse": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyReceiptGetResponse",
+    "schemaId": "CustomerPolicyReceiptGetResponse",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "policy_receipt_ref",
+      "subject_ref",
+      "policy_set_id",
+      "policy_set_revision",
+      "ordered_document_revision_ids",
+      "ordered_content_digests",
+      "decision",
+      "recorded_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest",
+    "schemaId": "CustomerPolicySetResolveRequest",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "product_ref",
+      "environment",
+      "capability",
+      "locale"
+    ],
+    "optionalFields": [
+      "jurisdiction_profile_ref",
+      "channel_ref",
+      "seller_role_ref"
+    ],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse": {
+    "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse",
+    "schemaId": "CustomerPolicySetResolveResponse",
+    "sourceContract": "contracts/apis/core-api/customer-policy-registry.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "consent",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "policy_set_resolution_ref",
+      "resolution_status",
+      "required_user_action",
+      "policy_set_id",
+      "policy_set_revision",
+      "ordered_document_revision_ids",
+      "ordered_content_digests",
+      "presentation_rule_version",
+      "document_projections",
+      "resolved_at",
       "expires_at"
     ],
     "optionalFields": [],
@@ -835,6 +1129,29 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
 } as const satisfies ZdpGeneratedSchemaModelMap;
 
 export const ZDP_TYPED_FETCH_OPERATION_MAP = {
+  "core.consent.policy_sets.resolve": {
+    "operationId": "core.consent.policy_sets.resolve",
+    "method": "POST",
+    "path": "/v1/customer-policy-sets/resolve",
+    "successStatuses": [
+      200,
+      201
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest",
+    "responseSchemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "invalid_policy_resolution_request",
+      "invalid_trusted_edge_proof",
+      "policy_set_unavailable",
+      "policy_resolution_conflict",
+      "policy_resolution_unavailable"
+    ]
+  },
   "core.auth.registrations.create": {
     "operationId": "core.auth.registrations.create",
     "method": "POST",
@@ -1276,6 +1593,98 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "product_mismatch",
       "return_target_mismatch",
       "idempotency_conflict"
+    ]
+  },
+  "platform.abuse.challenges.issue": {
+    "operationId": "platform.abuse.challenges.issue",
+    "method": "POST",
+    "path": "/v1/abuse/challenges",
+    "successStatuses": [
+      201
+    ],
+    "requestSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest",
+    "responseSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "action_not_allowed",
+      "provider_unavailable",
+      "rate_limited",
+      "idempotency_conflict"
+    ]
+  },
+  "platform.abuse.challenges.redeem": {
+    "operationId": "platform.abuse.challenges.redeem",
+    "method": "POST",
+    "path": "/v1/abuse/challenges/{challenge_ref}/redeem",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemRequest",
+    "responseSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "challenge_invalid",
+      "challenge_expired",
+      "challenge_already_redeemed",
+      "binding_mismatch",
+      "provider_unavailable",
+      "rate_limited",
+      "idempotency_conflict"
+    ]
+  },
+  "platform.abuse.verifications.verify": {
+    "operationId": "platform.abuse.verifications.verify",
+    "method": "POST",
+    "path": "/internal/v1/abuse/verifications/verify",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyRequest",
+    "responseSchemaRef": "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "scope_access_denied",
+      "verification_invalid",
+      "verification_expired",
+      "verification_already_consumed",
+      "binding_mismatch",
+      "idempotency_conflict"
+    ]
+  },
+  "platform.abuse.health.get": {
+    "operationId": "platform.abuse.health.get",
+    "method": "GET",
+    "path": "/internal/v1/abuse/health",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/abuse-api/health.yaml#AbuseHealthGetRequest",
+    "responseSchemaRef": "contracts/apis/abuse-api/health.yaml#AbuseHealthGetResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "scope_access_denied",
+      "provider_unavailable"
     ]
   }
 } as const satisfies ZdpGeneratedOperationMetadataMap;

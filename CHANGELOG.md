@@ -1,5 +1,14 @@
 # CHANGELOG.md
 
+## 0.15.1
+
+### Changed
+
+- `zdp-api-contracts@0.29.2`의 정확한 Git revision으로 API 입력 잠금과
+  CI·Trusted Publisher checkout을 갱신했다.
+- password registration schema가 client-selected `terms_consent_ref` 대신
+  Core 발급 `policy_set_resolution_ref`를 요구하도록 generated metadata를 동기화했다.
+
 ## 0.15.0
 
 ### Changed

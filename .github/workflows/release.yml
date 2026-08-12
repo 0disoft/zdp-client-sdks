@@ -38,7 +38,7 @@ jobs:
         with:
           persist-credentials: false
           repository: 0disoft/zdp-api-contracts
-          ref: fb739b2bf214174d527b20e941555e8264ef23de
+          ref: 73cfb01c01796e204bb9ba13131cd218a16e4ec5
           path: projects/zdp-platforms/contracts/zdp-api-contracts
 
       - name: Verify tagged commit is on main
