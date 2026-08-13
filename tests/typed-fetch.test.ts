@@ -83,6 +83,58 @@ const operations = defineZdpOperations({
 });
 
 describe('typed fetch client', () => {
+  it('rejects operation paths that can override the configured API origin', async () => {
+    let fetchCalls = 0;
+    const unsafeOperations = defineZdpOperations({
+      'core.profiles.unsafe': defineZdpOperation<
+        ReadProfileRequest,
+        ReadProfileResponse
+      >({
+        ...operations['core.profiles.read'],
+        operationId: 'core.profiles.unsafe',
+        path: 'https://attacker.example/v1/profiles/{profileId}'
+      })
+    });
+    const client = createZdpTypedFetchClient(unsafeOperations, {
+      baseUrl: 'https://api.example.test',
+      fetch: async () => {
+        fetchCalls += 1;
+        return jsonResponse({ profile_id: 'unused' }, 200);
+      },
+      getAccessToken: () => 'access_123',
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call('core.profiles.unsafe', { profileId: 'profile_123' })
+    ).rejects.toBeInstanceOf(ZdpClientConfigurationError);
+    expect(fetchCalls).toBe(0);
+  });
+
+  it('rejects protocol-relative and backslash operation paths', async () => {
+    for (const path of ['//attacker.example/v1/profiles/{profileId}', '\\\\attacker.example\\v1']) {
+      const unsafeOperations = defineZdpOperations({
+        unsafe: defineZdpOperation<ReadProfileRequest, ReadProfileResponse>({
+          ...operations['core.profiles.read'],
+          operationId: 'unsafe',
+          path
+        })
+      });
+      const client = createZdpTypedFetchClient(unsafeOperations, {
+        baseUrl: 'https://api.example.test',
+        fetch: async () => jsonResponse({ profile_id: 'unused' }, 200),
+        getAccessToken: () => 'access_123',
+        requestIdFactory: () => 'req_123',
+        traceIdFactory: () => 'trace_123'
+      });
+
+      await expect(
+        client.call('unsafe', { profileId: 'profile_123' })
+      ).rejects.toBeInstanceOf(ZdpClientConfigurationError);
+    }
+  });
+
   it('calls a typed operation and propagates request, trace, and idempotency headers', async () => {
     const captured: {
       url?: URL;

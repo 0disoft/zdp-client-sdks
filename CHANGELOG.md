@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## 0.15.2
+
+### Fixed
+
+- typed fetch operation 경로를 query·fragment 없는 동일 origin의 root-relative 경로로 제한해 bearer token이 외부 origin으로 전달되지 않게 했다.
+- generated request schema의 비밀 필드는 URL query나 path parameter로 인코딩할 수 없도록 fail-closed 검증을 추가했다.
+
 ## 0.15.1
 
 ### Changed

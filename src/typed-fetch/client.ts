@@ -357,6 +357,7 @@ function buildUrl(
   pathTemplate: string,
   encoded: EncodedZdpRequest
 ): URL {
+  validateOperationPath(pathTemplate);
   const path = pathTemplate.replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => {
     const value = encoded.pathParams?.[key];
     if (value === undefined) {
@@ -368,6 +369,11 @@ function buildUrl(
     return encodeURIComponent(String(value));
   });
   const url = new URL(path, baseUrl);
+  if (url.origin !== baseUrl.origin) {
+    throw new ZdpClientConfigurationError(
+      `Operation path \`${pathTemplate}\` must stay on the configured API origin.`
+    );
+  }
 
   if (encoded.query !== undefined) {
     for (const [key, value] of Object.entries(encoded.query)) {
@@ -376,6 +382,20 @@ function buildUrl(
   }
 
   return url;
+}
+
+function validateOperationPath(path: string): void {
+  if (
+    !path.startsWith('/') ||
+    path.startsWith('//') ||
+    path.includes('\\') ||
+    path.includes('?') ||
+    path.includes('#')
+  ) {
+    throw new ZdpClientConfigurationError(
+      `Operation path \`${path}\` must be a root-relative URL path without a query or fragment.`
+    );
+  }
 }
 
 function appendQueryValue(url: URL, key: string, value: ZdpQueryValue): void {

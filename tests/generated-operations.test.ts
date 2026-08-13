@@ -190,6 +190,31 @@ describe('generated typed fetch operations', () => {
     ).rejects.toBeInstanceOf(ZdpClientConfigurationError);
   });
 
+  it('rejects secret request fields encoded in URL components', async () => {
+    const client = createZdpApiClient({
+      baseUrl: 'https://api.example.test',
+      fetch: async () => new Response('{}'),
+      requestIdFactory: () => 'req_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(
+      client.call(
+        'core.auth.product_link_challenges.exchange',
+        {
+          pathParams: { challenge_ref: 'challenge_123' },
+          body: {
+            challenge_ref: 'challenge_123',
+            client_correlation_ref: 'correlation_123',
+            proof_verifier: 'secret-verifier'
+          },
+          query: { proof_verifier: 'secret-verifier' }
+        },
+        { idempotencyKey: 'idem_123' }
+      )
+    ).rejects.toBeInstanceOf(ZdpClientConfigurationError);
+  });
+
   it('rejects generated responses missing schema-required fields', async () => {
     const client = createZdpApiClient({
       baseUrl: 'https://api.example.test',

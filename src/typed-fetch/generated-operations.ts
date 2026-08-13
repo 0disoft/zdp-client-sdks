@@ -214,9 +214,15 @@ function validateOperationMetadata(
       `Generated operation \`${operationId}\` has unsupported idempotency policy \`${metadata.idempotency}\`.`
     );
   }
-  if (metadata.path.trim().length === 0) {
+  if (
+    !metadata.path.startsWith('/') ||
+    metadata.path.startsWith('//') ||
+    metadata.path.includes('\\') ||
+    metadata.path.includes('?') ||
+    metadata.path.includes('#')
+  ) {
     throw new ZdpClientConfigurationError(
-      `Generated operation \`${operationId}\` must include a path.`
+      `Generated operation \`${operationId}\` must use a root-relative path without a query or fragment.`
     );
   }
   if (metadata.successStatuses.length === 0) {
@@ -256,8 +262,34 @@ function encodeGeneratedOperationRequest<
   }
 
   validateRequestRequiredFields(metadata, requestSchema, request);
+  validateSecretFieldLocations(metadata, requestSchema, request);
 
   return request;
+}
+
+function validateSecretFieldLocations(
+  metadata: ZdpGeneratedOperationMetadata,
+  requestSchema: ZdpGeneratedSchemaModel,
+  request: EncodedZdpRequest
+): void {
+  for (const field of requestSchema.secretFields) {
+    if (
+      request.query !== undefined &&
+      Object.prototype.hasOwnProperty.call(request.query, field)
+    ) {
+      throw new ZdpClientConfigurationError(
+        `Generated operation \`${metadata.operationId}\` secret field \`${field}\` must not be encoded in the URL query.`
+      );
+    }
+    if (
+      request.pathParams !== undefined &&
+      Object.prototype.hasOwnProperty.call(request.pathParams, field)
+    ) {
+      throw new ZdpClientConfigurationError(
+        `Generated operation \`${metadata.operationId}\` secret field \`${field}\` must not be encoded in the URL path.`
+      );
+    }
+  }
 }
 
 function decodeGeneratedOperationResponse<
