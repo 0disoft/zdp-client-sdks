@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type {
   ApiExportPlanHandoff,
   ApiSchemaModelHandoff,
@@ -10,7 +9,11 @@ import type {
 
 const SDK_GENERATION_INPUT_FILE = 'contracts/sdk-generation-input.yaml';
 const PACKAGE_FILE = 'package.json';
-const API_EXPORT_PLAN_FILE = 'src/api-export-plan/plan.ts';
+const API_EXPORT_PLAN_FILE = 'contracts/apis/catalog.yaml';
+const API_CATALOG_FILE = 'contracts/apis/catalog.yaml';
+const ROUTE_CONTRACT_FILE = 'contracts/route-contract.yaml';
+const ERROR_ENVELOPE_FILE = 'contracts/error-envelope.yaml';
+const WEBHOOK_CONTRACT_FILE = 'contracts/webhook-contract.yaml';
 const REQUIRED_EXPORT_TRACE_FIELDS = ['request_id', 'trace_id'] as const;
 export const REQUIRED_API_EXPORT_DOCS_METADATA = [
   'permission_check',
@@ -61,7 +64,7 @@ export async function loadApiExportPlanHandoff(
 ): Promise<ApiExportPlanHandoff> {
   const packageJson = await readJsonRecord(join(apiContractsRoot, PACKAGE_FILE));
   const scripts = readRecord(packageJson, 'scripts');
-  const plan = await buildApiExportPlan(apiContractsRoot);
+  const plan = await buildApiExportPlanHandoff(apiContractsRoot);
 
   return {
     script: readString(scripts, 'export:plan'),
@@ -90,12 +93,14 @@ export async function loadApiExportPlanHandoff(
 export async function loadApiSchemaModelHandoff(
   apiContractsRoot: string
 ): Promise<Readonly<Record<string, ApiSchemaModelHandoff>>> {
-  const exportPlan = await loadApiExportPlanHandoff(apiContractsRoot);
-  if (Object.keys(exportPlan.schemaModelMap).length > 0) {
-    return exportPlan.schemaModelMap;
-  }
-
   const apiInput = await loadApiSdkGenerationInput(apiContractsRoot);
+  return loadSchemaModels(apiContractsRoot, apiInput);
+}
+
+async function loadSchemaModels(
+  apiContractsRoot: string,
+  apiInput: ApiSdkGenerationInputContract
+): Promise<Readonly<Record<string, ApiSchemaModelHandoff>>> {
   const schemaModels: Record<string, ApiSchemaModelHandoff> = {};
 
   for (const sourceContract of apiInput.sourceContracts) {
@@ -165,43 +170,103 @@ function parseYamlRecord(source: string): Record<string, unknown> {
   return {};
 }
 
-async function buildApiExportPlan(
+async function buildApiExportPlanHandoff(
   apiContractsRoot: string
 ): Promise<Record<string, unknown>> {
-  const loadApiContracts = await loadSiblingFunction(
-    apiContractsRoot,
-    'src/api-contracts/parser.ts',
-    'loadApiContracts'
+  const apiInput = await loadApiSdkGenerationInput(apiContractsRoot);
+  const catalogDocument = parseYamlRecord(
+    await readFile(join(apiContractsRoot, API_CATALOG_FILE), 'utf8')
   );
-  const buildPlan = await loadSiblingFunction(
-    apiContractsRoot,
-    API_EXPORT_PLAN_FILE,
-    'buildApiExportPlan'
-  );
-  const result = buildPlan(await loadApiContracts(apiContractsRoot));
+  const catalog = readRecord(catalogDocument, 'api_catalog');
+  const routes = Array.isArray(catalogDocument.routes)
+    ? catalogDocument.routes
+    : [];
+  const operationMap: Record<string, ApiTypedFetchOperationHandoff> = {};
 
-  if (!isRecord(result)) {
-    return {};
+  for (const route of routes) {
+    if (!isRecord(route)) continue;
+    const operation = readRouteOperation(route);
+    if (operation !== null) operationMap[operation.operationId] = operation;
   }
 
-  const plan = result.plan;
-  return isRecord(plan) ? plan : {};
+  const schemaModelMap = await loadSchemaModels(apiContractsRoot, apiInput);
+  const routeContract = readRecord(
+    parseYamlRecord(await readFile(join(apiContractsRoot, ROUTE_CONTRACT_FILE), 'utf8')),
+    'route_contract'
+  );
+  const errorEnvelope = readRecord(
+    parseYamlRecord(await readFile(join(apiContractsRoot, ERROR_ENVELOPE_FILE), 'utf8')),
+    'error_envelope'
+  );
+  const webhookContract = readRecord(
+    parseYamlRecord(await readFile(join(apiContractsRoot, WEBHOOK_CONTRACT_FILE), 'utf8')),
+    'webhook_contract'
+  );
+  const forbiddenValues = uniqueSorted([
+    ...apiInput.forbiddenValues,
+    ...readStringArray(catalog, 'forbidden_values'),
+    ...readStringArray(routeContract, 'forbidden_shapes'),
+    ...readStringArray(errorEnvelope, 'forbidden_fields'),
+    ...readStringArray(webhookContract, 'forbidden_controls')
+  ]);
+
+  return {
+    outputs: ['openapi', 'sdk_generation_input', 'webhook_schema', 'docs_contract'].map(
+      (kind) => ({ kind, forbiddenValues, requiredMetadata: REQUIRED_API_EXPORT_DOCS_METADATA })
+    ),
+    traceFields: REQUIRED_EXPORT_TRACE_FIELDS,
+    clientRuntimeMetadata: apiInput.requiredClientRuntimeMetadata,
+    operationIds: Object.keys(operationMap),
+    typedFetchOperationMap: operationMap,
+    schemaModelMap,
+    mutatingMethodsRequiringIdempotency: ['POST', 'PUT', 'PATCH', 'DELETE'],
+    requiredMutationIdempotencyPolicy: 'required_idempotency_key',
+    writesArtifacts: false,
+    publishesSchemas: false
+  };
 }
 
-async function loadSiblingFunction(
-  root: string,
-  fileName: string,
-  exportName: string
-): Promise<(...args: unknown[]) => unknown> {
-  const moduleUrl = pathToFileURL(join(root, fileName)).href;
-  const moduleRecord = (await import(moduleUrl)) as Record<string, unknown>;
-  const exported = moduleRecord[exportName];
+function readRouteOperation(
+  route: Record<string, unknown>
+): ApiTypedFetchOperationHandoff | null {
+  const operationId = readString(route, 'operation_id');
+  const method = readString(route, 'method');
+  const path = readString(route, 'path');
+  const requestSchemaRef = readString(route, 'request_schema_ref');
+  const rawResponseSchemaRef = route.response_schema_ref;
+  const responseSchemaRef = rawResponseSchemaRef === null
+    ? null
+    : typeof rawResponseSchemaRef === 'string' && rawResponseSchemaRef.trim().length > 0
+      ? rawResponseSchemaRef.trim()
+      : undefined;
+  const authRequired = readBoolean(route, 'auth_required');
+  const idempotency = readString(route, 'idempotency');
+  const requestIdRequired = readBoolean(route, 'request_id_required');
+  const traceIdRequired = readBoolean(route, 'trace_id_required');
+  const successStatuses = readNumberArray(route, 'success_statuses');
+  const errorCodes = readStringArray(route, 'error_codes');
 
-  if (typeof exported !== 'function') {
-    throw new Error(`${fileName} must export function \`${exportName}\`.`);
+  if (operationId === null || method === null || path === null ||
+      requestSchemaRef === null || responseSchemaRef === undefined ||
+      authRequired === null || idempotency === null || requestIdRequired === null ||
+      traceIdRequired === null || successStatuses.length === 0 || errorCodes.length === 0) {
+    return null;
   }
 
-  return exported as (...args: unknown[]) => unknown;
+  return {
+    operationId,
+    method,
+    path,
+    successStatuses,
+    requestSchemaRef,
+    responseSchemaRef,
+    responseBodyMode: responseSchemaRef === null ? 'none' : 'schema',
+    authRequired,
+    idempotency,
+    requestIdRequired,
+    traceIdRequired,
+    errorCodes
+  };
 }
 
 function readSchemaModel(input: {

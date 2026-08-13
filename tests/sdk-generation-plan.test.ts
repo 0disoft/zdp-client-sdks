@@ -14,7 +14,7 @@ describe('SDK generation plan', () => {
       apiExportPlan: await loadApiExportPlanHandoff('../zdp-api-contracts'),
       apiSchemaModels: await loadApiSchemaModelHandoff('../zdp-api-contracts'),
       apiInputSourceFile: '../zdp-api-contracts/contracts/sdk-generation-input.yaml',
-      apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts'
+      apiExportPlanSourceFile: '../zdp-api-contracts/contracts/apis/catalog.yaml'
     });
 
     expect(result.ok).toBe(true);
@@ -46,7 +46,7 @@ describe('SDK generation plan', () => {
         'contracts/apis/money-api/credit-purchase.yaml',
         'contracts/apis/money-api/credit-purchase-read.yaml'
       ],
-      apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
+      apiExportPlanSourceFile: '../zdp-api-contracts/contracts/apis/catalog.yaml',
       apiExportPlanOutputKinds: [
         'openapi',
         'sdk_generation_input',

@@ -11,7 +11,7 @@ export async function runSdkGenerationPlanCli(
 ): Promise<number> {
   const options = readOptions(argv);
   const apiInputSourceFile = 'contracts/sdk-generation-input.yaml';
-  const apiExportPlanSourceFile = 'src/api-export-plan/plan.ts';
+  const apiExportPlanSourceFile = 'contracts/apis/catalog.yaml';
   const result = buildSdkGenerationPlan(
     await loadClientSdkContracts(options.root),
     {

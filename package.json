@@ -1,6 +1,6 @@
 {
   "name": "zdp-client-sdks",
-  "version": "0.15.2",
+  "version": "0.15.3",
   "private": false,
   "license": "MIT",
   "type": "module",
