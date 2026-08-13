@@ -9,7 +9,7 @@ import type {
 
 const SDK_GENERATION_INPUT_FILE = 'contracts/sdk-generation-input.yaml';
 const PACKAGE_FILE = 'package.json';
-const API_EXPORT_PLAN_FILE = 'contracts/apis/catalog.yaml';
+const API_EXPORT_PLAN_FILE = 'src/api-export-plan/plan.ts';
 const API_CATALOG_FILE = 'contracts/apis/catalog.yaml';
 const ROUTE_CONTRACT_FILE = 'contracts/route-contract.yaml';
 const ERROR_ENVELOPE_FILE = 'contracts/error-envelope.yaml';
