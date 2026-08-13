@@ -414,6 +414,13 @@ export function validateClientSdkContracts(
       code: 'CLIENT_SDK_AUTH_HELPER_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'auth helper forbidden ownership'
     }),
+    ...validateDisjointOwnership({
+      file: AUTH_HELPER_FILE,
+      owns: contracts.authHelper.owns,
+      mustNotOwn: contracts.authHelper.mustNotOwn,
+      code: 'CLIENT_SDK_AUTH_HELPER_OWNERSHIP_CONTRADICTION',
+      label: 'auth helper'
+    }),
     ...validateAllowedStatus({
       file: UPLOAD_CLIENT_FILE,
       path: 'upload_client.status',
@@ -436,6 +443,13 @@ export function validateClientSdkContracts(
       required: REQUIRED_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP,
       code: 'CLIENT_SDK_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP_MISSING',
       label: 'upload client forbidden ownership'
+    }),
+    ...validateDisjointOwnership({
+      file: UPLOAD_CLIENT_FILE,
+      owns: contracts.uploadClient.owns,
+      mustNotOwn: contracts.uploadClient.mustNotOwn,
+      code: 'CLIENT_SDK_UPLOAD_CLIENT_OWNERSHIP_CONTRADICTION',
+      label: 'upload client'
     })
   ];
 
@@ -443,6 +457,23 @@ export function validateClientSdkContracts(
     ok: diagnostics.length === 0,
     diagnostics
   };
+}
+
+function validateDisjointOwnership(input: {
+  readonly file: string;
+  readonly owns: readonly string[];
+  readonly mustNotOwn: readonly string[];
+  readonly code: string;
+  readonly label: string;
+}): readonly ClientSdkContractDiagnostic[] {
+  return input.owns
+    .filter((entry) => input.mustNotOwn.includes(entry))
+    .map((entry) => ({
+      code: input.code,
+      file: input.file,
+      path: 'owns',
+      message: `${input.label} must not both own and forbid \`${entry}\`.`
+    }));
 }
 
 function validateRequiredEntries(input: {

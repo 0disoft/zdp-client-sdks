@@ -548,6 +548,22 @@ describe('client SDK contract checker', () => {
     );
   });
 
+  it('fails when auth helper ownership contradicts its forbidden boundary', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      authHelper: {
+        ...contracts.authHelper,
+        owns: [...contracts.authHelper.owns, 'refresh token storage']
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_AUTH_HELPER_OWNERSHIP_CONTRADICTION'
+    );
+  });
+
   it('fails when upload clients drop idempotency key propagation', () => {
     const contracts = loadCommittedContracts();
     const result = validateClientSdkContracts({
@@ -581,6 +597,22 @@ describe('client SDK contract checker', () => {
     expect(result.ok).toBe(false);
     expect(result.diagnostics.map((item) => item.code)).toContain(
       'CLIENT_SDK_UPLOAD_CLIENT_FORBIDDEN_OWNERSHIP_MISSING'
+    );
+  });
+
+  it('fails when upload ownership contradicts its forbidden boundary', () => {
+    const contracts = loadCommittedContracts();
+    const result = validateClientSdkContracts({
+      ...contracts,
+      uploadClient: {
+        ...contracts.uploadClient,
+        owns: [...contracts.uploadClient.owns, 'file ownership decisions']
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => item.code)).toContain(
+      'CLIENT_SDK_UPLOAD_CLIENT_OWNERSHIP_CONTRADICTION'
     );
   });
 });
