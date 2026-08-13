@@ -6,6 +6,7 @@
 
 - SDK generation plan이 sibling 저장소의 TypeScript 모듈을 import해 실행하지 않고 잠긴 YAML 계약만 수동 파싱하도록 바꿨다.
 - typed fetch operation metadata를 API route catalog 자체에서 구성해 method, path, auth, idempotency, request/trace 요구사항, schema, status와 error code가 별도 handoff에서 이탈할 여지를 제거했다.
+- npm Trusted Publisher OIDC 권한을 검증된 artifact만 받는 최소 publish job으로 격리하고, checkout·dependency·build·smoke·사후 검증은 별도 job으로 분리했다.
 
 ## 0.15.2
 
