@@ -74,11 +74,19 @@ import {
   ZDP_API_SCHEMA_MODEL_MAP,
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from 'zdp-client-sdks/typed-fetch/api-operations';
+import {
+  createZdpFetchUploadTransport,
+  createZdpSignedUploadClient,
+  createZdpXhrUploadTransport
+} from 'zdp-client-sdks/upload';
 
 if (
   typeof createZdpTypedFetchClient !== 'function' ||
   typeof defineZdpOperation !== 'function' ||
-  typeof defineZdpOperations !== 'function'
+  typeof defineZdpOperations !== 'function' ||
+  typeof createZdpSignedUploadClient !== 'function' ||
+  typeof createZdpFetchUploadTransport !== 'function' ||
+  typeof createZdpXhrUploadTransport !== 'function'
 ) {
   throw new Error('Public runtime exports were not consumable.');
 }
