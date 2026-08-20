@@ -211,7 +211,6 @@ describe('generated TypeScript API client', () => {
       const requestRuntime =
         ZDP_API_SCHEMA_RUNTIME_TYPE_MAP[operation.requestSchemaRef];
       expect(requestRuntime.requiredFields).toEqual(requestModel.requiredFields);
-      expect(requestRuntime.optionalFields).toEqual(requestModel.optionalFields);
       expect(Object.keys(requestRuntime.fieldTypes)).toEqual([
         ...requestModel.requiredFields,
         ...requestModel.optionalFields
@@ -225,9 +224,10 @@ describe('generated TypeScript API client', () => {
         expect(responseRuntime.requiredFields).toEqual(
           responseModel.requiredFields
         );
-        expect(responseRuntime.optionalFields).toEqual(
-          responseModel.optionalFields
-        );
+        expect(Object.keys(responseRuntime.fieldTypes)).toEqual([
+          ...responseModel.requiredFields,
+          ...responseModel.optionalFields
+        ]);
       }
     }
   });

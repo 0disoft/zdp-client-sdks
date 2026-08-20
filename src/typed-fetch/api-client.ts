@@ -115,6 +115,11 @@ export function createZdpClient(
   options: ZdpTypedFetchClientOptions
 ): ZdpApiClient {
   const raw = createZdpApiClient(options);
+  const rawCall = raw.call as (
+    operationId: ZdpApiOperationId,
+    request: EncodedZdpRequest,
+    options?: ZdpCallOptions
+  ) => Promise<unknown>;
   const namespaces: Record<string, unknown> = {};
 
   const invoke = async (
@@ -157,7 +162,7 @@ export function createZdpClient(
       request,
       pathParameters
     );
-    const response = await raw.call(operationId, encoded, callOptions);
+    const response = await rawCall(operationId, encoded, callOptions);
 
     if (operation.responseSchemaRef === null) {
       return undefined;
