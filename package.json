@@ -15,29 +15,29 @@
   "homepage": "https://github.com/0disoft/zdp-client-sdks#readme",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./typed-fetch": {
-      "types": "./src/typed-fetch/index.ts",
-      "import": "./src/typed-fetch/index.ts",
-      "default": "./src/typed-fetch/index.ts"
+      "types": "./dist/typed-fetch/index.d.ts",
+      "import": "./dist/typed-fetch/index.js",
+      "default": "./dist/typed-fetch/index.js"
     },
     "./typed-fetch/api-operations": {
-      "types": "./src/typed-fetch/api-operations.ts",
-      "import": "./src/typed-fetch/api-operations.ts",
-      "default": "./src/typed-fetch/api-operations.ts"
+      "types": "./dist/typed-fetch/api-operations.d.ts",
+      "import": "./dist/typed-fetch/api-operations.js",
+      "default": "./dist/typed-fetch/api-operations.js"
     },
     "./upload": {
-      "types": "./src/upload/index.ts",
-      "import": "./src/upload/index.ts",
-      "default": "./src/upload/index.ts"
+      "types": "./dist/upload/index.d.ts",
+      "import": "./dist/upload/index.js",
+      "default": "./dist/upload/index.js"
     }
   },
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "files": [
-    "src/",
+    "dist/",
     "contracts/",
     "README.md",
     "CHANGELOG.md",
@@ -50,6 +50,7 @@
   ],
   "sideEffects": false,
   "scripts": {
+    "build": "bun scripts/build-package.ts",
     "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run generation:plan -- --check && bun run release:artifact:check",
     "check:tsgo": "tsgo --noEmit",
     "test": "bun test",
@@ -60,9 +61,10 @@
     "api-operations:check": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts --check",
     "typescript-models:sync": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts",
     "typescript-models:check": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts --check",
-    "release:artifact:check": "bun scripts/build-release-artifact.ts --check",
+    "release:artifact:check": "bun run build && bun scripts/build-release-artifact.ts --check",
     "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run typescript-models:check && bun run release:artifact:check && bun run smoke:package",
-    "smoke:package": "bun scripts/smoke-packed-package.ts",
+    "smoke:package": "bun run build && bun scripts/smoke-packed-package.ts",
+    "smoke:vite": "bun run build && bun scripts/smoke-packed-package.ts --vite",
     "smoke:published": "bun scripts/smoke-published-package.ts"
   },
   "devDependencies": {

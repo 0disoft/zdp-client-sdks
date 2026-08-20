@@ -4,12 +4,13 @@ import {
 } from './generated-operations';
 import type {
   ZdpGeneratedOperationMetadataMap,
+  ZdpGeneratedOperationDefinitions,
   ZdpGeneratedOperationRequest,
   ZdpGeneratedSchemaModel,
   ZdpGeneratedSchemaModelMap,
   ZdpGeneratedSchemaPayload
 } from './generated-operations';
-import type { ZdpTypedFetchClientOptions } from './types';
+import type { ZdpTypedFetchClient, ZdpTypedFetchClientOptions } from './types';
 
 export const ZDP_API_SCHEMA_MODEL_MAP = {
   "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest": {
@@ -2078,7 +2079,10 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
   }
 } as const satisfies ZdpGeneratedOperationMetadataMap;
 
-export const zdpTypedFetchOperations =
+export const zdpTypedFetchOperations: ZdpGeneratedOperationDefinitions<
+  typeof ZDP_TYPED_FETCH_OPERATION_MAP,
+  typeof ZDP_API_SCHEMA_MODEL_MAP
+> =
   createZdpGeneratedOperationDefinitions(
     ZDP_TYPED_FETCH_OPERATION_MAP,
     ZDP_API_SCHEMA_MODEL_MAP
@@ -2127,7 +2131,9 @@ export function getZdpGeneratedSchemaOptionalPayloadFields(
   return model.optionalFields;
 }
 
-export function createZdpApiClient(options: ZdpTypedFetchClientOptions) {
+export function createZdpApiClient(
+  options: ZdpTypedFetchClientOptions
+): ZdpTypedFetchClient<typeof zdpTypedFetchOperations> {
   return createZdpGeneratedTypedFetchClient(
     ZDP_TYPED_FETCH_OPERATION_MAP,
     ZDP_API_SCHEMA_MODEL_MAP,

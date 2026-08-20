@@ -17,6 +17,8 @@ ZDP API 계약을 실제 제품 코드에서 바로 사용할 수 있는 TypeScr
 - current-session, product-link, credit purchase, referral, abuse challenge operation
 - signed upload authorization, provider transfer, completion TypeScript runtime
 - upload file size·MIME 제한, SHA-256 checksum, 진행률, 취소, replay-safe 제한적 재시도
+- compiled ESM runtime과 TypeScript declaration package output
+- Node, Bun, TypeScript NodeNext packed consumer smoke와 Vite current-major CI smoke
 - npm Trusted Publisher, immutable release artifact, packed/published consumer smoke
 - SDK generation dry-run plan과 checked-in generated source drift 검증
 
@@ -99,9 +101,9 @@ bun run typescript-models:check
 
 루트 `service.yaml`이 저장소의 운영 계약이다. `zdp-api-contracts`는 route, schema field presence, success status, error code, auth, idempotency와 request/trace 요구사항의 원천이다. 이 저장소는 그 입력을 잠긴 Git revision에서 읽어 TypeScript representation과 실행 surface를 생성한다.
 
-패키지는 Bun과 TypeScript bundler가 `src/`의 TypeScript source export를 직접 소비하는 source package다. public export는 package root, `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`, `zdp-client-sdks/upload`다. generated TypeScript models, client facade, signed upload runtime은 `src/`에 포함되지만 Dart와 Rust runtime artifact는 package에 포함하지 않는다.
+공개 패키지는 표준 ESM runtime과 TypeScript 소비자를 위한 compiled package다. public export는 package root, `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`, `zdp-client-sdks/upload`다. runtime export는 `dist/**/*.js`, type export는 대응하는 `dist/**/*.d.ts`를 가리키며 `src/`, checker, generation-plan 구현, tests는 tarball에 포함하지 않는다. generated TypeScript models, client facade, signed upload runtime은 compiled output에 포함하고 Dart와 Rust runtime artifact는 제외한다.
 
-공개 릴리스는 `package.json` 버전과 같은 `v<version>` tag가 `main`에 포함된 commit을 가리킬 때만 실행된다. GitHub Actions의 npm Trusted Publisher가 OIDC로 검증된 tarball을 공개하며 장기 npm token이나 로컬 `npm publish`는 사용하지 않는다. 공개 전 packed consumer, 공개 후 npm `gitHead`, integrity, registry signature, SLSA provenance, GitHub Release asset을 같은 commit과 대조한다.
+공개 릴리스는 `package.json` 버전과 같은 `v<version>` tag가 `main`에 포함된 commit을 가리킬 때만 실행된다. GitHub Actions의 npm Trusted Publisher가 OIDC로 검증된 tarball을 공개하며 장기 npm token이나 로컬 `npm publish`는 사용하지 않는다. 같은 tarball은 Node·Bun direct import, TypeScript `NodeNext`, Vite current-major 소비를 통과해야 하며, 공개 후 npm `gitHead`, integrity, registry signature, SLSA provenance, GitHub Release asset을 같은 commit과 대조한다.
 
 `contracts/api-contracts.lock.json`은 generated operation map과 TypeScript model generation이 소비한 `zdp-api-contracts` full Git SHA를 고정한다. 일반 CI와 release workflow는 같은 revision을 checkout한다. 최신 API main 호환성은 lock 갱신과 generated source 동기화를 포함한 별도 변경으로 처리한다.
 
@@ -175,6 +177,9 @@ authorization adapter는 `uploadRef`, 만료 시각, replay-safe 여부, authori
 
 ```bash
 bun run check
+bun run build
+bun run smoke:package
+bun run smoke:vite
 bun run contracts:check
 bun run api-operations:check
 bun run typescript-models:check

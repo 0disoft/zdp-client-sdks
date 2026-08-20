@@ -4,6 +4,9 @@
 
 ### Added
 
+- TypeScript runtime을 `dist/**/*.js` ESM과 같은 구조의 `dist/**/*.d.ts` 선언 파일로 빌드하는 package build를 추가했다.
+- packed tarball을 Node, Bun, TypeScript `NodeNext` 소비자에서 검증하고 일반 CI에서는 Vite 8 build까지 확인한다.
+
 - `authorize → provider transfer → complete` 단계를 묶는 signed upload runtime과 `zdp-client-sdks/upload` export를 추가했다.
 - 로컬·authorization 범위의 파일 크기와 MIME 제한, SHA-256 checksum handoff, timeout·취소, 진행률을 추가했다.
 - fetch transport와 세밀한 browser byte 진행률을 위한 XHR transport를 추가했다.
@@ -23,6 +26,8 @@
 
 ### Changed
 
+- npm public exports와 root `types`가 `src/**/*.ts` 대신 compiled `dist/` 산출물을 가리키도록 바꿨다.
+- npm file allowlist에서 `src/`를 제거해 checker와 generation-plan 내부 구현이 공개 tarball에 섞이지 않게 했다.
 - GET 또는 API 계약이 idempotency key를 허용하고 실제 키가 있는 mutation만 transport 오류와 HTTP 408, 429, 502, 503, 504를 재시도한다.
 - `Retry-After` header와 표준 error envelope의 `retry_after_seconds`를 따르되 configured wait cap을 넘으면 추가 요청 없이 원래 오류를 반환한다.
 - 재시도 중 request id, trace id, idempotency key, access token을 다시 만들지 않고 caller abort가 backoff를 즉시 중단하도록 했다.

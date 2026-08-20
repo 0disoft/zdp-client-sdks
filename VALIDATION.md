@@ -19,6 +19,8 @@
 
 - service boundary: `service.yaml`
 - package boundary: `package.json`, `BOUNDARY.md`, `SECURITY.md`
+- compiled package build: `tsconfig.build.json`, `scripts/build-package.ts`
+- packed consumer smoke: `scripts/smoke-packed-package.ts`
 - SDK surface contract: `contracts/sdk-surface.yaml`
 - TypeScript representation contract: `contracts/typescript-sdk-models.yaml`
 - generation source: `contracts/sdk-generation-source.yaml`
@@ -32,21 +34,23 @@
 
 ## Drift Checks
 
-- SDK generation source는 `zdp-api-contracts/contracts/sdk-generation-input.yaml`을 유지한다.
-- API export dry-run plan은 artifact write나 schema publish를 주장하지 않는다.
-- TypeScript, Dart, Rust target은 route metadata와 forbidden value에서 갈라지지 않는다.
-- typed fetch operation definition은 API catalog에서 파생하며 product shortcut을 손으로 추가하지 않는다.
-- TypeScript schema representation은 operation이 사용하는 schema만 포함한다.
-- TypeScript field map은 API required/optional field와 정확히 일치한다.
-- checked-in `api-models.ts`는 generator output과 byte 단위로 일치한다.
-- domain client는 operation id에서 method tree를 만들고 path/query/body encoding을 metadata에서 파생한다.
-- generated request/response type test는 대표 auth, money, abuse operation을 포함한다.
-- auth helper는 refresh/session/credential storage를 얻지 않는다.
-- package export는 internal-only generator path를 공개하지 않는다.
-- release workflow는 `NODE_AUTH_TOKEN`, `NPM_TOKEN`, repository secret을 참조하지 않는다.
-- release artifact manifest, tarball, npm `gitHead`, integrity, GitHub Release asset은 같은 version과 commit을 설명한다.
-- CI와 release는 `contracts/api-contracts.lock.json`의 exact API revision을 checkout한다.
+- SDK generation source must still point to `zdp-api-contracts/contracts/sdk-generation-input.yaml`.
+- API export dry-run plan handoff must not claim artifact writes or schema publishing.
+- TypeScript, Dart, and Rust targets must not diverge on route metadata or forbidden sensitive values.
+- Typed fetch operation definitions must stay derived from API catalog data, not hand-authored product shortcuts.
+- Schema model metadata must preserve both required and optional fields from the API export plan.
+- TypeScript field map must exactly cover API required and optional fields.
+- Checked-in model source must match generator output byte-for-byte.
+- Domain client methods and path/query/body encoding must remain derived from operation metadata.
+- Auth helper must not gain refresh/session/credential storage.
+- Package exports must expose only compiled `dist/**/*.js` runtime files and matching `dist/**/*.d.ts` declarations.
+- Package files must exclude `src/`, tests, checker implementations, and internal generation-plan implementations.
+- Emitted ESM and declarations must use explicit runtime file extensions so Node `NodeNext` resolution does not depend on bundler-only behavior.
+- Packed consumers must pass Node and Bun direct imports plus TypeScript `NodeNext`; CI additionally checks the current Vite major.
+- Release workflow must not reference `NODE_AUTH_TOKEN`, `NPM_TOKEN`, or repository secrets.
+- Release artifact manifest, packed tarball, npm `gitHead`, npm integrity, and GitHub Release assets must describe the same version and commit.
+- CI and release workflows must checkout the exact API contract revision in `contracts/api-contracts.lock.json`; latest API compatibility is a separate lock-update check, not an implicit release input.
 
 ## Version Impact
 
-`package.json`이 package version source다. `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `BOUNDARY.md`, `RUNBOOK.md`, `service.yaml`, `SECURITY.md`, `LICENSE`, `src/**`, `scripts/**`, `contracts/**` 변경은 version impact review가 필요하다. `CHECKLIST.md`, `VALIDATION.md`, `.agents/**`, `docs/**`는 현재 package allowlist 밖의 source-only guidance다.
+`package.json` is the package version source. `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `BOUNDARY.md`, `RUNBOOK.md`, `service.yaml`, `SECURITY.md`, `LICENSE`, `contracts/**`, and `src/typed-fetch/**` and `src/upload/**` affect the published package and require version impact review. `dist/**` is generated from reviewed runtime source and must not be committed. `src/client-sdk-contracts/**`, `src/sdk-generation-plan/**`, `scripts/**`, `CHECKLIST.md`, `VALIDATION.md`, `.agents/**`, and `docs/**` are source-only implementation or guidance, but package build and release changes still require packed consumer evidence.
