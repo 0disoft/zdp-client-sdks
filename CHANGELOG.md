@@ -1,5 +1,19 @@
 # CHANGELOG.md
 
+## 0.16.0
+
+### Added
+
+- API operation이 사용하는 47개 request/response schema를 실제 TypeScript interface와 semantic wire type으로 생성하는 `typescript-models:sync` 경로를 추가했다.
+- operation id를 `client.core.auth.sessions.create()` 형태의 camelCase namespace method로 노출하는 `createZdpClient()` facade를 추가했다.
+- generated method가 path parameter, GET query, mutation JSON body를 자동 분리하고 request/response field representation을 fetch 전후에 검증하도록 했다.
+- `contracts/typescript-sdk-models.yaml`과 API required/optional field 집합의 exact coverage drift check를 추가했다.
+
+### Changed
+
+- TypeScript generated model과 runtime facade를 이 저장소의 정식 public surface로 승격하고 Dart와 Rust runtime은 generation plan 범위로 유지했다.
+- package version을 `0.16.0`으로 올리고 model generation drift를 기본 check와 release check에 포함했다.
+
 ## 0.15.3
 
 ### Fixed

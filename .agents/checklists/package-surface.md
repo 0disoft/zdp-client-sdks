@@ -1,7 +1,9 @@
 # Package Surface Checklist
 
 - Root, `./typed-fetch`, and `./typed-fetch/api-operations` are the only public exports.
-- `files` allowlist does not include generated language-specific runtime artifacts.
+- Generated TypeScript models and client runtime stay under the existing `src/` public surface.
+- Dart and Rust generated runtime artifacts are not included.
+- Generator scripts and cross-repository handoff readers are not public exports.
 - Package examples do not use live base URLs or real tokens.
 - Package metadata changes are paired with version impact review.
 - Pack evidence is collected before publish work.

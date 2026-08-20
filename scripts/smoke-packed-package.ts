@@ -66,6 +66,7 @@ async function verifyConsumer(tarball: string, consumerRoot: string): Promise<vo
 
 function smokeSource(): string {
   return `import {
+  createZdpClient,
   createZdpTypedFetchClient,
   defineZdpOperation
 } from 'zdp-client-sdks';
@@ -76,6 +77,7 @@ import {
 } from 'zdp-client-sdks/typed-fetch/api-operations';
 
 if (
+  typeof createZdpClient !== 'function' ||
   typeof createZdpTypedFetchClient !== 'function' ||
   typeof defineZdpOperation !== 'function' ||
   typeof defineZdpOperations !== 'function'

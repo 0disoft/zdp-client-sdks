@@ -8,6 +8,10 @@ sdk_surface:
     - typed fetch runtime foundation
     - generated TypeScript typed fetch operation definitions
     - generated schema required and optional field metadata
+    - generated TypeScript request and response models
+    - generated TypeScript operation namespace client
+    - automatic path query and JSON body encoding
+    - TypeScript request and response field validation
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation

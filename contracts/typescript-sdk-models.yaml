@@ -1,0 +1,369 @@
+typescript_sdk_models:
+  schema_field_types:
+    contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest:
+      product_ref: string
+      environment: string
+      capability: string
+      locale: locale
+      jurisdiction_profile_ref: string
+      channel_ref: string
+      seller_role_ref: string
+    contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse:
+      policy_set_resolution_ref: string
+      resolution_status:
+        enum:
+        - resolved
+        - unavailable
+        - review_required
+      required_user_action:
+        enum:
+        - no_user_action
+        - notice
+        - acknowledgement
+        - explicit_consent
+        - feature_restriction
+      policy_set_id: string
+      policy_set_revision: string
+      ordered_document_revision_ids: string[]
+      ordered_content_digests: string[]
+      presentation_rule_version: string
+      document_projections: json_object[]
+      resolved_at: datetime
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#AuthRegistrationCreateRequest:
+      login_id: string
+      password: string
+      policy_set_resolution_ref: string
+      locale: locale
+    contracts/apis/core-api/auth-session.yaml#AuthRegistrationCreateResponse:
+      registration_request_id: string
+      next_step: string
+    contracts/apis/core-api/auth-session.yaml#AuthSessionCreateRequest:
+      login_identifier: string
+      verifier: string
+    contracts/apis/core-api/auth-session.yaml#AuthSessionCreateResponse:
+      session_ref: string
+      actor_ref: string
+      tenant_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#AuthSessionRefreshRequest:
+      session_ref: string
+      rotation_proof: string
+    contracts/apis/core-api/auth-session.yaml#AuthSessionRefreshResponse:
+      session_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#AuthSessionRevokeCurrentRequest:
+      session_ref: string
+    contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest: {}
+    contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetResponse:
+      session_ref: string
+      actor_ref: string
+      tenant_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#AuthRecoveryRequestCreateRequest:
+      login_identifier: string
+      locale: locale
+    contracts/apis/core-api/auth-session.yaml#AuthRecoveryRequestCreateResponse:
+      recovery_request_id: string
+      next_step: string
+    contracts/apis/core-api/auth-session.yaml#PasskeyChallengeCreateRequest:
+      ceremony: string
+      login_identifier: string
+    contracts/apis/core-api/auth-session.yaml#PasskeyChallengeCreateResponse:
+      challenge_ref: string
+      public_key_options_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#PasskeyAssertionVerifyRequest:
+      challenge_ref: string
+      assertion: json_object
+    contracts/apis/core-api/auth-session.yaml#PasskeyAssertionVerifyResponse:
+      session_ref: string
+      actor_ref: string
+      tenant_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/auth-session.yaml#OAuthCallbackAcceptRequest:
+      provider: string
+      state_ref: string
+      callback_code: string
+    contracts/apis/core-api/auth-session.yaml#OAuthCallbackAcceptResponse:
+      session_ref: string
+      actor_ref: string
+      tenant_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/access-decision.yaml#AccessAuthorizationDecisionCreateRequest:
+      product_ref: string
+      action: string
+      resource_type: string
+      resource_ref: string
+      requested_scope_type: string
+      requested_scope_ref: string
+    contracts/apis/core-api/access-decision.yaml#AccessAuthorizationDecisionCreateResponse:
+      decision_ref: string
+      decision:
+        enum:
+        - allow
+        - deny
+      reason_code: string
+      policy_version: string
+      data_revision: string
+      subject_ref: string
+      session_ref: string
+      product_ref: string
+      action: string
+      resource_type: string
+      resource_ref: string
+      scope_type: string
+      scope_ref: string
+      decided_at: datetime
+      decision_expires_at: datetime
+      session_expires_at: datetime
+      obligations: string[]
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest:
+      product_ref: string
+      client_instance_ref: string
+      client_correlation_ref: string
+      proof_challenge: string
+      requested_scope_refs: string[]
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateResponse:
+      challenge_ref: string
+      verification_uri: uri
+      expires_at: datetime
+      poll_interval_seconds: integer
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest:
+      challenge_ref: string
+      approval_decision: string
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse:
+      challenge_ref: string
+      state:
+        enum:
+        - pending
+        - approved
+        - denied
+        - expired
+        - consumed
+      expires_at: datetime
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeRequest:
+      challenge_ref: string
+      client_correlation_ref: string
+      proof_verifier: string
+    contracts/apis/core-api/product-link.yaml#ProductLinkChallengeExchangeResponse:
+      link_receipt_ref: string
+      subject_ref: string
+      consent_receipt_ref: string
+      verified_at: datetime
+      workspace_ref: string
+    contracts/apis/core-api/referral.yaml#ReferralUseCreateRequest:
+      referral_code: string
+      campaign_ref: string
+      referred_account_ref: string
+    contracts/apis/core-api/referral.yaml#ReferralUseCreateResponse:
+      referral_use_ref: string
+      referral_status: string
+      reward_status: string
+      money_reward_status_ref: string
+    contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetRequest:
+      referral_use_ref: string
+    contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetResponse:
+      referral_use_ref: string
+      reward_status: string
+      reward_recipient: string
+      eligible_settled_paid_amount_credit_unit: decimal
+      excluded_refund_amount_credit_unit: decimal
+      excluded_chargeback_amount_credit_unit: decimal
+      abuse_review_status: string
+      campaign_policy_version: string
+      referral_reward_confirmation_ref: string
+    contracts/apis/money-api/credit-purchase-read.yaml#CreditPackCatalogProjectionGetRequest:
+      product_ref: string
+      scope_type: string
+      scope_ref: string
+      environment: string
+      locale: locale
+    contracts/apis/money-api/credit-purchase-read.yaml#CreditPackCatalogProjectionGetResponse:
+      projection_ref: string
+      product_ref: string
+      scope_type: string
+      scope_ref: string
+      environment: string
+      locale: locale
+      catalog_version: string
+      currency: currency
+      ship_tiers: json_object[]
+      sales_status: string
+      projected_at: datetime
+      expires_at: datetime
+    contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutIntentCreateRequest:
+      product_ref: string
+      ship_tier_id: string
+      scope_type: string
+      scope_ref: string
+      environment: string
+      locale: locale
+      return_target_id: string
+    contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutIntentCreateResponse:
+      checkout_intent_ref: string
+      operation_ref: string
+      checkout_status:
+        enum:
+        - created
+        - payment_pending
+        - credit_issuance_pending
+        - completed
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      payment_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      credit_issuance_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+      return_receipt_status:
+        enum:
+        - not_issued
+        - available
+        - consumed
+        - expired
+      catalog_version: string
+      price_snapshot_ref: string
+      tax_snapshot_ref: string
+      benefit_snapshot_ref: string
+      return_target_id: string
+      wallet_handoff_ref: string
+      created_at: datetime
+      expires_at: datetime
+    contracts/apis/money-api/credit-purchase-read.yaml#CreditCheckoutIntentStatusGetRequest:
+      checkout_intent_ref: string
+    contracts/apis/money-api/credit-purchase-read.yaml#CreditCheckoutIntentStatusGetResponse:
+      checkout_intent_ref: string
+      operation_ref: string
+      checkout_status:
+        enum:
+        - created
+        - payment_pending
+        - credit_issuance_pending
+        - completed
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      payment_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      credit_issuance_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+      return_receipt_status:
+        enum:
+        - not_issued
+        - available
+        - consumed
+        - expired
+      balance_refresh_required: boolean
+      updated_at: datetime
+      expires_at: datetime
+      payment_attempt_ref: string
+      ledger_issuance_ref: string
+    contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutReturnReceiptExchangeRequest:
+      return_receipt: string
+      product_ref: string
+      return_target_id: string
+    contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutReturnReceiptExchangeResponse:
+      checkout_intent_ref: string
+      operation_ref: string
+      checkout_status:
+        enum:
+        - created
+        - payment_pending
+        - credit_issuance_pending
+        - completed
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      payment_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+        - cancelled
+        - expired
+      credit_issuance_status:
+        enum:
+        - not_started
+        - pending
+        - succeeded
+        - review_required
+        - failed
+      return_receipt_status:
+        enum:
+        - not_issued
+        - available
+        - consumed
+        - expired
+      balance_refresh_required: boolean
+      consumed_at: datetime
+    contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest:
+      product_ref: string
+      environment: string
+      action: string
+    contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueResponse:
+      challenge_ref: string
+      challenge_kind: string
+      widget_bootstrap: json_object
+      expires_at: datetime
+    contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemRequest:
+      product_ref: string
+      environment: string
+      action: string
+      challenge_response: json
+    contracts/apis/abuse-api/challenge.yaml#AbuseChallengeRedeemResponse:
+      verification_ref: string
+      product_ref: string
+      environment: string
+      action: string
+      verified_at: datetime
+      expires_at: datetime
+    contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyRequest:
+      verification_ref: string
+      consumer_operation_ref: string
+      product_ref: string
+      environment: string
+      action: string
+    contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyResponse:
+      verification_state: string
+      product_ref: string
+      environment: string
+      action: string
+      verified_at: datetime
+      consumed_at: datetime
+      safe_reason_code: string
+    contracts/apis/abuse-api/health.yaml#AbuseHealthGetRequest: {}
+    contracts/apis/abuse-api/health.yaml#AbuseHealthGetResponse:
+      status: string
+      checked_at: datetime
+      adapter_status: string
+      state_store_status: string
