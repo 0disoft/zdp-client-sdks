@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.16.0
+
+### Added
+
+- TypeScript runtime을 `dist/**/*.js` ESM과 같은 구조의 `dist/**/*.d.ts` 선언 파일로 빌드하는 package build를 추가했다.
+- packed tarball을 Node, Bun, TypeScript `NodeNext` 소비자에서 검증하고 일반 CI에서는 Vite 8 build까지 확인한다.
+
+### Changed
+
+- npm public exports와 root `types`가 `src/**/*.ts` 대신 compiled `dist/` 산출물을 가리키도록 바꿨다.
+- npm file allowlist에서 `src/`를 제거해 checker와 generation-plan 내부 구현이 공개 tarball에 섞이지 않게 했다.
+
 ## 0.15.3
 
 ### Fixed

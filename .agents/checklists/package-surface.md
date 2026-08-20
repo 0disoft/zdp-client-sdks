@@ -1,7 +1,10 @@
 # Package Surface Checklist
 
 - Root, `./typed-fetch`, and `./typed-fetch/api-operations` are the only public exports.
-- `files` allowlist does not include generated language-specific runtime artifacts.
+- Runtime exports resolve to compiled `dist/**/*.js` and type exports resolve to matching `dist/**/*.d.ts`.
+- `files` includes `dist/` and excludes `src/`, tests, checker implementations, and generated language-specific runtime artifacts.
+- Packed consumers pass Node and Bun direct ESM imports plus TypeScript `NodeNext` declaration resolution.
+- CI builds the packed package in the current Vite major.
 - Package examples do not use live base URLs or real tokens.
 - Package metadata changes are paired with version impact review.
 - Pack evidence is collected before publish work.

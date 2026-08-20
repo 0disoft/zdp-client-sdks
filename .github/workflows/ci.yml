@@ -37,6 +37,12 @@ jobs:
           ref: 73cfb01c01796e204bb9ba13131cd218a16e4ec5
           path: projects/zdp-platforms/contracts/zdp-api-contracts
 
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: "24.18.0"
+          package-manager-cache: false
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
 
@@ -49,3 +55,6 @@ jobs:
 
       - name: Check
         run: bun run check
+
+      - name: Verify compiled package consumers
+        run: bun scripts/smoke-packed-package.ts --vite

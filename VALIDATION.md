@@ -19,6 +19,8 @@
 
 - service boundary: `service.yaml`
 - package boundary: `package.json`, `BOUNDARY.md`, `SECURITY.md`
+- compiled package build: `tsconfig.build.json`, `scripts/build-package.ts`
+- packed consumer smoke: `scripts/smoke-packed-package.ts`
 - SDK surface contract: `contracts/sdk-surface.yaml`
 - generation source: `contracts/sdk-generation-source.yaml`
 - libs handoff: `contracts/libs-export-source.yaml`
@@ -36,11 +38,14 @@
 - Typed fetch operation definitions must stay derived from API catalog data, not hand-authored product shortcuts.
 - Schema model metadata must preserve both required and optional fields from the API export plan.
 - Auth helper must not gain refresh/session/credential storage.
-- Package exports must not expose generated artifacts or internal implementation-only paths.
+- Package exports must expose only compiled `dist/**/*.js` runtime files and matching `dist/**/*.d.ts` declarations.
+- Package files must exclude `src/`, tests, checker implementations, and internal generation-plan implementations.
+- Emitted ESM and declarations must use explicit runtime file extensions so Node `NodeNext` resolution does not depend on bundler-only behavior.
+- Packed consumers must pass Node and Bun direct imports plus TypeScript `NodeNext`; CI additionally checks the current Vite major.
 - Release workflow must not reference `NODE_AUTH_TOKEN`, `NPM_TOKEN`, or repository secrets.
 - Release artifact manifest, packed tarball, npm `gitHead`, npm integrity, and GitHub Release assets must describe the same version and commit.
 - CI and release workflows must checkout the exact API contract revision in `contracts/api-contracts.lock.json`; latest API compatibility is a separate lock-update check, not an implicit release input.
 
 ## Version Impact
 
-`package.json` is the package version source. `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `BOUNDARY.md`, `RUNBOOK.md`, `service.yaml`, `SECURITY.md`, `LICENSE`, `src/**`, and `contracts/**` are in the package file allowlist. Changes there require package version impact review. `CHECKLIST.md`, `VALIDATION.md`, `.agents/**`, and `docs/**` are source-only agent guidance under the current allowlist.
+`package.json` is the package version source. `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `BOUNDARY.md`, `RUNBOOK.md`, `service.yaml`, `SECURITY.md`, `LICENSE`, `contracts/**`, and `src/typed-fetch/**` affect the published package and require version impact review. `dist/**` is generated from reviewed runtime source and must not be committed. `src/client-sdk-contracts/**`, `src/sdk-generation-plan/**`, `scripts/**`, `CHECKLIST.md`, `VALIDATION.md`, `.agents/**`, and `docs/**` are source-only implementation or guidance, but package build and release changes still require packed consumer evidence.
