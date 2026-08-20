@@ -21,7 +21,9 @@ export function createZdpFetchUploadTransport(
 
   return async (input) => {
     input.onProgress(0, input.totalBytes);
-    const request = new Request(input.request, {
+    const response = await fetchLike(input.request.url, {
+      method: input.request.method,
+      headers: input.request.headers,
       body: input.body,
       signal: input.signal,
       credentials: 'omit',
@@ -29,7 +31,6 @@ export function createZdpFetchUploadTransport(
       referrerPolicy: 'no-referrer',
       cache: 'no-store'
     });
-    const response = await fetchLike(request);
     input.onProgress(input.totalBytes, input.totalBytes);
     return response;
   };

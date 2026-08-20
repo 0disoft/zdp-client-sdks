@@ -30,15 +30,22 @@ describe('signed upload client', () => {
         maxFileSizeBytes: 1_024,
         allowedContentTypes: ['text/*']
       },
-      fetch: async (input) => {
-        const request = input instanceof Request ? input : new Request(input);
-        providerBody = await request.text();
-        expect(request.method).toBe('PUT');
-        expect(request.credentials).toBe('omit');
-        expect(request.redirect).toBe('error');
-        expect(request.headers.has('x-request-id')).toBe(false);
-        expect(request.headers.has('x-trace-id')).toBe(false);
-        expect(request.headers.has('idempotency-key')).toBe(false);
+      fetch: async (input, init) => {
+        expect(String(input)).toBe('https://upload.invalid/ephemeral');
+        expect(init?.method).toBe('PUT');
+        expect(init?.credentials).toBe('omit');
+        expect(init?.redirect).toBe('error');
+
+        const headers = new Headers(init?.headers);
+        expect(headers.has('x-request-id')).toBe(false);
+        expect(headers.has('x-trace-id')).toBe(false);
+        expect(headers.has('idempotency-key')).toBe(false);
+
+        if (!(init?.body instanceof Blob)) {
+          throw new Error('Fetch upload transport must attach the source Blob.');
+        }
+        providerBody = await init.body.text();
+
         return new Response(null, {
           status: 204,
           headers: { etag: '"provider-etag"' }
