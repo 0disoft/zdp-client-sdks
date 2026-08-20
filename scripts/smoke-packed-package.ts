@@ -35,7 +35,8 @@ const PACKAGE_NAME = 'zdp-client-sdks';
 const PUBLIC_EXPORTS = [
   '.',
   './typed-fetch',
-  './typed-fetch/api-operations'
+  './typed-fetch/api-operations',
+  './upload'
 ] as const;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const smokeRoot = await mkdtemp(join(tmpdir(), 'zdp-client-sdks-pack-smoke-'));
@@ -147,7 +148,7 @@ async function verifyRuntimeConsumers(
     `import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  createZdpApiClient,
+  createZdpClient,
   createZdpTypedFetchClient
 } from 'zdp-client-sdks';
 import {
@@ -158,6 +159,11 @@ import {
   ZDP_API_SCHEMA_MODEL_MAP,
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from 'zdp-client-sdks/typed-fetch/api-operations';
+import {
+  createZdpFetchUploadTransport,
+  createZdpSignedUploadClient,
+  createZdpXhrUploadTransport
+} from 'zdp-client-sdks/upload';
 
 const expectedVersion = process.argv[2];
 const manifest = JSON.parse(
@@ -172,10 +178,13 @@ if (manifest.version !== expectedVersion) {
   );
 }
 if (
-  typeof createZdpApiClient !== 'function' ||
+  typeof createZdpClient !== 'function' ||
   typeof createZdpTypedFetchClient !== 'function' ||
   typeof defineZdpOperation !== 'function' ||
-  typeof defineZdpOperations !== 'function'
+  typeof defineZdpOperations !== 'function' ||
+  typeof createZdpSignedUploadClient !== 'function' ||
+  typeof createZdpFetchUploadTransport !== 'function' ||
+  typeof createZdpXhrUploadTransport !== 'function'
 ) {
   throw new Error('Compiled runtime exports were not consumable.');
 }
@@ -185,7 +194,7 @@ if (
 ) {
   throw new Error('Compiled generated API metadata was not consumable.');
 }
-const client = createZdpApiClient({
+const client = createZdpClient({
   baseUrl: 'https://api.example.test',
   fetch: async () => new Response(null, { status: 204 })
 });
@@ -213,7 +222,7 @@ async function verifyTypeScriptConsumer(consumerRoot: string): Promise<void> {
   await writeFile(
     join(consumerRoot, 'type-smoke.ts'),
     `import {
-  createZdpApiClient,
+  createZdpClient,
   type ZdpApiOperationId,
   type ZdpApiOperationRequest,
   type ZdpApiOperationResponse
@@ -232,7 +241,7 @@ type CurrentSessionResponse = ZdpApiOperationResponse<typeof operationId>;
 const options: ZdpTypedFetchClientOptions = {
   baseUrl: 'https://api.example.test'
 };
-const client = createZdpApiClient(options);
+const client = createZdpClient(options);
 const metadata = ZDP_TYPED_FETCH_OPERATION_MAP[operationId];
 const preserveResponseType = (
   response: CurrentSessionResponse
@@ -289,12 +298,12 @@ async function verifyViteConsumer(consumerRoot: string): Promise<void> {
   );
   await writeFile(
     join(consumerRoot, 'src', 'main.ts'),
-    `import { createZdpApiClient } from 'zdp-client-sdks';
+    `import { createZdpClient } from 'zdp-client-sdks';
 import {
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from 'zdp-client-sdks/typed-fetch/api-operations';
 
-const client = createZdpApiClient({
+const client = createZdpClient({
   baseUrl: 'https://api.example.test',
   fetch: async () => new Response(null, { status: 204 })
 });

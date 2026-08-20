@@ -18,7 +18,8 @@ interface PackageManifest {
 const PUBLIC_EXPORTS = [
   '.',
   './typed-fetch',
-  './typed-fetch/api-operations'
+  './typed-fetch/api-operations',
+  './upload'
 ] as const;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(repositoryRoot, 'dist');

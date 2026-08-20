@@ -14,6 +14,6 @@
     "noEmit": false,
     "noEmitOnError": true
   },
-  "include": ["src/index.ts", "src/typed-fetch/**/*.ts"],
+  "include": ["src/index.ts", "src/typed-fetch/**/*.ts", "src/upload/**/*.ts"],
   "exclude": ["scripts/**", "tests/**"]
 }

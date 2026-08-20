@@ -7,10 +7,32 @@
 - TypeScript runtime을 `dist/**/*.js` ESM과 같은 구조의 `dist/**/*.d.ts` 선언 파일로 빌드하는 package build를 추가했다.
 - packed tarball을 Node, Bun, TypeScript `NodeNext` 소비자에서 검증하고 일반 CI에서는 Vite 8 build까지 확인한다.
 
+- `authorize → provider transfer → complete` 단계를 묶는 signed upload runtime과 `zdp-client-sdks/upload` export를 추가했다.
+- 로컬·authorization 범위의 파일 크기와 MIME 제한, SHA-256 checksum handoff, timeout·취소, 진행률을 추가했다.
+- fetch transport와 세밀한 browser byte 진행률을 위한 XHR transport를 추가했다.
+- replay-safe로 명시된 provider transfer에만 5회 이하의 제한적 재시도를 허용했다.
+- typed fetch에 기본 비활성인 bounded retry policy와 호출별 override를 추가했다.
+- `idempotencyKeyFactory`가 논리 호출당 키를 한 번만 만들고 모든 재시도에서 같은 값을 재사용하도록 했다.
+- API operation이 사용하는 request/response schema를 실제 TypeScript interface와 semantic wire type으로 생성하는 `typescript-models:sync` 경로를 추가했다.
+- operation id를 `client.core.auth.sessions.create()` 형태의 camelCase namespace method로 노출하는 `createZdpClient()` facade를 추가했다.
+- generated method가 path parameter, GET query, mutation JSON body를 자동 분리하고 request/response field representation을 fetch 전후에 검증하도록 했다.
+- `contracts/typescript-sdk-models.yaml`과 API required/optional field 집합의 exact coverage drift check를 추가했다.
+
+### Security
+
+- signed provider URL을 ephemeral `Request` factory 안에 가두고 결과·오류·진행 이벤트에서 노출하지 않는다.
+- provider 요청에 ZDP Authorization, cookie, request ID, trace ID, idempotency key가 섞이면 전송 전에 실패한다.
+- provider 응답 본문은 공개 오류나 completion result로 전달하지 않는다.
+
 ### Changed
 
 - npm public exports와 root `types`가 `src/**/*.ts` 대신 compiled `dist/` 산출물을 가리키도록 바꿨다.
 - npm file allowlist에서 `src/`를 제거해 checker와 generation-plan 내부 구현이 공개 tarball에 섞이지 않게 했다.
+- GET 또는 API 계약이 idempotency key를 허용하고 실제 키가 있는 mutation만 transport 오류와 HTTP 408, 429, 502, 503, 504를 재시도한다.
+- `Retry-After` header와 표준 error envelope의 `retry_after_seconds`를 따르되 configured wait cap을 넘으면 추가 요청 없이 원래 오류를 반환한다.
+- 재시도 중 request id, trace id, idempotency key, access token을 다시 만들지 않고 caller abort가 backoff를 즉시 중단하도록 했다.
+- TypeScript generated model과 runtime facade를 이 저장소의 정식 public surface로 승격하고 Dart와 Rust runtime은 generation plan 범위로 유지했다.
+- package version을 `0.16.0`으로 올리고 model generation drift를 기본 check와 release check에 포함했다.
 
 ## 0.15.3
 

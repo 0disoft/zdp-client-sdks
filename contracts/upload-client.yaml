@@ -1,12 +1,18 @@
 upload_client:
-  status: skeleton
+  status: reviewed
   owns:
     - signed upload request shape
     - upload error mapping
     - request_id propagation
     - trace_id propagation
     - idempotency key propagation
+    - local and authorization-scoped file limit enforcement
+    - SHA-256 checksum handoff
+    - upload progress and cancellation
+    - bounded replay-safe provider transfer retry
   must_not_own:
     - object storage bucket names
     - raw provider URLs as public contract
+    - signed URL persistence
+    - raw provider response body exposure
     - file ownership decisions
