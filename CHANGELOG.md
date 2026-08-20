@@ -1,5 +1,18 @@
 # CHANGELOG.md
 
+## 0.16.0
+
+### Added
+
+- typed fetch에 기본 비활성인 bounded retry policy와 호출별 override를 추가했다.
+- `idempotencyKeyFactory`가 논리 호출당 키를 한 번만 만들고 모든 재시도에서 같은 값을 재사용하도록 했다.
+
+### Changed
+
+- GET 또는 API 계약이 idempotency key를 허용하고 실제 키가 있는 mutation만 transport 오류와 HTTP 408, 429, 502, 503, 504를 재시도한다.
+- `Retry-After` header와 표준 error envelope의 `retry_after_seconds`를 따르되 configured wait cap을 넘으면 추가 요청 없이 원래 오류를 반환한다.
+- 재시도 중 request id, trace id, idempotency key, access token을 다시 만들지 않고 caller abort가 backoff를 즉시 중단하도록 했다.
+
 ## 0.15.3
 
 ### Fixed

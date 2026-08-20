@@ -66,6 +66,24 @@ export type ZdpAccessTokenProvider = () => string | null | Promise<string | null
 
 export type ZdpIdFactory = () => string;
 
+/**
+ * Creates one idempotency key for a logical SDK call. The runtime invokes the
+ * factory at most once and reuses the returned value for every retry attempt.
+ */
+export type ZdpIdempotencyKeyFactory = (operationId: string) => string;
+
+/**
+ * Bounded retry policy. `maxAttempts` counts the initial request, so `1`
+ * disables retries. Automatic retries remain disabled when this option is not
+ * configured.
+ */
+export interface ZdpRetryOptions {
+  readonly maxAttempts: number;
+  readonly baseDelayMs?: number;
+  readonly maxDelayMs?: number;
+  readonly maxRetryAfterMs?: number;
+}
+
 export interface ZdpTypedFetchClientOptions {
   readonly baseUrl: string;
   readonly fetch?: ZdpFetchLike;
@@ -74,6 +92,8 @@ export interface ZdpTypedFetchClientOptions {
   readonly getAccessToken?: ZdpAccessTokenProvider;
   readonly requestIdFactory?: ZdpIdFactory;
   readonly traceIdFactory?: ZdpIdFactory;
+  readonly idempotencyKeyFactory?: ZdpIdempotencyKeyFactory;
+  readonly retry?: false | ZdpRetryOptions;
 }
 
 export interface ZdpCallOptions {
@@ -83,6 +103,8 @@ export interface ZdpCallOptions {
   readonly requestId?: string;
   readonly traceId?: string;
   readonly idempotencyKey?: string;
+  /** Overrides the client retry policy for this call. */
+  readonly retry?: false | ZdpRetryOptions;
 }
 
 export interface ZdpTypedFetchClient<Operations extends ZdpOperationMap> {
