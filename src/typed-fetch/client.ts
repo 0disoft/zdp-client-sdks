@@ -19,6 +19,7 @@ import type {
   ZdpPathValue,
   ZdpQueryValue,
   ZdpResponseContext,
+  ZdpRetryOptions,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
@@ -27,14 +28,33 @@ const REQUEST_ID_HEADER = 'x-request-id';
 const TRACE_ID_HEADER = 'x-trace-id';
 const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 const AUTHORIZATION_HEADER = 'authorization';
+const RETRY_AFTER_HEADER = 'retry-after';
 const JSON_CONTENT_TYPE = 'application/json';
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
+const DEFAULT_RETRY_BASE_DELAY_MS = 200;
+const DEFAULT_RETRY_MAX_DELAY_MS = 2_000;
+const DEFAULT_MAX_RETRY_AFTER_MS = 30_000;
+const MAX_RETRY_ATTEMPTS = 5;
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
+const RETRYABLE_RESPONSE_STATUSES = new Set([408, 429, 502, 503, 504]);
+
+interface ResolvedRetryPolicy {
+  readonly maxAttempts: number;
+  readonly baseDelayMs: number;
+  readonly maxDelayMs: number;
+  readonly maxRetryAfterMs: number;
+}
+
+interface MergedAbortSignal {
+  readonly signal: AbortSignal;
+  readonly cleanup: () => void;
+}
 
 /**
  * mf:anchor zdp.client-sdks.typed-fetch-runtime
- * purpose: Locate typed fetch runtime for request metadata, auth headers, idempotency, timeout, and errors.
- * search: typed fetch, request metadata, authorization, idempotency, timeout, error envelope
- * invariant: request_id, trace_id, access token, and idempotency values are enforced before fetch.
+ * purpose: Locate typed fetch runtime for request metadata, auth headers, idempotency, timeout, retry, and errors.
+ * search: typed fetch, request metadata, authorization, idempotency, timeout, retry, Retry-After, error envelope
+ * invariant: request_id, trace_id, access token, and idempotency values are enforced once and reused across retries.
  * risk: external_request, authz, security, state
  */
 export function defineZdpOperation<Request, Response>(
@@ -59,6 +79,7 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
     options.defaultTimeoutMs === undefined
       ? DEFAULT_FETCH_TIMEOUT_MS
       : validateTimeout(options.defaultTimeoutMs, 'defaultTimeoutMs');
+  const defaultRetryPolicy = resolveRetryPolicy(options.retry, undefined);
 
   return {
     operations,
@@ -87,7 +108,15 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
         required: operation.traceIdRequired,
         label: 'trace_id'
       });
-      const idempotencyKey = resolveIdempotencyKey(operation, callOptions);
+      const idempotencyKey = resolveIdempotencyKey(
+        operation,
+        callOptions,
+        options.idempotencyKeyFactory
+      );
+      const retryPolicy =
+        callOptions.retry === undefined
+          ? defaultRetryPolicy
+          : resolveRetryPolicy(callOptions.retry, 'retry');
       const url = buildUrl(baseUrl, operation.path, encoded);
       const headers = await buildHeaders({
         operation,
@@ -103,7 +132,7 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
           ? defaultTimeoutMs
           : validateTimeout(callOptions.timeoutMs, 'timeoutMs');
       const body = encodeBody(encoded, headers);
-      const response = await performFetch({
+      const response = await performFetchWithRetry({
         fetchLike,
         url,
         init: buildRequestInit({
@@ -112,7 +141,10 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
           body,
           signal: callOptions.signal
         }),
-        timeoutMs
+        timeoutMs,
+        retryPolicy,
+        retrySafe: isRetrySafeOperation(operation, idempotencyKey),
+        successStatuses: operation.successStatuses
       });
 
       return decodeResponse(operation, response);
@@ -158,11 +190,22 @@ function resolveRequiredId(input: {
 
 function resolveIdempotencyKey(
   operation: AnyZdpOperationDefinition,
-  options: ZdpCallOptions
+  options: ZdpCallOptions,
+  factory: ((operationId: string) => string) | undefined
 ): string | null {
-  const value = options.idempotencyKey;
-  if (value !== undefined && value.trim().length > 0) {
-    return value;
+  const explicit = options.idempotencyKey;
+  if (explicit !== undefined && explicit.trim().length > 0) {
+    return explicit;
+  }
+
+  if (operation.idempotency !== 'not_required' && factory !== undefined) {
+    const generated = factory(operation.operationId);
+    if (typeof generated !== 'string' || generated.trim().length === 0) {
+      throw new ZdpClientConfigurationError(
+        `Idempotency key factory returned an empty value for \`${operation.operationId}\`.`
+      );
+    }
+    return generated;
   }
 
   if (operation.idempotency === 'required_idempotency_key') {
@@ -240,6 +283,73 @@ function encodeBody(
   return JSON.stringify(encoded.body);
 }
 
+async function performFetchWithRetry(input: {
+  readonly fetchLike: ZdpFetchLike;
+  readonly url: URL;
+  readonly init: RequestInit;
+  readonly timeoutMs: number;
+  readonly retryPolicy: ResolvedRetryPolicy;
+  readonly retrySafe: boolean;
+  readonly successStatuses: readonly number[];
+}): Promise<Response> {
+  let attempt = 1;
+
+  while (true) {
+    let response: Response;
+    try {
+      response = await performFetch({
+        fetchLike: input.fetchLike,
+        url: input.url,
+        init: input.init,
+        timeoutMs: input.timeoutMs
+      });
+    } catch (error) {
+      if (
+        !shouldRetryTransportError({
+          error,
+          attempt,
+          retryPolicy: input.retryPolicy,
+          retrySafe: input.retrySafe,
+          callerSignal: input.init.signal ?? null
+        })
+      ) {
+        throw error;
+      }
+
+      await waitForRetry(
+        calculateBackoffDelayMs(attempt, input.retryPolicy),
+        input.init.signal ?? null
+      );
+      attempt += 1;
+      continue;
+    }
+
+    if (
+      !input.retrySafe ||
+      attempt >= input.retryPolicy.maxAttempts ||
+      input.successStatuses.includes(response.status) ||
+      !RETRYABLE_RESPONSE_STATUSES.has(response.status)
+    ) {
+      return response;
+    }
+
+    const serverDelayMs = await readServerRetryDelayMs(response);
+    if (
+      serverDelayMs !== null &&
+      serverDelayMs > input.retryPolicy.maxRetryAfterMs
+    ) {
+      return response;
+    }
+
+    await discardResponse(response);
+    await waitForRetry(
+      serverDelayMs ?? calculateBackoffDelayMs(attempt, input.retryPolicy),
+      input.init.signal ?? null
+    );
+    attempt += 1;
+  }
+}
+
 async function performFetch(input: {
   readonly fetchLike: ZdpFetchLike;
   readonly url: URL;
@@ -247,7 +357,7 @@ async function performFetch(input: {
   readonly timeoutMs: number;
 }): Promise<Response> {
   const timeoutController = new AbortController();
-  const combinedSignal = mergeAbortSignals(
+  const mergedSignal = mergeAbortSignals(
     input.init.signal ?? null,
     timeoutController.signal
   );
@@ -256,7 +366,7 @@ async function performFetch(input: {
   try {
     return await input.fetchLike(input.url, {
       ...input.init,
-      signal: combinedSignal
+      signal: mergedSignal.signal
     });
   } catch (error) {
     if (timeoutController.signal.aborted) {
@@ -268,7 +378,232 @@ async function performFetch(input: {
     throw new ZdpTransportError('ZDP request failed before a response.', error);
   } finally {
     clearTimeout(timeout);
+    mergedSignal.cleanup();
   }
+}
+
+function shouldRetryTransportError(input: {
+  readonly error: unknown;
+  readonly attempt: number;
+  readonly retryPolicy: ResolvedRetryPolicy;
+  readonly retrySafe: boolean;
+  readonly callerSignal: AbortSignal | null;
+}): boolean {
+  if (
+    !input.retrySafe ||
+    input.attempt >= input.retryPolicy.maxAttempts ||
+    input.callerSignal?.aborted === true ||
+    input.error instanceof ZdpRequestAbortedError
+  ) {
+    return false;
+  }
+
+  return input.error instanceof ZdpTransportError;
+}
+
+function isRetrySafeOperation(
+  operation: AnyZdpOperationDefinition,
+  idempotencyKey: string | null
+): boolean {
+  if (operation.method === 'GET') {
+    return true;
+  }
+
+  return operation.idempotency !== 'not_required' && idempotencyKey !== null;
+}
+
+function resolveRetryPolicy(
+  configured: false | ZdpRetryOptions | undefined,
+  label: string | undefined
+): ResolvedRetryPolicy {
+  if (configured === undefined || configured === false) {
+    return {
+      maxAttempts: 1,
+      baseDelayMs: DEFAULT_RETRY_BASE_DELAY_MS,
+      maxDelayMs: DEFAULT_RETRY_MAX_DELAY_MS,
+      maxRetryAfterMs: DEFAULT_MAX_RETRY_AFTER_MS
+    };
+  }
+
+  const prefix = label ?? 'retry';
+  const maxAttempts = validateIntegerInRange(
+    configured.maxAttempts,
+    `${prefix}.maxAttempts`,
+    1,
+    MAX_RETRY_ATTEMPTS
+  );
+  const baseDelayMs = validateIntegerInRange(
+    configured.baseDelayMs ?? DEFAULT_RETRY_BASE_DELAY_MS,
+    `${prefix}.baseDelayMs`,
+    0,
+    MAX_TIMER_DELAY_MS
+  );
+  const maxDelayMs = validateIntegerInRange(
+    configured.maxDelayMs ?? DEFAULT_RETRY_MAX_DELAY_MS,
+    `${prefix}.maxDelayMs`,
+    0,
+    MAX_TIMER_DELAY_MS
+  );
+  const maxRetryAfterMs = validateIntegerInRange(
+    configured.maxRetryAfterMs ?? DEFAULT_MAX_RETRY_AFTER_MS,
+    `${prefix}.maxRetryAfterMs`,
+    0,
+    MAX_TIMER_DELAY_MS
+  );
+
+  if (maxDelayMs < baseDelayMs) {
+    throw new ZdpClientConfigurationError(
+      `${prefix}.maxDelayMs must be greater than or equal to ${prefix}.baseDelayMs.`
+    );
+  }
+
+  return {
+    maxAttempts,
+    baseDelayMs,
+    maxDelayMs,
+    maxRetryAfterMs
+  };
+}
+
+function validateIntegerInRange(
+  value: number,
+  label: string,
+  minimum: number,
+  maximum: number
+): number {
+  if (!Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new ZdpClientConfigurationError(
+      `${label} must be an integer between ${minimum} and ${maximum}.`
+    );
+  }
+
+  return value;
+}
+
+function calculateBackoffDelayMs(
+  attempt: number,
+  policy: ResolvedRetryPolicy
+): number {
+  if (policy.baseDelayMs === 0 || policy.maxDelayMs === 0) {
+    return 0;
+  }
+
+  const exponentialCeiling = Math.min(
+    policy.maxDelayMs,
+    policy.baseDelayMs * 2 ** Math.max(0, attempt - 1)
+  );
+
+  return Math.floor(Math.random() * (exponentialCeiling + 1));
+}
+
+async function readServerRetryDelayMs(
+  response: Response
+): Promise<number | null> {
+  const headerDelayMs = parseRetryAfterHeaderMs(
+    response.headers.get(RETRY_AFTER_HEADER)
+  );
+  if (headerDelayMs !== null) {
+    return headerDelayMs;
+  }
+
+  try {
+    const payload: unknown = await response.clone().json();
+    if (!isRecord(payload)) {
+      return null;
+    }
+
+    const seconds = payload.retry_after_seconds;
+    if (
+      typeof seconds !== 'number' ||
+      !Number.isInteger(seconds) ||
+      seconds < 0
+    ) {
+      return null;
+    }
+
+    return secondsToMilliseconds(seconds);
+  } catch {
+    return null;
+  }
+}
+
+function parseRetryAfterHeaderMs(value: string | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    const seconds = Number.parseInt(normalized, 10);
+    return Number.isSafeInteger(seconds)
+      ? secondsToMilliseconds(seconds)
+      : MAX_TIMER_DELAY_MS + 1;
+  }
+
+  const timestamp = Date.parse(normalized);
+  if (!Number.isFinite(timestamp)) {
+    return null;
+  }
+
+  return clampServerDelayMs(Math.max(0, timestamp - Date.now()));
+}
+
+function secondsToMilliseconds(seconds: number): number {
+  if (seconds > MAX_TIMER_DELAY_MS / 1_000) {
+    return MAX_TIMER_DELAY_MS + 1;
+  }
+
+  return seconds * 1_000;
+}
+
+function clampServerDelayMs(value: number): number {
+  return value > MAX_TIMER_DELAY_MS ? MAX_TIMER_DELAY_MS + 1 : value;
+}
+
+async function discardResponse(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel();
+  } catch {
+    // A failed body cancellation must not turn a retryable response into a new error.
+  }
+}
+
+async function waitForRetry(
+  delayMs: number,
+  signal: AbortSignal | null
+): Promise<void> {
+  if (signal?.aborted === true) {
+    throw new ZdpRequestAbortedError(
+      'ZDP request was aborted during retry backoff.',
+      signal.reason
+    );
+  }
+  if (delayMs === 0) {
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const onAbort = (): void => {
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', onAbort);
+      reject(
+        new ZdpRequestAbortedError(
+          'ZDP request was aborted during retry backoff.',
+          signal?.reason
+        )
+      );
+    };
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, delayMs);
+
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 function buildRequestInit(input: {
@@ -438,35 +773,53 @@ function validateTimeout(value: number, label: string): number {
 function mergeAbortSignals(
   callerSignal: AbortSignal | null,
   timeoutSignal: AbortSignal
-): AbortSignal {
+): MergedAbortSignal {
   if (callerSignal === null) {
-    return timeoutSignal;
+    return {
+      signal: timeoutSignal,
+      cleanup: () => undefined
+    };
   }
 
   const controller = new AbortController();
-  const abort = () => controller.abort();
+  const abortFromCaller = (): void => controller.abort(callerSignal.reason);
+  const abortFromTimeout = (): void => controller.abort(timeoutSignal.reason);
+  const cleanup = (): void => {
+    callerSignal.removeEventListener('abort', abortFromCaller);
+    timeoutSignal.removeEventListener('abort', abortFromTimeout);
+  };
 
-  if (callerSignal.aborted || timeoutSignal.aborted) {
-    abort();
-    return controller.signal;
+  if (callerSignal.aborted) {
+    abortFromCaller();
+    return { signal: controller.signal, cleanup };
+  }
+  if (timeoutSignal.aborted) {
+    abortFromTimeout();
+    return { signal: controller.signal, cleanup };
   }
 
-  callerSignal.addEventListener('abort', abort, { once: true });
-  timeoutSignal.addEventListener('abort', abort, { once: true });
+  callerSignal.addEventListener('abort', abortFromCaller, { once: true });
+  timeoutSignal.addEventListener('abort', abortFromTimeout, { once: true });
 
-  return controller.signal;
+  return { signal: controller.signal, cleanup };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export type {
   EncodedZdpRequest,
   ZdpCallOptions,
   ZdpFetchLike,
+  ZdpIdempotencyKeyFactory,
   ZdpIdempotencyPolicy,
   ZdpOperationDefinition,
   ZdpOperationMap,
   ZdpOperationRequest,
   ZdpOperationResponse,
   ZdpResponseContext,
+  ZdpRetryOptions,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';

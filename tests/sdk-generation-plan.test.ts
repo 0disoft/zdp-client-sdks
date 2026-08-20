@@ -27,6 +27,7 @@ describe('SDK generation plan', () => {
       apiInputSourceContracts: [
         'contracts/route-contract.yaml',
         'contracts/error-envelope.yaml',
+        'contracts/error-code-catalog.yaml',
         'contracts/webhook-contract.yaml',
         'contracts/sdk-generation-input.yaml',
         'contracts/apis/catalog.yaml',
@@ -39,12 +40,14 @@ describe('SDK generation plan', () => {
         'contracts/apis/core-api/oidc-client-registry.yaml',
         'contracts/apis/core-api/oidc-product-session.yaml',
         'contracts/apis/core-api/oidc-provider-runtime.yaml',
+        'contracts/apis/core-api/operator-session-context.yaml',
         'contracts/apis/core-api/product-link.yaml',
         'contracts/apis/core-api/referral.yaml',
         'contracts/apis/core-api/sensitive-action-authorization.yaml',
         'contracts/apis/money-api/referral-reward.yaml',
         'contracts/apis/money-api/credit-purchase.yaml',
-        'contracts/apis/money-api/credit-purchase-read.yaml'
+        'contracts/apis/money-api/credit-purchase-read.yaml',
+        'contracts/apis/support-api/intake.yaml'
       ],
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts',
       apiExportPlanOutputKinds: [
@@ -72,12 +75,18 @@ describe('SDK generation plan', () => {
         'no_content_response_body_handling'
       ],
       apiRouteOperationIds: [
+        'platform.support.cases.create',
+        'platform.support.case_detail_reads.create',
+        'platform.support.case_status_changes.create',
+        'platform.support.case_replies.create',
+        'platform.support.reply_address_verifications.create',
         'core.consent.policy_sets.resolve',
         'core.auth.registrations.create',
         'core.auth.sessions.create',
         'core.auth.sessions.refresh',
         'core.auth.sessions.revoke_current',
         'core.auth.sessions.get_current',
+        'core.admin.operator_session_context.get',
         'core.access.authorization_decisions.create',
         'core.auth.product_link_challenges.create',
         'core.auth.product_link_challenges.complete',

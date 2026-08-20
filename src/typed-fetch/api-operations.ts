@@ -78,7 +78,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "ownerBoundary": "platform",
     "status": "contract-only",
     "kind": "response",
-    "carriesSecretMaterial": false,
+    "carriesSecretMaterial": true,
     "requiredFields": [
       "verification_ref",
       "product_ref",
@@ -88,7 +88,9 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "expires_at"
     ],
     "optionalFields": [],
-    "secretFields": [],
+    "secretFields": [
+      "verification_ref"
+    ],
     "sessionEffect": "none"
   },
   "contracts/apis/abuse-api/challenge.yaml#AbuseVerificationVerifyRequest": {
@@ -667,6 +669,41 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "secretFields": [],
     "sessionEffect": "none"
   },
+  "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest": {
+    "schemaRef": "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest",
+    "schemaId": "OperatorSessionContextGetRequest",
+    "sourceContract": "contracts/apis/core-api/operator-session-context.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse": {
+    "schemaRef": "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse",
+    "schemaId": "OperatorSessionContextGetResponse",
+    "sourceContract": "contracts/apis/core-api/operator-session-context.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "operator_ref",
+      "organization_ref",
+      "role",
+      "capabilities",
+      "expires_at",
+      "policy_version"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
   "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest": {
     "schemaRef": "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest",
     "schemaId": "ProductLinkChallengeCompleteRequest",
@@ -792,9 +829,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "kind": "request",
     "carriesSecretMaterial": false,
     "requiredFields": [
-      "referral_code",
-      "campaign_ref",
-      "referred_account_ref"
+      "referral_code"
     ],
     "optionalFields": [],
     "secretFields": [],
@@ -1125,10 +1160,341 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "optionalFields": [],
     "secretFields": [],
     "sessionEffect": "none"
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseCreateRequest": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseCreateRequest",
+    "schemaId": "SupportCaseCreateRequest",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "request_kind",
+      "reply_address",
+      "message",
+      "locale",
+      "abuse_verification_ref"
+    ],
+    "optionalFields": [
+      "product_id",
+      "privacy_action",
+      "account_ref"
+    ],
+    "secretFields": [
+      "abuse_verification_ref"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse",
+    "schemaId": "SupportCaseCreateResponse",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "case_id",
+      "received_at",
+      "verification_state",
+      "next_step"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadRequest": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadRequest",
+    "schemaId": "SupportCaseDetailReadRequest",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "expected_source_version",
+      "purpose",
+      "reason",
+      "audit_request_id",
+      "audit_policy_version"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadResponse": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadResponse",
+    "schemaId": "SupportCaseDetailReadResponse",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "case_id",
+      "source_version",
+      "request_kind",
+      "source_state",
+      "sanitized_message",
+      "masked_reply_address",
+      "locale",
+      "opened_at",
+      "last_activity_at",
+      "content_access"
+    ],
+    "optionalFields": [
+      "product_id",
+      "privacy_action"
+    ],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyRequest": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyRequest",
+    "schemaId": "SupportCaseReplyAddressVerifyRequest",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "verification_ref"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "verification_ref"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyResponse": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyResponse",
+    "schemaId": "SupportCaseReplyAddressVerifyResponse",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "case_id",
+      "source_version",
+      "source_state",
+      "changed_at",
+      "replayed"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateRequest": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateRequest",
+    "schemaId": "SupportCaseReplyCreateRequest",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "expected_source_version",
+      "message",
+      "reason",
+      "audit_request_id",
+      "audit_policy_version"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateResponse": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateResponse",
+    "schemaId": "SupportCaseReplyCreateResponse",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "case_id",
+      "reply_id",
+      "source_version",
+      "source_state",
+      "delivery_state",
+      "created_at",
+      "replayed"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest",
+    "schemaId": "SupportCaseStatusChangeRequest",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "expected_source_version",
+      "target_state",
+      "reason",
+      "audit_request_id",
+      "audit_policy_version"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeResponse": {
+    "schemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeResponse",
+    "schemaId": "SupportCaseStatusChangeResponse",
+    "sourceContract": "contracts/apis/support-api/intake.yaml",
+    "serviceId": "support-intake-api",
+    "ownerBoundary": "platform",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "case_id",
+      "source_version",
+      "source_state",
+      "changed_at",
+      "replayed"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
   }
 } as const satisfies ZdpGeneratedSchemaModelMap;
 
 export const ZDP_TYPED_FETCH_OPERATION_MAP = {
+  "platform.support.cases.create": {
+    "operationId": "platform.support.cases.create",
+    "method": "POST",
+    "path": "/v1/support/cases",
+    "successStatuses": [
+      201
+    ],
+    "requestSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseCreateRequest",
+    "responseSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "origin_proof_failed",
+      "abuse_verification_failed",
+      "rate_limited",
+      "idempotency_conflict",
+      "support_intake_unavailable"
+    ]
+  },
+  "platform.support.case_detail_reads.create": {
+    "operationId": "platform.support.case_detail_reads.create",
+    "method": "POST",
+    "path": "/v1/support/cases/{case_id}/detail-reads",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadRequest",
+    "responseSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "support_case_not_found",
+      "support_case_version_stale",
+      "support_case_detail_read_denied",
+      "idempotency_conflict",
+      "support_source_unavailable"
+    ]
+  },
+  "platform.support.case_status_changes.create": {
+    "operationId": "platform.support.case_status_changes.create",
+    "method": "POST",
+    "path": "/v1/support/cases/{case_id}/status-changes",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest",
+    "responseSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "support_case_not_found",
+      "support_case_version_stale",
+      "support_case_status_change_denied",
+      "invalid_status_transition",
+      "idempotency_conflict",
+      "support_source_unavailable"
+    ]
+  },
+  "platform.support.case_replies.create": {
+    "operationId": "platform.support.case_replies.create",
+    "method": "POST",
+    "path": "/v1/support/cases/{case_id}/replies",
+    "successStatuses": [
+      201
+    ],
+    "requestSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateRequest",
+    "responseSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "support_case_not_found",
+      "support_case_version_stale",
+      "support_case_reply_denied",
+      "reply_address_unverified",
+      "idempotency_conflict",
+      "support_source_unavailable"
+    ]
+  },
+  "platform.support.reply_address_verifications.create": {
+    "operationId": "platform.support.reply_address_verifications.create",
+    "method": "POST",
+    "path": "/v1/support/cases/{case_id}/reply-address-verifications",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyRequest",
+    "responseSchemaRef": "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "verification_receipt_invalid",
+      "support_case_not_found",
+      "support_source_unavailable"
+    ]
+  },
   "core.consent.policy_sets.resolve": {
     "operationId": "core.consent.policy_sets.resolve",
     "method": "POST",
@@ -1263,6 +1629,29 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "session_expired",
       "session_compromised",
       "account_restricted"
+    ]
+  },
+  "core.admin.operator_session_context.get": {
+    "operationId": "core.admin.operator_session_context.get",
+    "method": "GET",
+    "path": "/v1/admin/session-context",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest",
+    "responseSchemaRef": "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "operator_session_required",
+      "operator_session_revoked",
+      "operator_session_expired",
+      "account_restricted",
+      "operator_permission_denied",
+      "operator_context_unavailable"
     ]
   },
   "core.access.authorization_decisions.create": {

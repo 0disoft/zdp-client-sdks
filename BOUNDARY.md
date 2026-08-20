@@ -6,9 +6,13 @@
 
 소유한다:
 
-- TypeScript SDK surface
-- Dart SDK surface
-- Rust SDK 후보 surface
+- TypeScript SDK public surface
+- generated TypeScript request/response models
+- TypeScript operation namespace client
+- deterministic path, query, JSON body encoding
+- TypeScript request/response field representation validation
+- Dart SDK surface plan
+- Rust SDK surface plan
 - auth token handling boundary
 - standard error handling
 - typed fetch operation map and runtime option handoff
@@ -27,17 +31,15 @@
 
 - API 계약 원천
 - SDK generation input source of truth
-- API route/error/webhook contract source of truth
+- API route, schema field presence, error, webhook contract source of truth
 - zdp-libs-ts package source
-- runtime validation engine
+- Dart와 Rust generated runtime implementation
+- Dart와 Rust generated artifact publishing
 - translation runtime
 - backend authorization
 - token vault
 - product-specific business rules
 - generated docs source of truth
-- generated SDK artifact source of truth
-- language-specific generated SDK runtime implementation
-- language-specific generated SDK artifact publishing
 - refresh token storage
 - session token storage
 - raw credential storage
@@ -48,6 +50,8 @@
 - provider response body exposure
 - file ownership decisions
 
+`contracts/typescript-sdk-models.yaml`은 API field의 TypeScript representation만 소유한다. schema 존재, required/optional field 집합, route binding과 wire field name은 `zdp-api-contracts`에서 가져오며 이 저장소가 임의로 추가하거나 삭제할 수 없다.
+
 ## 분리 트리거
 
 - 언어별 SDK가 독립 release cadence를 요구한다.
@@ -57,4 +61,4 @@
 - checker가 API 계약 원천 소유나 refresh token 저장을 허용해야만 통과한다.
 - SDK generation source가 `zdp-api-contracts/contracts/sdk-generation-input.yaml` 외의 입력을 원천으로 삼아야 한다.
 - libs export source가 `zdp-libs-ts` public export 외의 입력을 원천으로 삼아야 한다.
-- SDK surface가 언어별로 다른 datetime, amount, locale 표현 규칙을 요구한다.
+- SDK surface가 언어별로 다른 datetime, amount, locale wire 규칙을 요구한다.

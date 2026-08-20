@@ -33,6 +33,12 @@ sdk_generation_source:
     - trace_id
     - retry_after_seconds
     - documentation_url
+    - http_status
+    - retryable
+    - user_visible
+    - localization_key
+    - owner_service_id
+    - lifecycle_status
   required_client_runtime_metadata:
     - typed_fetch_operation_map
     - standard_error_envelope_normalization
