@@ -6,12 +6,18 @@
 
 - typed fetch에 기본 비활성인 bounded retry policy와 호출별 override를 추가했다.
 - `idempotencyKeyFactory`가 논리 호출당 키를 한 번만 만들고 모든 재시도에서 같은 값을 재사용하도록 했다.
+- API operation이 사용하는 47개 request/response schema를 실제 TypeScript interface와 semantic wire type으로 생성하는 `typescript-models:sync` 경로를 추가했다.
+- operation id를 `client.core.auth.sessions.create()` 형태의 camelCase namespace method로 노출하는 `createZdpClient()` facade를 추가했다.
+- generated method가 path parameter, GET query, mutation JSON body를 자동 분리하고 request/response field representation을 fetch 전후에 검증하도록 했다.
+- `contracts/typescript-sdk-models.yaml`과 API required/optional field 집합의 exact coverage drift check를 추가했다.
 
 ### Changed
 
 - GET 또는 API 계약이 idempotency key를 허용하고 실제 키가 있는 mutation만 transport 오류와 HTTP 408, 429, 502, 503, 504를 재시도한다.
 - `Retry-After` header와 표준 error envelope의 `retry_after_seconds`를 따르되 configured wait cap을 넘으면 추가 요청 없이 원래 오류를 반환한다.
 - 재시도 중 request id, trace id, idempotency key, access token을 다시 만들지 않고 caller abort가 backoff를 즉시 중단하도록 했다.
+- TypeScript generated model과 runtime facade를 이 저장소의 정식 public surface로 승격하고 Dart와 Rust runtime은 generation plan 범위로 유지했다.
+- package version을 `0.16.0`으로 올리고 model generation drift를 기본 check와 release check에 포함했다.
 
 ## 0.15.3
 

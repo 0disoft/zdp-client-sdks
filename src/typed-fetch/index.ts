@@ -18,6 +18,17 @@ export {
   createZdpGeneratedOperationDefinitions,
   createZdpGeneratedTypedFetchClient
 } from './generated-operations';
+export { createZdpClient } from './api-client';
+export type {
+  ZdpApiCall,
+  ZdpApiCallArguments,
+  ZdpApiClient,
+  ZdpApiOperationMethod,
+  ZdpApiRequest,
+  ZdpApiResponse
+} from './api-client';
+export * from './api-models';
+export { ZDP_API_SCHEMA_RUNTIME_TYPE_MAP } from './api-model-runtime';
 export type {
   EncodedZdpRequest,
   ZdpAccessTokenProvider,

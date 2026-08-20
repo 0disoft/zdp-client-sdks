@@ -71,7 +71,7 @@ describe('npm Trusted Publisher release workflow', () => {
     });
     expect(stepWith(buildSteps, 'Checkout API contracts')).toMatchObject({
       'persist-credentials': false,
-      ref: '73cfb01c01796e204bb9ba13131cd218a16e4ec5'
+      ref: 'f7d63f2d9e713869e5b020be451b526dc442eec2'
     });
     expect(stepWith(buildSteps, 'Set up Node')['node-version']).toBe('24.18.0');
     expect(stepWith(buildSteps, 'Set up Bun')['bun-version']).toBe('1.3.14');

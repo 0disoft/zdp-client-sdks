@@ -4,7 +4,7 @@
   "private": false,
   "license": "MIT",
   "type": "module",
-  "description": "ZDP client SDK contract skeleton.",
+  "description": "Generated TypeScript models and typed client runtime for ZDP API contracts.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/0disoft/zdp-client-sdks.git"
@@ -45,7 +45,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run generation:plan -- --check && bun run release:artifact:check",
+    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run generation:plan -- --check && bun run release:artifact:check",
     "check:tsgo": "tsgo --noEmit",
     "test": "bun test",
     "contracts:check": "bun scripts/check-client-sdk-contracts.ts",
@@ -53,8 +53,10 @@
     "api-contracts-lock:check": "bun scripts/check-api-contracts-lock.ts",
     "api-operations:sync": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts",
     "api-operations:check": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts --check",
+    "typescript-models:sync": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts",
+    "typescript-models:check": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts --check",
     "release:artifact:check": "bun scripts/build-release-artifact.ts --check",
-    "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run release:artifact:check && bun run smoke:package",
+    "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run typescript-models:check && bun run release:artifact:check && bun run smoke:package",
     "smoke:package": "bun scripts/smoke-packed-package.ts",
     "smoke:published": "bun scripts/smoke-published-package.ts"
   },
