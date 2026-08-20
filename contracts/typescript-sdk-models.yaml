@@ -1,5 +1,13 @@
 typescript_sdk_models:
   schema_field_types:
+    contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest: {}
+    contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse:
+      operator_ref: string
+      organization_ref: string
+      role: string
+      capabilities: string[]
+      expires_at: datetime
+      policy_version: string
     contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest:
       product_ref: string
       environment: string
@@ -154,8 +162,6 @@ typescript_sdk_models:
       workspace_ref: string
     contracts/apis/core-api/referral.yaml#ReferralUseCreateRequest:
       referral_code: string
-      campaign_ref: string
-      referred_account_ref: string
     contracts/apis/core-api/referral.yaml#ReferralUseCreateResponse:
       referral_use_ref: string
       referral_status: string
@@ -367,3 +373,70 @@ typescript_sdk_models:
       checked_at: datetime
       adapter_status: string
       state_store_status: string
+    contracts/apis/support-api/intake.yaml#SupportCaseCreateRequest:
+      request_kind: string
+      reply_address: string
+      message: string
+      locale: locale
+      abuse_verification_ref: string
+      product_id: string
+      privacy_action: string
+      account_ref: string
+    contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse:
+      case_id: string
+      received_at: datetime
+      verification_state: string
+      next_step: string
+    contracts/apis/support-api/intake.yaml#SupportCaseDetailReadRequest:
+      expected_source_version: integer
+      purpose: string
+      reason: string
+      audit_request_id: string
+      audit_policy_version: string
+    contracts/apis/support-api/intake.yaml#SupportCaseDetailReadResponse:
+      case_id: string
+      source_version: integer
+      request_kind: string
+      source_state: string
+      sanitized_message: string
+      masked_reply_address: string
+      locale: locale
+      opened_at: datetime
+      last_activity_at: datetime
+      content_access: string
+      product_id: string
+      privacy_action: string
+    contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest:
+      expected_source_version: integer
+      target_state: string
+      reason: string
+      audit_request_id: string
+      audit_policy_version: string
+    contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeResponse:
+      case_id: string
+      source_version: integer
+      source_state: string
+      changed_at: datetime
+      replayed: boolean
+    contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateRequest:
+      expected_source_version: integer
+      message: string
+      reason: string
+      audit_request_id: string
+      audit_policy_version: string
+    contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateResponse:
+      case_id: string
+      reply_id: string
+      source_version: integer
+      source_state: string
+      delivery_state: string
+      created_at: datetime
+      replayed: boolean
+    contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyRequest:
+      verification_ref: string
+    contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyResponse:
+      case_id: string
+      source_version: integer
+      source_state: string
+      changed_at: datetime
+      replayed: boolean

@@ -36,6 +36,7 @@ export type {
   ZdpFetchLike,
   ZdpHttpMethod,
   ZdpIdFactory,
+  ZdpIdempotencyKeyFactory,
   ZdpIdempotencyPolicy,
   ZdpOperationDefinition,
   ZdpOperationMap,
@@ -44,6 +45,7 @@ export type {
   ZdpPathValue,
   ZdpQueryValue,
   ZdpResponseContext,
+  ZdpRetryOptions,
   ZdpTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';

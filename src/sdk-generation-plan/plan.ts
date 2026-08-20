@@ -23,6 +23,7 @@ const REQUIRED_API_EXPORT_OUTPUT_KINDS = [
 const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/route-contract.yaml',
   'contracts/error-envelope.yaml',
+  'contracts/error-code-catalog.yaml',
   'contracts/webhook-contract.yaml',
   'contracts/sdk-generation-input.yaml',
   'contracts/apis/catalog.yaml',
@@ -35,12 +36,14 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/apis/core-api/oidc-client-registry.yaml',
   'contracts/apis/core-api/oidc-product-session.yaml',
   'contracts/apis/core-api/oidc-provider-runtime.yaml',
+  'contracts/apis/core-api/operator-session-context.yaml',
   'contracts/apis/core-api/product-link.yaml',
   'contracts/apis/core-api/referral.yaml',
   'contracts/apis/core-api/sensitive-action-authorization.yaml',
   'contracts/apis/money-api/referral-reward.yaml',
   'contracts/apis/money-api/credit-purchase.yaml',
-  'contracts/apis/money-api/credit-purchase-read.yaml'
+  'contracts/apis/money-api/credit-purchase-read.yaml',
+  'contracts/apis/support-api/intake.yaml'
 ] as const;
 const REQUIRED_API_INPUT_FORBIDDEN_VALUES = [
   'raw_customer_payload',

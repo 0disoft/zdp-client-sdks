@@ -44,13 +44,15 @@ export interface PasskeyChallengeCreateRequest { readonly ceremony: string; read
 export interface PasskeyChallengeCreateResponse { readonly challenge_ref: string; readonly public_key_options_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface CustomerPolicySetResolveRequest { readonly product_ref: string; readonly environment: string; readonly capability: string; readonly locale: ZdpLocaleString; readonly jurisdiction_profile_ref?: string; readonly channel_ref?: string; readonly seller_role_ref?: string; }
 export interface CustomerPolicySetResolveResponse { readonly policy_set_resolution_ref: string; readonly resolution_status: "resolved" | "unavailable" | "review_required"; readonly required_user_action: "no_user_action" | "notice" | "acknowledgement" | "explicit_consent" | "feature_restriction"; readonly policy_set_id: string; readonly policy_set_revision: string; readonly ordered_document_revision_ids: readonly string[]; readonly ordered_content_digests: readonly string[]; readonly presentation_rule_version: string; readonly document_projections: readonly ZdpJsonObject[]; readonly resolved_at: ZdpIsoDateTimeString; readonly expires_at: ZdpIsoDateTimeString; }
+export interface OperatorSessionContextGetRequest {  }
+export interface OperatorSessionContextGetResponse { readonly operator_ref: string; readonly organization_ref: string; readonly role: string; readonly capabilities: readonly string[]; readonly expires_at: ZdpIsoDateTimeString; readonly policy_version: string; }
 export interface ProductLinkChallengeCompleteRequest { readonly challenge_ref: string; readonly approval_decision: string; }
 export interface ProductLinkChallengeCompleteResponse { readonly challenge_ref: string; readonly state: "pending" | "approved" | "denied" | "expired" | "consumed"; readonly expires_at: ZdpIsoDateTimeString; }
 export interface ProductLinkChallengeCreateRequest { readonly product_ref: string; readonly client_instance_ref: string; readonly client_correlation_ref: string; readonly proof_challenge: string; readonly requested_scope_refs: readonly string[]; }
 export interface ProductLinkChallengeCreateResponse { readonly challenge_ref: string; readonly verification_uri: ZdpUriString; readonly expires_at: ZdpIsoDateTimeString; readonly poll_interval_seconds: number; }
 export interface ProductLinkChallengeExchangeRequest { readonly challenge_ref: string; readonly client_correlation_ref: string; readonly proof_verifier: string; }
 export interface ProductLinkChallengeExchangeResponse { readonly link_receipt_ref: string; readonly subject_ref: string; readonly consent_receipt_ref: string; readonly verified_at: ZdpIsoDateTimeString; readonly workspace_ref?: string; }
-export interface ReferralUseCreateRequest { readonly referral_code: string; readonly campaign_ref: string; readonly referred_account_ref: string; }
+export interface ReferralUseCreateRequest { readonly referral_code: string; }
 export interface ReferralUseCreateResponse { readonly referral_use_ref: string; readonly referral_status: string; readonly reward_status: string; readonly money_reward_status_ref: string; }
 export interface CreditCheckoutIntentStatusGetRequest { readonly checkout_intent_ref: string; }
 export interface CreditCheckoutIntentStatusGetResponse { readonly checkout_intent_ref: string; readonly operation_ref: string; readonly checkout_status: "created" | "payment_pending" | "credit_issuance_pending" | "completed" | "review_required" | "failed" | "cancelled" | "expired"; readonly payment_status: "not_started" | "pending" | "succeeded" | "review_required" | "failed" | "cancelled" | "expired"; readonly credit_issuance_status: "not_started" | "pending" | "succeeded" | "review_required" | "failed"; readonly return_receipt_status: "not_issued" | "available" | "consumed" | "expired"; readonly balance_refresh_required: boolean; readonly updated_at: ZdpIsoDateTimeString; readonly expires_at: ZdpIsoDateTimeString; readonly payment_attempt_ref?: string; readonly ledger_issuance_ref?: string; }
@@ -62,6 +64,16 @@ export interface CreditCheckoutReturnReceiptExchangeRequest { readonly return_re
 export interface CreditCheckoutReturnReceiptExchangeResponse { readonly checkout_intent_ref: string; readonly operation_ref: string; readonly checkout_status: "created" | "payment_pending" | "credit_issuance_pending" | "completed" | "review_required" | "failed" | "cancelled" | "expired"; readonly payment_status: "not_started" | "pending" | "succeeded" | "review_required" | "failed" | "cancelled" | "expired"; readonly credit_issuance_status: "not_started" | "pending" | "succeeded" | "review_required" | "failed"; readonly return_receipt_status: "not_issued" | "available" | "consumed" | "expired"; readonly balance_refresh_required: boolean; readonly consumed_at: ZdpIsoDateTimeString; }
 export interface ReferralRewardStatusGetRequest { readonly referral_use_ref: string; }
 export interface ReferralRewardStatusGetResponse { readonly referral_use_ref: string; readonly reward_status: string; readonly reward_recipient: string; readonly eligible_settled_paid_amount_credit_unit: ZdpDecimalString; readonly excluded_refund_amount_credit_unit: ZdpDecimalString; readonly excluded_chargeback_amount_credit_unit: ZdpDecimalString; readonly abuse_review_status: string; readonly campaign_policy_version: string; readonly referral_reward_confirmation_ref: string; }
+export interface SupportCaseCreateRequest { readonly request_kind: string; readonly reply_address: string; readonly message: string; readonly locale: ZdpLocaleString; readonly abuse_verification_ref: string; readonly product_id?: string; readonly privacy_action?: string; readonly account_ref?: string; }
+export interface SupportCaseCreateResponse { readonly case_id: string; readonly received_at: ZdpIsoDateTimeString; readonly verification_state: string; readonly next_step: string; }
+export interface SupportCaseDetailReadRequest { readonly expected_source_version: number; readonly purpose: string; readonly reason: string; readonly audit_request_id: string; readonly audit_policy_version: string; }
+export interface SupportCaseDetailReadResponse { readonly case_id: string; readonly source_version: number; readonly request_kind: string; readonly source_state: string; readonly sanitized_message: string; readonly masked_reply_address: string; readonly locale: ZdpLocaleString; readonly opened_at: ZdpIsoDateTimeString; readonly last_activity_at: ZdpIsoDateTimeString; readonly content_access: string; readonly product_id?: string; readonly privacy_action?: string; }
+export interface SupportCaseReplyAddressVerifyRequest { readonly verification_ref: string; }
+export interface SupportCaseReplyAddressVerifyResponse { readonly case_id: string; readonly source_version: number; readonly source_state: string; readonly changed_at: ZdpIsoDateTimeString; readonly replayed: boolean; }
+export interface SupportCaseReplyCreateRequest { readonly expected_source_version: number; readonly message: string; readonly reason: string; readonly audit_request_id: string; readonly audit_policy_version: string; }
+export interface SupportCaseReplyCreateResponse { readonly case_id: string; readonly reply_id: string; readonly source_version: number; readonly source_state: string; readonly delivery_state: string; readonly created_at: ZdpIsoDateTimeString; readonly replayed: boolean; }
+export interface SupportCaseStatusChangeRequest { readonly expected_source_version: number; readonly target_state: string; readonly reason: string; readonly audit_request_id: string; readonly audit_policy_version: string; }
+export interface SupportCaseStatusChangeResponse { readonly case_id: string; readonly source_version: number; readonly source_state: string; readonly changed_at: ZdpIsoDateTimeString; readonly replayed: boolean; }
 
 export interface ZdpApiSchemaTypeMap {
   readonly "contracts/apis/abuse-api/challenge.yaml#AbuseChallengeIssueRequest": AbuseChallengeIssueRequest;
@@ -93,6 +105,8 @@ export interface ZdpApiSchemaTypeMap {
   readonly "contracts/apis/core-api/auth-session.yaml#PasskeyChallengeCreateResponse": PasskeyChallengeCreateResponse;
   readonly "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest": CustomerPolicySetResolveRequest;
   readonly "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse": CustomerPolicySetResolveResponse;
+  readonly "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest": OperatorSessionContextGetRequest;
+  readonly "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse": OperatorSessionContextGetResponse;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest": ProductLinkChallengeCompleteRequest;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse": ProductLinkChallengeCompleteResponse;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest": ProductLinkChallengeCreateRequest;
@@ -111,4 +125,14 @@ export interface ZdpApiSchemaTypeMap {
   readonly "contracts/apis/money-api/credit-purchase.yaml#CreditCheckoutReturnReceiptExchangeResponse": CreditCheckoutReturnReceiptExchangeResponse;
   readonly "contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetRequest": ReferralRewardStatusGetRequest;
   readonly "contracts/apis/money-api/referral-reward.yaml#ReferralRewardStatusGetResponse": ReferralRewardStatusGetResponse;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseCreateRequest": SupportCaseCreateRequest;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse": SupportCaseCreateResponse;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadRequest": SupportCaseDetailReadRequest;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseDetailReadResponse": SupportCaseDetailReadResponse;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyRequest": SupportCaseReplyAddressVerifyRequest;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseReplyAddressVerifyResponse": SupportCaseReplyAddressVerifyResponse;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateRequest": SupportCaseReplyCreateRequest;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseReplyCreateResponse": SupportCaseReplyCreateResponse;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest": SupportCaseStatusChangeRequest;
+  readonly "contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeResponse": SupportCaseStatusChangeResponse;
 }
