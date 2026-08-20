@@ -43,6 +43,7 @@ import { join } from 'node:path';
 import { createZdpTypedFetchClient } from 'zdp-client-sdks';
 import { defineZdpOperation } from 'zdp-client-sdks/typed-fetch';
 import { ZDP_TYPED_FETCH_OPERATION_MAP } from 'zdp-client-sdks/typed-fetch/api-operations';
+import { createZdpSignedUploadClient } from 'zdp-client-sdks/upload';
 
 const expectedVersion = process.argv[2];
 const manifest = JSON.parse(
@@ -54,6 +55,7 @@ if (manifest.version !== expectedVersion) {
 if (
   typeof createZdpTypedFetchClient !== 'function' ||
   typeof defineZdpOperation !== 'function' ||
+  typeof createZdpSignedUploadClient !== 'function' ||
   Object.keys(ZDP_TYPED_FETCH_OPERATION_MAP).length === 0
 ) {
   throw new Error('Published exports were not consumable.');
