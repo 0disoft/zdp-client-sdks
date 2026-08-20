@@ -4,12 +4,22 @@
 
 ### Added
 
+- `authorize → provider transfer → complete` 단계를 묶는 signed upload runtime과 `zdp-client-sdks/upload` export를 추가했다.
+- 로컬·authorization 범위의 파일 크기와 MIME 제한, SHA-256 checksum handoff, timeout·취소, 진행률을 추가했다.
+- fetch transport와 세밀한 browser byte 진행률을 위한 XHR transport를 추가했다.
+- replay-safe로 명시된 provider transfer에만 5회 이하의 제한적 재시도를 허용했다.
 - typed fetch에 기본 비활성인 bounded retry policy와 호출별 override를 추가했다.
 - `idempotencyKeyFactory`가 논리 호출당 키를 한 번만 만들고 모든 재시도에서 같은 값을 재사용하도록 했다.
-- API operation이 사용하는 47개 request/response schema를 실제 TypeScript interface와 semantic wire type으로 생성하는 `typescript-models:sync` 경로를 추가했다.
+- API operation이 사용하는 request/response schema를 실제 TypeScript interface와 semantic wire type으로 생성하는 `typescript-models:sync` 경로를 추가했다.
 - operation id를 `client.core.auth.sessions.create()` 형태의 camelCase namespace method로 노출하는 `createZdpClient()` facade를 추가했다.
 - generated method가 path parameter, GET query, mutation JSON body를 자동 분리하고 request/response field representation을 fetch 전후에 검증하도록 했다.
 - `contracts/typescript-sdk-models.yaml`과 API required/optional field 집합의 exact coverage drift check를 추가했다.
+
+### Security
+
+- signed provider URL을 ephemeral `Request` factory 안에 가두고 결과·오류·진행 이벤트에서 노출하지 않는다.
+- provider 요청에 ZDP Authorization, cookie, request ID, trace ID, idempotency key가 섞이면 전송 전에 실패한다.
+- provider 응답 본문은 공개 오류나 completion result로 전달하지 않는다.
 
 ### Changed
 

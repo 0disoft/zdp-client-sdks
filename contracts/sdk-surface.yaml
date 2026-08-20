@@ -22,6 +22,7 @@ sdk_surface:
     - abort signal support
     - pagination handling
     - upload handoff
+    - signed upload runtime foundation
   must_not_own:
     - API contract source
     - refresh token storage

@@ -15,7 +15,8 @@ ZDP API 계약을 실제 제품 코드에서 바로 사용할 수 있는 TypeScr
 - typed fetch timeout, abort signal, request id, trace id, idempotency key 처리
 - access token attachment와 표준 error envelope 정규화
 - current-session, product-link, credit purchase, referral, abuse challenge operation
-- signed upload client handoff 기준
+- signed upload authorization, provider transfer, completion TypeScript runtime
+- upload file size·MIME 제한, SHA-256 checksum, 진행률, 취소, replay-safe 제한적 재시도
 - npm Trusted Publisher, immutable release artifact, packed/published consumer smoke
 - SDK generation dry-run plan과 checked-in generated source drift 검증
 
@@ -25,6 +26,7 @@ ZDP API 계약을 실제 제품 코드에서 바로 사용할 수 있는 TypeScr
 - API 계약에 선언되지 않은 제품별 convenience model
 - 중첩 object 내부까지 추론하는 독립 schema language
 - 자동 페이지 순회
+- multipart·resumable upload orchestration
 - live API base URL
 - refresh token, session token, raw credential 보관
 - 제품별 business rule과 최종 권한 판단
@@ -97,7 +99,7 @@ bun run typescript-models:check
 
 루트 `service.yaml`이 저장소의 운영 계약이다. `zdp-api-contracts`는 route, schema field presence, success status, error code, auth, idempotency와 request/trace 요구사항의 원천이다. 이 저장소는 그 입력을 잠긴 Git revision에서 읽어 TypeScript representation과 실행 surface를 생성한다.
 
-패키지는 Bun과 TypeScript bundler가 `src/`의 TypeScript source export를 직접 소비하는 source package다. public export는 package root, `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`다. generated TypeScript models와 client facade는 `src/`에 포함되지만 Dart와 Rust runtime artifact는 package에 포함하지 않는다.
+패키지는 Bun과 TypeScript bundler가 `src/`의 TypeScript source export를 직접 소비하는 source package다. public export는 package root, `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`, `zdp-client-sdks/upload`다. generated TypeScript models, client facade, signed upload runtime은 `src/`에 포함되지만 Dart와 Rust runtime artifact는 package에 포함하지 않는다.
 
 공개 릴리스는 `package.json` 버전과 같은 `v<version>` tag가 `main`에 포함된 commit을 가리킬 때만 실행된다. GitHub Actions의 npm Trusted Publisher가 OIDC로 검증된 tarball을 공개하며 장기 npm token이나 로컬 `npm publish`는 사용하지 않는다. 공개 전 packed consumer, 공개 후 npm `gitHead`, integrity, registry signature, SLSA provenance, GitHub Release asset을 같은 commit과 대조한다.
 
@@ -114,7 +116,62 @@ bun run typescript-models:check
 - request와 response field type drift는 fetch 전후에 각각 configuration error와 protocol error로 실패시킨다.
 - 최종 authorization, membership, entitlement와 money mutation authority는 서버 경계가 소유한다.
 
+## Signed upload runtime
+
+`zdp-client-sdks/upload`은 authorization adapter가 반환한 ephemeral `Request` factory를 사용해 `authorize → provider transfer → complete`를 실행한다. signed URL은 factory closure 안에만 존재하며 upload 결과와 오류에는 들어가지 않는다.
+
+```ts
+import { createZdpSignedUploadClient } from 'zdp-client-sdks/upload';
+
+const uploads = createZdpSignedUploadClient({
+  limits: {
+    maxFileSizeBytes: 25 * 1024 * 1024,
+    allowedContentTypes: ['image/*']
+  },
+  authorize: (request, context) =>
+    uploadAuthorizationBoundary.authorize(request, context)
+});
+
+const result = await uploads.upload(
+  {
+    source: file,
+    fileName: file.name
+  },
+  {
+    onProgress: ({ phase, loadedBytes, totalBytes }) => {
+      renderUploadProgress(phase, loadedBytes, totalBytes);
+    }
+  }
+);
+```
+
+authorization adapter는 `uploadRef`, 만료 시각, replay-safe 여부, authorization 범위의 파일 제한, body 없는 provider `Request`를 만드는 closure, completion callback을 반환한다. request ID, trace ID, idempotency key와 같은 ZDP 식별자는 authorization·completion callback에만 전달되고 provider 요청에는 붙지 않는다.
+
+기본 fetch transport는 시작과 완료 시점의 진행률을 제공한다. browser에서 byte 단위 진행률이 필요하면 `createZdpXhrUploadTransport()`를 `transfer`로 전달한다. 기본 SHA-256 계산은 Web Crypto와 `Blob.arrayBuffer()`를 사용하므로 대용량 파일에는 미리 계산한 checksum이나 custom `checksumProvider`를 사용한다.
+
 ## 검증
+
+`contracts:check`는 SDK generation source, libs export source, SDK surface, auth helper, upload client 계약을 읽고 SDK가 다음 경계를 잃지 않았는지 확인한다. `generation:plan`은 같은 계약, `zdp-api-contracts/contracts/sdk-generation-input.yaml`, `zdp-api-contracts`의 API export dry-run plan handoff를 함께 읽고 TypeScript, Dart, Rust SDK를 어떤 입력에서 만들 예정인지 dry-run 계획만 만든다.
+
+- TypeScript, Dart, Rust SDK surface는 같은 API 계약을 소비한다.
+- SDK generation source는 `zdp-api-contracts/contracts/sdk-generation-input.yaml`만 입력 원천으로 쓴다.
+- API SDK generation input drift 검증은 `zdp-api-contracts`와 `zdp-client-sdks`가 generation target, route metadata, success status metadata, error metadata, webhook metadata, forbidden values를 다르게 주장하는 일을 막는다.
+- API export dry-run plan handoff 검증은 API repo의 실제 `buildApiExportPlan()` 결과를 읽어 OpenAPI, SDK generation input, docs contract, webhook schema 산출면, route operation id, typed fetch operation map, typed fetch runtime metadata, mutation idempotency policy, forbidden values를 같은 계약에서 뽑겠다는 보장을 SDK plan도 보게 만든다. 이게 없으면 API 쪽은 `permission_check`, `audit_event`, `idempotency`, `success_statuses`, `request_id`, `trace_id`, timeout/abort signal, route/webhook 금지값을 함께 묶겠다고 말하는데 SDK 쪽은 일부 YAML만 보고 지나가서, 나중에 SDK가 문서나 OpenAPI와 다른 안전장치를 갖는 일이 생긴다.
+- libs export source는 `zdp-libs-ts/schema`, `zdp-libs-ts/env-contract`, `zdp-libs-ts/event-contracts`, `zdp-libs-ts/error`, `zdp-libs-ts/i18n-contract`만 공통 계약 입력으로 참조한다.
+- route metadata의 `idempotency`는 같은 요청이 두 번 들어와도 SDK가 재시도 안전성을 잃지 않게 해준다.
+- route metadata의 `owner_boundary`, `tenant_boundary`, `request_id_required`, `trace_id_required`, `session_effect`, `credential_policy`는 SDK가 auth/session route를 일반 CRUD처럼 취급하지 않게 해준다.
+- route metadata의 `success_statuses`는 언어별 SDK가 성공 응답 처리 기준을 서로 다르게 해석하지 않게 해준다.
+- error metadata의 `request_id`, `trace_id`는 사용자가 겪은 실패를 서버 로그와 연결할 수 있게 해준다.
+- libs metadata의 `schema_id`, `error_code`, `message_key`, `request_id`, `trace_id`는 SDK 생성기가 스키마 이름, 에러 코드, 번역 키, 추적 식별자를 언어별로 따로 지어내지 않게 해준다.
+- webhook metadata의 `idempotency_key`, `replay_policy`, `dead_letter_policy`는 중복 이벤트와 실패 이벤트를 SDK 표면에서 숨기지 않게 해준다.
+- SDK는 typed fetch operation map, `request_id`, `trace_id`, idempotency key 전파, 표준 error envelope 정규화, timeout option, abort signal, pagination metadata handoff, upload handoff 기준을 유지한다. 자동 페이지 순회는 현재 runtime 범위가 아니다.
+- SDK는 API export plan handoff에서 검증한 operation metadata를 TypeScript typed fetch runtime에 연결 가능한 operation definitions로 노출한다. 또한 API schema bundle의 `required_fields`, `secret_fields`, `session_effect`를 generated schema model metadata로 노출하고, generated typed fetch runtime에서 request/response required field 누락을 실패로 잡는다. 이 단계는 schema별 encoder/decoder나 언어별 구현 타입을 생성하지 않으므로 API 계약 원천을 소유하지 않는다.
+- HTTP 204 success response는 body가 없는 HTTP 의미를 보존해 `undefined`로 반환하며, body를 가질 수 있는 success response에만 generated response required field 검증을 적용한다.
+- SDK는 API contract source가 아니다.
+- auth helper는 access token 부착 경계만 소유하고 refresh token storage, session token storage, raw credential storage, membership authority, entitlement authority를 소유하지 않는다.
+- upload client는 signed upload request shape, error mapping, request/trace/idempotency propagation, local·authorization file limit, checksum, progress, cancellation, replay-safe transfer retry를 소유한다. bucket name, raw provider URL, signed URL persistence, provider response body, file ownership decision은 공개 계약으로 만들지 않는다.
+
+이렇게 해두면 SDK가 클라이언트 편의 코드라는 이유로 API 원천, libs package 원천, refresh token 저장소, 권한 최종 판단자, provider URL 공개 계약으로 커지는 일을 checker 단계에서 먼저 막을 수 있다. 또한 raw customer payload, provider secret, provider token, authorization header, refresh token plaintext, stack trace 같은 값이 SDK 생성 입력으로 섞이는 것을 금지해서, SDK 패키지가 민감한 운영 데이터를 예시나 타입으로 굳히는 사고를 줄인다. dry-run generation plan은 실제 파일을 만들지 않고도 이 입력 조합을 반복 검증하게 해준다. 즉 SDK 생성기가 붙기 전부터 "어느 언어가 어느 API 계약과 어느 공통 libs export를 소비하는지"가 고정되고, 실수로 한 언어만 다른 원천을 바라보는 일을 줄인다. API input drift 검증은 `trace_id`, `success_statuses`, typed fetch runtime metadata, auth/session metadata, forbidden values가 API 계약에는 있는데 SDK plan에는 없는 상태를 막아, 장애 문의 때 SDK 오류와 서버 로그를 연결할 실마리가 사라지거나 성공 응답 처리가 언어별로 갈라지는 일을 줄인다. API export plan handoff 검증은 실제 plan 결과의 `writesArtifacts`와 `publishesSchemas`가 false인지와 `typedFetchOperationMap`이 route catalog operation id와 일치하는지도 보므로, SDK 생성 준비 단계가 몰래 OpenAPI나 schema 파일을 쓰거나 publish하는 일 없이 순수 계획으로 남는다.
 
 ```bash
 bun run check

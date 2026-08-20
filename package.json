@@ -28,6 +28,11 @@
       "types": "./src/typed-fetch/api-operations.ts",
       "import": "./src/typed-fetch/api-operations.ts",
       "default": "./src/typed-fetch/api-operations.ts"
+    },
+    "./upload": {
+      "types": "./src/upload/index.ts",
+      "import": "./src/upload/index.ts",
+      "default": "./src/upload/index.ts"
     }
   },
   "types": "./src/index.ts",

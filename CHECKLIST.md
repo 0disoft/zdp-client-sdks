@@ -36,18 +36,30 @@
 
 ## Typed Fetch And Auth
 
-- operation id, request id, trace id, timeout, abort signal, idempotency key, standard error envelope를 보존한다.
-- HTTP 204는 `undefined`로 디코딩한다.
-- secret field를 query나 path로 보내지 않는다.
-- access token은 인증 operation에만 부착한다.
-- credential, refresh, session lifecycle은 consuming app이나 core/auth boundary가 소유한다.
+- Typed fetch는 operation id, request id, trace id, timeout, abort signal, idempotency key, pagination metadata, standard error envelope를 보존한다.
+- HTTP 204 success는 body schema required field를 가장하지 않고 `undefined`로 디코딩한다.
+- Generated schema model은 required field와 optional field를 구분하고 API handoff에서 빠뜨리지 않는다.
+- Secret field를 query나 path로 보내지 않는다.
+- 자동 retry는 GET 또는 계약상 idempotency key를 허용하고 실제 키가 확정된 mutation에만 적용한다.
+- Auth helper는 access token attachment boundary만 소유한다.
+- Credential, refresh, session lifecycle은 consuming app이나 core/auth boundary가 소유한다.
+- Auth/session route metadata를 일반 CRUD처럼 취급하지 않는다.
+
+## Upload Client
+
+- Signed upload authorization, provider transfer, completion은 하나의 timeout·cancellation signal과 request/trace/idempotency context를 공유한다.
+- 로컬 파일 제한과 authorization 범위의 크기·MIME 제한을 provider 전송 전에 모두 적용한다.
+- SHA-256 checksum을 authorization과 completion에 전달한다.
+- Provider 전송 재시도는 `replaySafe: true`일 때만 허용하고 최대 시도 횟수를 제한한다.
+- Provider 요청에는 ZDP Authorization, cookie, request ID, trace ID, idempotency key를 붙이지 않는다.
+- Bucket name, raw provider URL, signed URL persistence, provider response body, file ownership decision을 public SDK contract로 만들지 않는다.
 
 ## Package Surface
 
-- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`다.
+- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`, `./upload`이다.
 - `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다.
-- generated TypeScript source는 package에 포함하고 Dart/Rust runtime artifact는 포함하지 않는다.
-- Package publish 전 check와 npm pack dry-run evidence가 필요하다.
+- Generated TypeScript source는 package에 포함하고 Dart/Rust runtime artifact는 포함하지 않는다.
+- Package publish 전에는 check, npm pack dry-run, packed consumer evidence가 필요하다.
 - `contracts/api-contracts.lock.json`, CI checkout, release checkout은 동일한 full API contract Git SHA를 가리킨다.
-- 공개 릴리스는 exact version tag와 npm Trusted Publisher OIDC만 사용한다.
+- 공개 릴리스는 exact version tag와 npm Trusted Publisher OIDC만 사용하고, 공개 후 npm `gitHead`, integrity, registry signature, provenance, GitHub Release 자산을 대조한다.
 - 로컬 npm token publish, 공개 version 재사용, tag 이동은 허용하지 않는다.
