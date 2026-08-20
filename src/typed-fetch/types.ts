@@ -89,6 +89,11 @@ export interface ZdpTypedFetchClientOptions {
   readonly fetch?: ZdpFetchLike;
   readonly defaultHeaders?: Readonly<Record<string, string>>;
   readonly defaultTimeoutMs?: number;
+  /**
+   * Maximum decoded response body bytes accepted before JSON parsing.
+   * Defaults to 4 MiB and applies to both success and error responses.
+   */
+  readonly maxResponseBodyBytes?: number;
   readonly getAccessToken?: ZdpAccessTokenProvider;
   readonly requestIdFactory?: ZdpIdFactory;
   readonly traceIdFactory?: ZdpIdFactory;
@@ -103,6 +108,8 @@ export interface ZdpCallOptions {
   readonly requestId?: string;
   readonly traceId?: string;
   readonly idempotencyKey?: string;
+  /** Overrides the client response body byte limit for this call. */
+  readonly maxResponseBodyBytes?: number;
   /** Overrides the client retry policy for this call. */
   readonly retry?: false | ZdpRetryOptions;
 }
