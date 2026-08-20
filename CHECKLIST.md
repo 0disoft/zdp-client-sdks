@@ -27,12 +27,16 @@
 
 ## Upload Client
 
-- Signed upload request shape, error mapping, request/trace/idempotency propagation만 소유한다.
-- Bucket name, raw provider URL, file ownership decision을 public SDK contract로 만들지 않는다.
+- Signed upload authorization, provider transfer, completion은 하나의 timeout·cancellation signal과 request/trace/idempotency context를 공유한다.
+- 로컬 파일 제한과 authorization 범위의 크기·MIME 제한을 provider 전송 전에 모두 적용한다.
+- SHA-256 checksum을 authorization과 completion에 전달한다.
+- Provider 전송 재시도는 `replaySafe: true`일 때만 허용하고 최대 시도 횟수를 제한한다.
+- Provider 요청에는 ZDP Authorization, cookie, request ID, trace ID, idempotency key를 붙이지 않는다.
+- Bucket name, raw provider URL, signed URL persistence, provider response body, file ownership decision을 public SDK contract로 만들지 않는다.
 
 ## Package Surface
 
-- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`다.
+- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`, `./upload`이다.
 - `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다.
 - Generated language-specific SDK runtime artifact는 package에 포함하지 않는다.
 - Package publish 전에는 check와 npm pack dry-run evidence가 필요하다.

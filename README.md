@@ -17,7 +17,8 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - zdp-api-contracts schema bundle 기반 generated TypeScript schema model required/optional field metadata
 - current-session 조회와 desktop product-link create·complete·exchange typed fetch handoff
 - credit pack 조회, checkout intent·상태 조회와 일회용 return receipt 교환의 분리된 payment·credit issuance·receipt 상태 handoff
-- signed upload client handoff 기준
+- signed upload authorization, provider transfer, completion TypeScript runtime
+- upload file size·MIME 제한, SHA-256 checksum, 진행률, 취소, replay-safe 제한적 재시도
 - npm package metadata, MIT license, public export map, package file whitelist
 - npm Trusted Publisher release workflow, immutable release artifact manifest, packed/published consumer smoke
 - 계약 파일을 읽는 one-shot checker
@@ -30,6 +31,7 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - 언어별 request/response 구현 타입 산출물
 - 언어별 generated SDK runtime implementation
 - SDK 파일 쓰기
+- multipart·resumable upload orchestration
 - 로컬 npm token publish와 수동 publish 우회
 - live API base URL
 - refresh token 보관
@@ -41,11 +43,44 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 
 루트 `service.yaml`이 이 저장소의 서비스 계약이다. `contracts/` 아래 파일은 실제 SDK 구현이 생기기 전에 public surface와 금지선을 고정하는 skeleton이다.
 
-패키지 표면은 Bun과 TypeScript bundler 소비자를 위한 source package다. root export는 `src/index.ts`이고, 하위 export는 `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`만 허용한다. `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다. live base URL, refresh token storage, provider secret, generated language-specific SDK artifact는 이 패키지에 포함하지 않는다.
+패키지 표면은 Bun과 TypeScript bundler 소비자를 위한 source package다. root export는 `src/index.ts`이고, 하위 export는 `zdp-client-sdks/typed-fetch`, `zdp-client-sdks/typed-fetch/api-operations`, `zdp-client-sdks/upload`만 허용한다. `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다. live base URL, refresh token storage, provider secret, generated language-specific SDK artifact는 이 패키지에 포함하지 않는다.
 
 공개 릴리스는 `package.json` 버전과 같은 `v<version>` tag가 `main`에 포함된 커밋을 가리킬 때만 실행된다. GitHub Actions의 npm Trusted Publisher가 OIDC로 정확한 tarball을 공개하며, 장기 npm token이나 로컬 `npm publish`는 사용하지 않는다. 같은 tarball은 publish 전에 빈 소비자에서 설치되고, publish 뒤에는 npm `gitHead`, integrity, registry signature, SLSA provenance, GitHub Release 자산까지 같은 커밋을 가리키는지 확인한다.
 
 `contracts/api-contracts.lock.json`은 이 package version의 checked-in operation map과 schema metadata를 만든 `zdp-api-contracts` full Git SHA를 고정한다. 일반 CI와 release workflow는 같은 revision을 checkout한다. 최신 API main과의 호환성 확인은 lock 갱신과 generated operation 동기화를 포함한 별도 SDK 변경으로 처리하며, 이미 준비된 release의 입력을 암묵적으로 바꾸지 않는다.
+
+## Signed upload runtime
+
+`zdp-client-sdks/upload`은 authorization adapter가 반환한 ephemeral `Request` factory를 사용해 `authorize → provider transfer → complete`를 실행한다. signed URL은 factory closure 안에만 존재하며 upload 결과와 오류에는 들어가지 않는다.
+
+```ts
+import { createZdpSignedUploadClient } from 'zdp-client-sdks/upload';
+
+const uploads = createZdpSignedUploadClient({
+  limits: {
+    maxFileSizeBytes: 25 * 1024 * 1024,
+    allowedContentTypes: ['image/*']
+  },
+  authorize: (request, context) =>
+    uploadAuthorizationBoundary.authorize(request, context)
+});
+
+const result = await uploads.upload(
+  {
+    source: file,
+    fileName: file.name
+  },
+  {
+    onProgress: ({ phase, loadedBytes, totalBytes }) => {
+      renderUploadProgress(phase, loadedBytes, totalBytes);
+    }
+  }
+);
+```
+
+authorization adapter는 `uploadRef`, 만료 시각, replay-safe 여부, authorization 범위의 파일 제한, body 없는 provider `Request`를 만드는 closure, completion callback을 반환한다. request ID, trace ID, idempotency key와 같은 ZDP 식별자는 authorization·completion callback에만 전달되고 provider 요청에는 붙지 않는다.
+
+기본 fetch transport는 시작과 완료 시점의 진행률을 제공한다. browser에서 byte 단위 진행률이 필요하면 `createZdpXhrUploadTransport()`를 `transfer`로 전달한다. 기본 SHA-256 계산은 Web Crypto와 `Blob.arrayBuffer()`를 사용하므로 대용량 파일에는 미리 계산한 checksum이나 custom `checksumProvider`를 사용한다.
 
 ## 검증
 
@@ -67,7 +102,7 @@ ZDP client SDK 저장소다. 초기 목적은 TypeScript, Dart, Rust SDK가 나�
 - HTTP 204 success response는 body가 없는 HTTP 의미를 보존해 `undefined`로 반환하며, body를 가질 수 있는 success response에만 generated response required field 검증을 적용한다.
 - SDK는 API contract source가 아니다.
 - auth helper는 access token 부착 경계만 소유하고 refresh token storage, session token storage, raw credential storage, membership authority, entitlement authority를 소유하지 않는다.
-- upload client는 signed upload request shape, error mapping, request/trace/idempotency propagation을 소유하지만 bucket name, raw provider URL, file ownership decision을 공개 계약으로 만들지 않는다.
+- upload client는 signed upload request shape, error mapping, request/trace/idempotency propagation, local·authorization file limit, checksum, progress, cancellation, replay-safe transfer retry를 소유한다. bucket name, raw provider URL, signed URL persistence, provider response body, file ownership decision은 공개 계약으로 만들지 않는다.
 
 이렇게 해두면 SDK가 클라이언트 편의 코드라는 이유로 API 원천, libs package 원천, refresh token 저장소, 권한 최종 판단자, provider URL 공개 계약으로 커지는 일을 checker 단계에서 먼저 막을 수 있다. 또한 raw customer payload, provider secret, provider token, authorization header, refresh token plaintext, stack trace 같은 값이 SDK 생성 입력으로 섞이는 것을 금지해서, SDK 패키지가 민감한 운영 데이터를 예시나 타입으로 굳히는 사고를 줄인다. dry-run generation plan은 실제 파일을 만들지 않고도 이 입력 조합을 반복 검증하게 해준다. 즉 SDK 생성기가 붙기 전부터 "어느 언어가 어느 API 계약과 어느 공통 libs export를 소비하는지"가 고정되고, 실수로 한 언어만 다른 원천을 바라보는 일을 줄인다. API input drift 검증은 `trace_id`, `success_statuses`, typed fetch runtime metadata, auth/session metadata, forbidden values가 API 계약에는 있는데 SDK plan에는 없는 상태를 막아, 장애 문의 때 SDK 오류와 서버 로그를 연결할 실마리가 사라지거나 성공 응답 처리가 언어별로 갈라지는 일을 줄인다. API export plan handoff 검증은 실제 plan 결과의 `writesArtifacts`와 `publishesSchemas`가 false인지와 `typedFetchOperationMap`이 route catalog operation id와 일치하는지도 보므로, SDK 생성 준비 단계가 몰래 OpenAPI나 schema 파일을 쓰거나 publish하는 일 없이 순수 계획으로 남는다.
 

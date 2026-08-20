@@ -1,6 +1,6 @@
 # Package Surface Contract
 
-The public package surface is limited to the package root, `./typed-fetch`, and `./typed-fetch/api-operations`.
+The public package surface is limited to the package root, `./typed-fetch`, `./typed-fetch/api-operations`, and `./upload`.
 
 The package file allowlist contains source skeletons, contracts, operating documents, service contract, security guidance, changelog, contribution guidance, and license. It does not include generated language-specific runtime artifacts.
 
@@ -9,6 +9,8 @@ Package metadata, packaged documents, contract files, or source files require pa
 ## 공개 경계
 
 패키지는 Bun과 TypeScript bundler가 `src/`의 TypeScript source export를 직접 소비하는 계약이다. Node가 `node_modules` 안의 TypeScript를 직접 실행하는 범용 JavaScript package라고 주장하지 않는다.
+
+`./upload`은 signed upload authorization, provider transfer, completion을 조율하는 TypeScript runtime이다. provider URL은 ephemeral `Request` factory 내부에만 존재하며 package result나 error surface로 승격하지 않는다.
 
 ## 릴리스 경계
 

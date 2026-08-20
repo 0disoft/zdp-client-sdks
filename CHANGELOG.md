@@ -1,5 +1,20 @@
 # CHANGELOG.md
 
+## 0.16.0
+
+### Added
+
+- `authorize → provider transfer → complete` 단계를 묶는 signed upload runtime과 `zdp-client-sdks/upload` export를 추가했다.
+- 로컬·authorization 범위의 파일 크기와 MIME 제한, SHA-256 checksum handoff, timeout·취소, 진행률을 추가했다.
+- fetch transport와 세밀한 browser byte 진행률을 위한 XHR transport를 추가했다.
+- replay-safe로 명시된 provider transfer에만 5회 이하의 제한적 재시도를 허용했다.
+
+### Security
+
+- signed provider URL을 ephemeral `Request` factory 안에 가두고 결과·오류·진행 이벤트에서 노출하지 않는다.
+- provider 요청에 ZDP Authorization, cookie, request ID, trace ID, idempotency key가 섞이면 전송 전에 실패한다.
+- provider 응답 본문은 공개 오류나 completion result로 전달하지 않는다.
+
 ## 0.15.3
 
 ### Fixed

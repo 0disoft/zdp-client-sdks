@@ -14,7 +14,7 @@
 - typed fetch operation map and runtime option handoff
 - schema required/optional field metadata handoff
 - minimal TypeScript typed fetch runtime foundation
-- upload client handoff
+- signed upload authorization, provider transfer, completion runtime
 - request, trace, and idempotency propagation contract
 - SDK contract checker
 - SDK generation input source handoff
@@ -42,13 +42,18 @@
 - session token storage
 - raw credential storage
 - final authorization decisions
+- object storage bucket names
 - raw provider URLs as public contract
+- signed URL persistence
+- provider response body exposure
+- file ownership decisions
 
 ## 분리 트리거
 
 - 언어별 SDK가 독립 release cadence를 요구한다.
 - SDK runtime helper와 generated model이 서로 다른 compatibility policy를 요구한다.
 - public API adoption이 language-specific support boundary를 요구한다.
+- upload runtime이 multipart·resumable protocol과 별도 release cadence를 요구한다.
 - checker가 API 계약 원천 소유나 refresh token 저장을 허용해야만 통과한다.
 - SDK generation source가 `zdp-api-contracts/contracts/sdk-generation-input.yaml` 외의 입력을 원천으로 삼아야 한다.
 - libs export source가 `zdp-libs-ts` public export 외의 입력을 원천으로 삼아야 한다.
