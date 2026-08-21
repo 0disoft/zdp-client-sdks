@@ -37,6 +37,8 @@
 ## Typed Fetch And Auth
 
 - Typed fetch는 operation id, request id, trace id, timeout, abort signal, idempotency key, pagination metadata, standard error envelope를 보존한다.
+- API base URL에 username이나 password를 포함하지 않는다.
+- JSON response는 success, error, retry metadata inspection 모두 byte limit 안에서 읽고 파싱한다.
 - HTTP 204 success는 body schema required field를 가장하지 않고 `undefined`로 디코딩한다.
 - Generated schema model은 required field와 optional field를 구분하고 API handoff에서 빠뜨리지 않는다.
 - Secret field를 query나 path로 보내지 않는다.

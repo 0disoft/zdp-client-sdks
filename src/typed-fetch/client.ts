@@ -29,8 +29,10 @@ const TRACE_ID_HEADER = 'x-trace-id';
 const IDEMPOTENCY_KEY_HEADER = 'idempotency-key';
 const AUTHORIZATION_HEADER = 'authorization';
 const RETRY_AFTER_HEADER = 'retry-after';
+const CONTENT_LENGTH_HEADER = 'content-length';
 const JSON_CONTENT_TYPE = 'application/json';
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000;
+const DEFAULT_MAX_RESPONSE_BODY_BYTES = 4 * 1024 * 1024;
 const DEFAULT_RETRY_BASE_DELAY_MS = 200;
 const DEFAULT_RETRY_MAX_DELAY_MS = 2_000;
 const DEFAULT_MAX_RETRY_AFTER_MS = 30_000;
@@ -52,8 +54,8 @@ interface MergedAbortSignal {
 
 /**
  * mf:anchor zdp.client-sdks.typed-fetch-runtime
- * purpose: Locate typed fetch runtime for request metadata, auth headers, idempotency, timeout, retry, and errors.
- * search: typed fetch, request metadata, authorization, idempotency, timeout, retry, Retry-After, error envelope
+ * purpose: Locate typed fetch runtime for request metadata, auth headers, idempotency, timeout, retry, bounded responses, and errors.
+ * search: typed fetch, request metadata, authorization, idempotency, timeout, retry, Retry-After, response byte limit, error envelope
  * invariant: request_id, trace_id, access token, and idempotency values are enforced once and reused across retries.
  * risk: external_request, authz, security, state
  */
@@ -79,6 +81,13 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
     options.defaultTimeoutMs === undefined
       ? DEFAULT_FETCH_TIMEOUT_MS
       : validateTimeout(options.defaultTimeoutMs, 'defaultTimeoutMs');
+  const defaultMaxResponseBodyBytes =
+    options.maxResponseBodyBytes === undefined
+      ? DEFAULT_MAX_RESPONSE_BODY_BYTES
+      : validateMaxResponseBodyBytes(
+          options.maxResponseBodyBytes,
+          'maxResponseBodyBytes'
+        );
   const defaultRetryPolicy = resolveRetryPolicy(options.retry, undefined);
 
   return {
@@ -117,6 +126,13 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
         callOptions.retry === undefined
           ? defaultRetryPolicy
           : resolveRetryPolicy(callOptions.retry, 'retry');
+      const maxResponseBodyBytes =
+        callOptions.maxResponseBodyBytes === undefined
+          ? defaultMaxResponseBodyBytes
+          : validateMaxResponseBodyBytes(
+              callOptions.maxResponseBodyBytes,
+              'maxResponseBodyBytes'
+            );
       const url = buildUrl(baseUrl, operation.path, encoded);
       const headers = await buildHeaders({
         operation,
@@ -142,12 +158,13 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
           signal: callOptions.signal
         }),
         timeoutMs,
+        maxResponseBodyBytes,
         retryPolicy,
         retrySafe: isRetrySafeOperation(operation, idempotencyKey),
         successStatuses: operation.successStatuses
       });
 
-      return decodeResponse(operation, response);
+      return decodeResponse(operation, response, maxResponseBodyBytes);
     }
   };
 }
@@ -288,6 +305,7 @@ async function performFetchWithRetry(input: {
   readonly url: URL;
   readonly init: RequestInit;
   readonly timeoutMs: number;
+  readonly maxResponseBodyBytes: number;
   readonly retryPolicy: ResolvedRetryPolicy;
   readonly retrySafe: boolean;
   readonly successStatuses: readonly number[];
@@ -333,7 +351,10 @@ async function performFetchWithRetry(input: {
       return response;
     }
 
-    const serverDelayMs = await readServerRetryDelayMs(response);
+    const serverDelayMs = await readServerRetryDelayMs(
+      response,
+      input.maxResponseBodyBytes
+    );
     if (
       serverDelayMs !== null &&
       serverDelayMs > input.retryPolicy.maxRetryAfterMs
@@ -497,7 +518,8 @@ function calculateBackoffDelayMs(
 }
 
 async function readServerRetryDelayMs(
-  response: Response
+  response: Response,
+  maxResponseBodyBytes: number
 ): Promise<number | null> {
   const headerDelayMs = parseRetryAfterHeaderMs(
     response.headers.get(RETRY_AFTER_HEADER)
@@ -507,7 +529,10 @@ async function readServerRetryDelayMs(
   }
 
   try {
-    const payload: unknown = await response.clone().json();
+    const payload = await readJsonResponse(
+      response.clone(),
+      maxResponseBodyBytes
+    );
     if (!isRecord(payload)) {
       return null;
     }
@@ -629,9 +654,10 @@ function buildRequestInit(input: {
 
 async function decodeResponse<Operation extends AnyZdpOperationDefinition>(
   operation: Operation,
-  response: Response
+  response: Response,
+  maxResponseBodyBytes: number
 ): Promise<ZdpOperationResponse<Operation>> {
-  const payload = await readJsonResponse(response);
+  const payload = await readJsonResponse(response, maxResponseBodyBytes);
 
   if (!operation.successStatuses.includes(response.status)) {
     try {
@@ -671,8 +697,14 @@ async function decodeResponse<Operation extends AnyZdpOperationDefinition>(
   }
 }
 
-async function readJsonResponse(response: Response): Promise<unknown> {
-  const text = await response.text();
+async function readJsonResponse(
+  response: Response,
+  maxResponseBodyBytes: number
+): Promise<unknown> {
+  const text = await readBoundedResponseText(
+    response,
+    maxResponseBodyBytes
+  );
   if (text.trim().length === 0) {
     return null;
   }
@@ -685,6 +717,106 @@ async function readJsonResponse(response: Response): Promise<unknown> {
       message: 'ZDP response body must be valid JSON when present.'
     });
   }
+}
+
+async function readBoundedResponseText(
+  response: Response,
+  maxResponseBodyBytes: number
+): Promise<string> {
+  if (response.body === null) {
+    return '';
+  }
+
+  const declaredLength = parseContentLength(
+    response.headers.get(CONTENT_LENGTH_HEADER)
+  );
+  if (
+    declaredLength !== null &&
+    declaredLength > maxResponseBodyBytes
+  ) {
+    cancelResponseBody(response);
+    throw createResponseTooLargeError(
+      response.status,
+      maxResponseBodyBytes,
+      declaredLength
+    );
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const textParts: string[] = [];
+  let receivedBytes = 0;
+
+  try {
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) {
+        break;
+      }
+
+      receivedBytes += chunk.value.byteLength;
+      if (receivedBytes > maxResponseBodyBytes) {
+        cancelResponseReader(reader);
+        throw createResponseTooLargeError(
+          response.status,
+          maxResponseBodyBytes,
+          receivedBytes
+        );
+      }
+
+      textParts.push(decoder.decode(chunk.value, { stream: true }));
+    }
+
+    textParts.push(decoder.decode());
+    return textParts.join('');
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function cancelResponseBody(response: Response): void {
+  try {
+    void response.body?.cancel().catch(() => undefined);
+  } catch {
+    // The bounded protocol error is more useful than a cancellation error.
+  }
+}
+
+function cancelResponseReader(
+  reader: ReadableStreamDefaultReader<Uint8Array>
+): void {
+  try {
+    void reader.cancel().catch(() => undefined);
+  } catch {
+    // The bounded protocol error is more useful than a cancellation error.
+  }
+}
+
+function parseContentLength(value: string | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const length = Number(normalized);
+  return Number.isSafeInteger(length) ? length : Number.POSITIVE_INFINITY;
+}
+
+function createResponseTooLargeError(
+  status: number,
+  maxResponseBodyBytes: number,
+  receivedBytes: number
+): ZdpProtocolError {
+  return new ZdpProtocolError({
+    status,
+    message:
+      `ZDP response body exceeded maxResponseBodyBytes ` +
+      `(${receivedBytes} > ${maxResponseBodyBytes}).`
+  });
 }
 
 function buildUrl(
@@ -749,22 +881,40 @@ function appendQueryValue(url: URL, key: string, value: ZdpQueryValue): void {
 }
 
 function normalizeBaseUrl(baseUrl: string): URL {
+  let url: URL;
   try {
-    const url = new URL(baseUrl);
-    if (url.protocol !== 'https:' && url.hostname !== 'localhost') {
-      throw new Error('Only HTTPS or localhost API base URLs are allowed.');
-    }
-    return url;
-  } catch (error) {
+    url = new URL(baseUrl);
+  } catch {
+    throw new ZdpClientConfigurationError('Invalid ZDP API base URL.');
+  }
+
+  if (url.username.length > 0 || url.password.length > 0) {
     throw new ZdpClientConfigurationError(
-      error instanceof Error ? error.message : 'Invalid ZDP API base URL.'
+      'ZDP API base URL must not include embedded credentials.'
     );
   }
+  if (url.protocol !== 'https:' && url.hostname !== 'localhost') {
+    throw new ZdpClientConfigurationError(
+      'Only HTTPS or localhost API base URLs are allowed.'
+    );
+  }
+
+  return url;
 }
 
 function validateTimeout(value: number, label: string): number {
   if (!Number.isInteger(value) || value <= 0) {
     throw new ZdpClientConfigurationError(`${label} must be a positive integer.`);
+  }
+
+  return value;
+}
+
+function validateMaxResponseBodyBytes(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new ZdpClientConfigurationError(
+      `${label} must be a positive safe integer.`
+    );
   }
 
   return value;
@@ -782,11 +932,22 @@ function mergeAbortSignals(
   }
 
   const controller = new AbortController();
-  const abortFromCaller = (): void => controller.abort(callerSignal.reason);
-  const abortFromTimeout = (): void => controller.abort(timeoutSignal.reason);
+  let cleaned = false;
   const cleanup = (): void => {
+    if (cleaned) {
+      return;
+    }
+    cleaned = true;
     callerSignal.removeEventListener('abort', abortFromCaller);
     timeoutSignal.removeEventListener('abort', abortFromTimeout);
+  };
+  const abortFromCaller = (): void => {
+    controller.abort(callerSignal.reason);
+    cleanup();
+  };
+  const abortFromTimeout = (): void => {
+    controller.abort(timeoutSignal.reason);
+    cleanup();
   };
 
   if (callerSignal.aborted) {

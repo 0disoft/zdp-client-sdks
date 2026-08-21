@@ -16,6 +16,8 @@ sdk_surface:
     - trace_id propagation
     - idempotency key propagation
     - bounded idempotency-safe retry and Retry-After handling
+    - bounded JSON response body handling
+    - credential-free API base URL handling
     - standard error envelope handling
     - error envelope normalization
     - timeout option support
