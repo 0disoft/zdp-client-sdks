@@ -77,7 +77,8 @@ describe('typed safe calls', () => {
             'ratelimit-reset': '1787220000',
             'retry-after': '3',
             'set-cookie': 'session=must-not-leak',
-              }
+            'x-visible': 'visible'
+          }
         }),
       requestIdFactory: () => 'request_123',
       traceIdFactory: () => 'trace_123'
@@ -104,8 +105,7 @@ describe('typed safe calls', () => {
         'retry-after': '3',
         'x-ratelimit-remaining': '42',
         'x-request-id': 'response_request_123',
-        'x-trace-id': 'response_trace_123',
-        'x-visible': 'visible'
+        'x-trace-id': 'response_trace_123'
       },
       requestId: 'response_request_123',
       traceId: 'response_trace_123',
