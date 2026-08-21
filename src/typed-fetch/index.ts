@@ -30,7 +30,8 @@ export type {
   ZdpApiRequest,
   ZdpApiResponse,
   ZdpApiSafeCall,
-  ZdpApiSafeCallResult
+  ZdpApiSafeCallResult,
+  ZdpSafeApiClient
 } from './api-client';
 export * from './api-models';
 export { ZDP_API_SCHEMA_RUNTIME_TYPE_MAP } from './api-model-runtime';

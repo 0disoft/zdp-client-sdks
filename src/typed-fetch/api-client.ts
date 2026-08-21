@@ -3,6 +3,7 @@ import {
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from './api-operations';
 import { createZdpGeneratedTypedFetchClient } from './generated-operations';
+import type { ZdpGeneratedOperationDefinitions } from './generated-operations';
 import type { ZdpApiOperationId } from './api-operations';
 import { ZDP_API_SCHEMA_RUNTIME_TYPE_MAP } from './api-model-runtime';
 import type {
@@ -21,6 +22,7 @@ import type {
   ZdpQueryValue,
   ZdpResponseMetadata,
   ZdpSafeCallResult,
+  ZdpSafeTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
 
@@ -125,6 +127,13 @@ export type ZdpApiSafeCall = <OperationId extends ZdpApiOperationId>(
   ...args: ZdpApiCallArguments<OperationId>
 ) => Promise<ZdpApiSafeCallResult<OperationId>>;
 
+export type ZdpSafeApiClient = ZdpSafeTypedFetchClient<
+  ZdpGeneratedOperationDefinitions<
+    ApiOperationMap,
+    typeof ZDP_API_SCHEMA_MODEL_MAP
+  >
+>;
+
 export type ZdpApiClient = ZdpApiOperationTree &
   Readonly<{
     raw: ReturnType<typeof createZdpSafeApiClient>;
@@ -137,7 +146,7 @@ export type ZdpApiClient = ZdpApiOperationTree &
  */
 export function createZdpSafeApiClient(
   options: ZdpTypedFetchClientOptions
-) {
+): ZdpSafeApiClient {
   return createZdpGeneratedTypedFetchClient(
     ZDP_TYPED_FETCH_OPERATION_MAP,
     ZDP_API_SCHEMA_MODEL_MAP,
