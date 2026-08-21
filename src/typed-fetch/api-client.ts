@@ -1,8 +1,9 @@
 import {
   ZDP_API_SCHEMA_MODEL_MAP,
-  ZDP_TYPED_FETCH_OPERATION_MAP,
-  createZdpApiClient
+  ZDP_TYPED_FETCH_OPERATION_MAP
 } from './api-operations';
+import { createZdpGeneratedTypedFetchClient } from './generated-operations';
+import type { ZdpGeneratedOperationDefinitions } from './generated-operations';
 import type { ZdpApiOperationId } from './api-operations';
 import { ZDP_API_SCHEMA_RUNTIME_TYPE_MAP } from './api-model-runtime';
 import type {
@@ -14,16 +15,21 @@ import {
   ZdpClientConfigurationError,
   ZdpProtocolError
 } from './errors';
+import type { ZdpApiError } from './errors';
 import type {
   EncodedZdpRequest,
   ZdpCallOptions,
   ZdpQueryValue,
+  ZdpResponseMetadata,
+  ZdpSafeCallResult,
+  ZdpSafeTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
 
 const PATH_PARAMETER_PATTERN = /\{([a-zA-Z0-9_]+)\}/g;
 
 type ApiOperationMap = typeof ZDP_TYPED_FETCH_OPERATION_MAP;
+type ApiOperation = ApiOperationMap[ZdpApiOperationId];
 
 type RequestSchemaRef<OperationId extends ZdpApiOperationId> =
   ApiOperationMap[OperationId]['requestSchemaRef'] & keyof ZdpApiSchemaTypeMap;
@@ -44,6 +50,12 @@ type PathParameters<Path extends string> = [PathParameterNames<Path>] extends [
 
 type Simplify<Value> = Readonly<{ [Key in keyof Value]: Value[Key] }>;
 
+interface PreparedApiCall {
+  readonly operation: ApiOperation;
+  readonly encoded: EncodedZdpRequest;
+  readonly callOptions: ZdpCallOptions | undefined;
+}
+
 export type ZdpApiRequest<OperationId extends ZdpApiOperationId> = Simplify<
   ZdpApiSchemaTypeMap[RequestSchemaRef<OperationId>] &
     PathParameters<ApiOperationMap[OperationId]['path']>
@@ -53,6 +65,18 @@ export type ZdpApiResponse<OperationId extends ZdpApiOperationId> =
   ResponseSchemaRef<OperationId> extends keyof ZdpApiSchemaTypeMap
     ? ZdpApiSchemaTypeMap[ResponseSchemaRef<OperationId>]
     : undefined;
+
+export type ZdpApiErrorCode<OperationId extends ZdpApiOperationId> =
+  ApiOperationMap[OperationId]['errorCodes'][number];
+
+export type ZdpApiOperationError<OperationId extends ZdpApiOperationId> =
+  ZdpApiError<ZdpApiErrorCode<OperationId>>;
+
+export type ZdpApiSafeCallResult<OperationId extends ZdpApiOperationId> =
+  ZdpSafeCallResult<
+    ZdpApiResponse<OperationId>,
+    ZdpApiErrorCode<OperationId>
+  >;
 
 export type ZdpApiCallArguments<OperationId extends ZdpApiOperationId> =
   keyof ZdpApiRequest<OperationId> extends never
@@ -98,11 +122,37 @@ export type ZdpApiCall = <OperationId extends ZdpApiOperationId>(
   ...args: ZdpApiCallArguments<OperationId>
 ) => Promise<ZdpApiResponse<OperationId>>;
 
+export type ZdpApiSafeCall = <OperationId extends ZdpApiOperationId>(
+  operationId: OperationId,
+  ...args: ZdpApiCallArguments<OperationId>
+) => Promise<ZdpApiSafeCallResult<OperationId>>;
+
+export type ZdpSafeApiClient = ZdpSafeTypedFetchClient<
+  ZdpGeneratedOperationDefinitions<
+    ApiOperationMap,
+    typeof ZDP_API_SCHEMA_MODEL_MAP
+  >
+>;
+
 export type ZdpApiClient = ZdpApiOperationTree &
   Readonly<{
-    raw: ReturnType<typeof createZdpApiClient>;
+    raw: ReturnType<typeof createZdpSafeApiClient>;
     call: ZdpApiCall;
+    safeCall: ZdpApiSafeCall;
   }>;
+
+/**
+ * Creates the generated low-level API client with operation-typed safe results.
+ */
+export function createZdpSafeApiClient(
+  options: ZdpTypedFetchClientOptions
+): ZdpSafeApiClient {
+  return createZdpGeneratedTypedFetchClient(
+    ZDP_TYPED_FETCH_OPERATION_MAP,
+    ZDP_API_SCHEMA_MODEL_MAP,
+    options
+  );
+}
 
 /**
  * Creates the ergonomic TypeScript SDK facade.
@@ -114,18 +164,18 @@ export type ZdpApiClient = ZdpApiOperationTree &
 export function createZdpClient(
   options: ZdpTypedFetchClientOptions
 ): ZdpApiClient {
-  const raw = createZdpApiClient(options);
-  const rawCall = raw.call as (
+  const raw = createZdpSafeApiClient(options);
+  const rawSafeCall = raw.safeCall as (
     operationId: ZdpApiOperationId,
     request: EncodedZdpRequest,
     options?: ZdpCallOptions
-  ) => Promise<unknown>;
+  ) => Promise<ZdpSafeCallResult<unknown, string>>;
   const namespaces: Record<string, unknown> = {};
 
-  const invoke = async (
+  const prepareCall = (
     operationId: ZdpApiOperationId,
     args: readonly unknown[]
-  ): Promise<unknown> => {
+  ): PreparedApiCall => {
     const operation = ZDP_TYPED_FETCH_OPERATION_MAP[operationId];
     const requestSchema = ZDP_API_SCHEMA_MODEL_MAP[operation.requestSchemaRef];
     const pathParameters = readPathParameters(operation.path);
@@ -157,27 +207,69 @@ export function createZdpClient(
       request,
       pathParameters
     );
-    const encoded = encodeDomainRequest(
-      operation.method,
-      request,
-      pathParameters
-    );
-    const response = await rawCall(operationId, encoded, callOptions);
 
-    if (operation.responseSchemaRef === null) {
-      return undefined;
+    return {
+      operation,
+      encoded: encodeDomainRequest(
+        operation.method,
+        request,
+        pathParameters
+      ),
+      callOptions
+    };
+  };
+
+  const invoke = async (
+    operationId: ZdpApiOperationId,
+    args: readonly unknown[]
+  ): Promise<unknown> => {
+    const prepared = prepareCall(operationId, args);
+    const result = await rawSafeCall(
+      operationId,
+      prepared.encoded,
+      prepared.callOptions
+    );
+    if (!result.ok) {
+      throw result.error;
+    }
+    return decodeDomainResponse(
+      operationId,
+      prepared.operation,
+      result.data,
+      result.response
+    );
+  };
+
+  const invokeSafe = async (
+    operationId: ZdpApiOperationId,
+    args: readonly unknown[]
+  ): Promise<ZdpSafeCallResult<unknown, string>> => {
+    const prepared = prepareCall(operationId, args);
+    const result = await rawSafeCall(
+      operationId,
+      prepared.encoded,
+      prepared.callOptions
+    );
+    if (!result.ok) {
+      return result;
     }
 
-    validateResponsePayload(
-      operationId,
-      operation.responseSchemaRef,
-      response
-    );
-    return response;
+    return {
+      ok: true,
+      data: decodeDomainResponse(
+        operationId,
+        prepared.operation,
+        result.data,
+        result.response
+      ),
+      response: result.response
+    };
   };
 
   const call = ((operationId: ZdpApiOperationId, ...args: unknown[]) =>
     invoke(operationId, args)) as ZdpApiCall;
+  const safeCall = ((operationId: ZdpApiOperationId, ...args: unknown[]) =>
+    invokeSafe(operationId, args)) as ZdpApiSafeCall;
 
   for (const operationId of Object.keys(
     ZDP_TYPED_FETCH_OPERATION_MAP
@@ -187,7 +279,26 @@ export function createZdpClient(
     );
   }
 
-  return Object.assign(namespaces, { raw, call }) as ZdpApiClient;
+  return Object.assign(namespaces, { raw, call, safeCall }) as ZdpApiClient;
+}
+
+function decodeDomainResponse(
+  operationId: ZdpApiOperationId,
+  operation: ApiOperation,
+  response: unknown,
+  responseMetadata: ZdpResponseMetadata
+): unknown {
+  if (operation.responseSchemaRef === null) {
+    return undefined;
+  }
+
+  validateResponsePayload(
+    operationId,
+    operation.responseSchemaRef,
+    response,
+    responseMetadata
+  );
+  return response;
 }
 
 function installOperationMethod(
@@ -328,12 +439,14 @@ function validateRequestPayload(
 function validateResponsePayload(
   operationId: ZdpApiOperationId,
   schemaRef: keyof typeof ZDP_API_SCHEMA_RUNTIME_TYPE_MAP,
-  response: unknown
+  response: unknown,
+  responseMetadata: ZdpResponseMetadata
 ): void {
   if (!isRecord(response)) {
     throw new ZdpProtocolError({
-      status: 0,
-      message: `ZDP operation \`${operationId}\` returned a non-object response.`
+      status: responseMetadata.status,
+      message: `ZDP operation \`${operationId}\` returned a non-object response.`,
+      response: responseMetadata
     });
   }
 
@@ -341,7 +454,8 @@ function validateResponsePayload(
     operationId,
     schemaRef,
     value: response,
-    mode: 'response'
+    mode: 'response',
+    responseMetadata
   });
 }
 
@@ -350,6 +464,7 @@ function validateSchemaFields(input: {
   readonly schemaRef: keyof typeof ZDP_API_SCHEMA_RUNTIME_TYPE_MAP;
   readonly value: Readonly<Record<string, unknown>>;
   readonly mode: 'request' | 'response';
+  readonly responseMetadata?: ZdpResponseMetadata;
 }): void {
   const schema = ZDP_API_SCHEMA_RUNTIME_TYPE_MAP[input.schemaRef];
 
@@ -381,6 +496,7 @@ function throwSchemaValueError(
     readonly operationId: ZdpApiOperationId;
     readonly schemaRef: string;
     readonly mode: 'request' | 'response';
+    readonly responseMetadata?: ZdpResponseMetadata;
   },
   detail: string
 ): never {
@@ -391,7 +507,13 @@ function throwSchemaValueError(
   if (input.mode === 'request') {
     throw new ZdpClientConfigurationError(message);
   }
-  throw new ZdpProtocolError({ status: 0, message });
+  throw new ZdpProtocolError({
+    status: input.responseMetadata?.status ?? 0,
+    message,
+    ...(input.responseMetadata === undefined
+      ? {}
+      : { response: input.responseMetadata })
+  });
 }
 
 function matchesFieldType(

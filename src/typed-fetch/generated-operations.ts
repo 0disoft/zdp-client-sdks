@@ -1,4 +1,5 @@
-import { createZdpTypedFetchClient, defineZdpOperation, defineZdpOperations } from './client';
+import { defineZdpOperations } from './client';
+import { createZdpSafeTypedFetchClient } from './safe-call';
 import {
   ZdpClientConfigurationError,
   ZdpProtocolError
@@ -9,7 +10,7 @@ import type {
   ZdpIdempotencyPolicy,
   ZdpOperationDefinition,
   ZdpResponseContext,
-  ZdpTypedFetchClient,
+  ZdpSafeTypedFetchClient,
   ZdpTypedFetchClientOptions
 } from './types';
 
@@ -91,7 +92,8 @@ export type ZdpGeneratedOperationDefinition<
   SchemaModels extends ZdpGeneratedSchemaModelMap = ZdpGeneratedSchemaModelMap
 > = ZdpOperationDefinition<
   ZdpGeneratedOperationRequest<Operation, SchemaModels>,
-  ZdpGeneratedOperationResponse<Operation, SchemaModels>
+  ZdpGeneratedOperationResponse<Operation, SchemaModels>,
+  Operation['errorCodes'][number]
 >;
 
 export type ZdpGeneratedOperationMetadataMap = Readonly<
@@ -144,8 +146,10 @@ export function createZdpGeneratedTypedFetchClient<
   operationMap: OperationMap,
   schemaModels: SchemaModels,
   options: ZdpTypedFetchClientOptions
-): ZdpTypedFetchClient<ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels>> {
-  return createZdpTypedFetchClient(
+): ZdpSafeTypedFetchClient<
+  ZdpGeneratedOperationDefinitions<OperationMap, SchemaModels>
+> {
+  return createZdpSafeTypedFetchClient(
     createZdpGeneratedOperationDefinitions(operationMap, schemaModels),
     options
   );
@@ -170,10 +174,7 @@ function createOperationDefinition<
       ? null
       : readSchemaModel(schemaModels, metadata.responseSchemaRef, 'response');
 
-  return defineZdpOperation<
-    ZdpGeneratedOperationRequest<Operation, SchemaModels>,
-    ZdpGeneratedOperationResponse<Operation, SchemaModels>
-  >({
+  return {
     operationId: metadata.operationId,
     method: metadata.method,
     path: metadata.path,
@@ -192,7 +193,7 @@ function createOperationDefinition<
         response,
         context
       )
-  });
+  };
 }
 
 function validateOperationMetadata(

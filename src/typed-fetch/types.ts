@@ -1,3 +1,5 @@
+import type { ZdpApiError } from './errors';
+
 export type ZdpHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type ZdpIdempotencyPolicy =
@@ -22,7 +24,11 @@ export interface EncodedZdpRequest {
   readonly headers?: Readonly<Record<string, string>>;
 }
 
-export interface ZdpOperationDefinition<Request, Response> {
+export interface ZdpOperationDefinition<
+  Request,
+  Response,
+  ErrorCode extends string = string
+> {
   readonly operationId: string;
   readonly method: ZdpHttpMethod;
   readonly path: string;
@@ -31,7 +37,7 @@ export interface ZdpOperationDefinition<Request, Response> {
   readonly idempotency: ZdpIdempotencyPolicy;
   readonly requestIdRequired: boolean;
   readonly traceIdRequired: boolean;
-  readonly errorCodes: readonly string[];
+  readonly errorCodes: readonly ErrorCode[];
   readonly encodeRequest: (request: Request) => EncodedZdpRequest;
   readonly decodeResponse: (
     response: unknown,
@@ -43,16 +49,52 @@ export interface ZdpResponseContext {
   readonly status: number;
 }
 
-export type AnyZdpOperationDefinition = ZdpOperationDefinition<never, unknown>;
+export interface ZdpRateLimitMetadata {
+  readonly limit: number | null;
+  readonly remaining: number | null;
+  readonly reset: string | null;
+  readonly retryAfterSeconds: number | null;
+}
+
+export interface ZdpResponseMetadata {
+  readonly status: number;
+  readonly headers: Readonly<Record<string, string>>;
+  readonly requestId: string | null;
+  readonly traceId: string | null;
+  readonly rateLimit: ZdpRateLimitMetadata | null;
+}
+
+export type AnyZdpOperationDefinition = ZdpOperationDefinition<
+  never,
+  unknown,
+  string
+>;
 
 export type ZdpOperationRequest<Operation> =
-  Operation extends ZdpOperationDefinition<infer Request, unknown>
+  Operation extends ZdpOperationDefinition<
+    infer Request,
+    infer _Response,
+    infer _ErrorCode
+  >
     ? Request
     : never;
 
 export type ZdpOperationResponse<Operation> =
-  Operation extends ZdpOperationDefinition<never, infer Response>
+  Operation extends ZdpOperationDefinition<
+    infer _Request,
+    infer Response,
+    infer _ErrorCode
+  >
     ? Response
+    : never;
+
+export type ZdpOperationErrorCode<Operation> =
+  Operation extends ZdpOperationDefinition<
+    infer _Request,
+    infer _Response,
+    infer ErrorCode
+  >
+    ? ErrorCode
     : never;
 
 export type ZdpOperationMap = Readonly<Record<string, AnyZdpOperationDefinition>>;
@@ -114,6 +156,21 @@ export interface ZdpCallOptions {
   readonly retry?: false | ZdpRetryOptions;
 }
 
+export type ZdpSafeCallResult<
+  Response,
+  ErrorCode extends string = string
+> =
+  | Readonly<{
+      ok: true;
+      data: Response;
+      response: ZdpResponseMetadata;
+    }>
+  | Readonly<{
+      ok: false;
+      error: ZdpApiError<ErrorCode>;
+      response: ZdpResponseMetadata;
+    }>;
+
 export interface ZdpTypedFetchClient<Operations extends ZdpOperationMap> {
   readonly operations: Operations;
   call<OperationId extends Extract<keyof Operations, string>>(
@@ -121,4 +178,18 @@ export interface ZdpTypedFetchClient<Operations extends ZdpOperationMap> {
     request: ZdpOperationRequest<Operations[OperationId]>,
     options?: ZdpCallOptions
   ): Promise<ZdpOperationResponse<Operations[OperationId]>>;
+}
+
+export interface ZdpSafeTypedFetchClient<Operations extends ZdpOperationMap>
+  extends ZdpTypedFetchClient<Operations> {
+  safeCall<OperationId extends Extract<keyof Operations, string>>(
+    operationId: OperationId,
+    request: ZdpOperationRequest<Operations[OperationId]>,
+    options?: ZdpCallOptions
+  ): Promise<
+    ZdpSafeCallResult<
+      ZdpOperationResponse<Operations[OperationId]>,
+      ZdpOperationErrorCode<Operations[OperationId]>
+    >
+  >;
 }
