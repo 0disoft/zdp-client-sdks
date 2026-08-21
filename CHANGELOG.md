@@ -4,6 +4,8 @@
 
 ### Added
 
+- operation별 error code union을 보존하는 `safeCall()`과 성공·API 오류를 구분하는 discriminated result를 추가했다.
+- status, request ID, trace ID와 rate-limit 정보를 노출하는 allowlist 기반 response metadata를 추가했다.
 - TypeScript runtime을 `dist/**/*.js` ESM과 같은 구조의 `dist/**/*.d.ts` 선언 파일로 빌드하는 package build를 추가했다.
 - packed tarball을 Node, Bun, TypeScript `NodeNext` 소비자에서 검증하고 일반 CI에서는 Vite 8 build까지 확인한다.
 
@@ -20,6 +22,9 @@
 
 ### Security
 
+- success, error, retry metadata의 JSON response body를 기본 4 MiB로 제한하고 호출별 override를 지원한다.
+- API base URL의 embedded credential을 원문 반사 없이 거부한다.
+- response metadata는 관측·rate-limit allowlist 헤더만 공개해 임의 secret header가 SDK 결과로 전파되지 않게 한다.
 - signed provider URL을 ephemeral `Request` factory 안에 가두고 결과·오류·진행 이벤트에서 노출하지 않는다.
 - provider 요청에 ZDP Authorization, cookie, request ID, trace ID, idempotency key가 섞이면 전송 전에 실패한다.
 - provider 응답 본문은 공개 오류나 completion result로 전달하지 않는다.

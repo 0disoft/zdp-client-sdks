@@ -1,5 +1,7 @@
-export interface ZdpErrorEnvelope {
-  readonly code: string;
+import type { ZdpResponseMetadata } from './types';
+
+export interface ZdpErrorEnvelope<Code extends string = string> {
+  readonly code: Code;
   readonly message: string;
   readonly requestId: string;
   readonly traceId: string;
@@ -21,35 +23,42 @@ export class ZdpProtocolError extends ZdpSdkError {
   readonly status: number;
   readonly requestId: string | null;
   readonly traceId: string | null;
+  readonly response: ZdpResponseMetadata | null;
 
   constructor(input: {
     readonly status: number;
     readonly message: string;
     readonly requestId?: string | null;
     readonly traceId?: string | null;
+    readonly response?: ZdpResponseMetadata;
   }) {
     super(input.message);
-    this.status = input.status;
-    this.requestId = input.requestId ?? null;
-    this.traceId = input.traceId ?? null;
+    this.response = input.response ?? null;
+    this.status = input.response?.status ?? input.status;
+    this.requestId = input.response?.requestId ?? input.requestId ?? null;
+    this.traceId = input.response?.traceId ?? input.traceId ?? null;
   }
 }
 
-export class ZdpApiError extends ZdpSdkError {
+export class ZdpApiError<Code extends string = string> extends ZdpSdkError {
   readonly status: number;
-  readonly code: string;
+  readonly code: Code;
   readonly requestId: string;
   readonly traceId: string;
+  readonly response: ZdpResponseMetadata;
   readonly details?: unknown;
   readonly retryAfterSeconds?: number;
   readonly documentationUrl?: string;
 
   constructor(input: {
     readonly status: number;
-    readonly envelope: ZdpErrorEnvelope;
+    readonly envelope: ZdpErrorEnvelope<Code>;
+    readonly response?: ZdpResponseMetadata;
   }) {
     super(input.envelope.message);
-    this.status = input.status;
+    this.response =
+      input.response ?? createErrorResponseMetadata(input.status, input.envelope);
+    this.status = this.response.status;
     this.code = input.envelope.code;
     this.requestId = input.envelope.requestId;
     this.traceId = input.envelope.traceId;
@@ -57,8 +66,12 @@ export class ZdpApiError extends ZdpSdkError {
     if (input.envelope.details !== undefined) {
       this.details = input.envelope.details;
     }
-    if (input.envelope.retryAfterSeconds !== undefined) {
-      this.retryAfterSeconds = input.envelope.retryAfterSeconds;
+    const retryAfterSeconds =
+      input.envelope.retryAfterSeconds ??
+      this.response.rateLimit?.retryAfterSeconds ??
+      undefined;
+    if (retryAfterSeconds !== undefined) {
+      this.retryAfterSeconds = retryAfterSeconds;
     }
     if (input.envelope.documentationUrl !== undefined) {
       this.documentationUrl = input.envelope.documentationUrl;
@@ -89,6 +102,8 @@ const FORBIDDEN_ERROR_ENVELOPE_FIELDS = [
   'stack_trace',
   'screen_component_payload'
 ] as const;
+
+const EMPTY_RESPONSE_HEADERS: Readonly<Record<string, string>> = Object.freeze({});
 
 export function parseZdpErrorEnvelope(input: unknown): ZdpErrorEnvelope {
   if (!isRecord(input)) {
@@ -142,6 +157,29 @@ export function parseZdpErrorEnvelope(input: unknown): ZdpErrorEnvelope {
   return envelope;
 }
 
+function createErrorResponseMetadata(
+  status: number,
+  envelope: ZdpErrorEnvelope
+): ZdpResponseMetadata {
+  const rateLimit =
+    envelope.retryAfterSeconds === undefined
+      ? null
+      : {
+          limit: null,
+          remaining: null,
+          reset: null,
+          retryAfterSeconds: envelope.retryAfterSeconds
+        };
+
+  return {
+    status,
+    headers: EMPTY_RESPONSE_HEADERS,
+    requestId: envelope.requestId,
+    traceId: envelope.traceId,
+    rateLimit
+  };
+}
+
 function readRequiredString(
   value: Record<string, unknown>,
   field: string
@@ -183,10 +221,14 @@ function readOptionalInteger(
   if (candidate === undefined || candidate === null) {
     return undefined;
   }
-  if (typeof candidate !== 'number' || !Number.isInteger(candidate)) {
+  if (
+    typeof candidate !== 'number' ||
+    !Number.isInteger(candidate) ||
+    candidate < 0
+  ) {
     throw new ZdpProtocolError({
       status: 0,
-      message: `API error response field \`${field}\` must be an integer when set.`
+      message: `API error response field \`${field}\` must be a non-negative integer when set.`
     });
   }
 
