@@ -51,7 +51,7 @@
   "sideEffects": false,
   "scripts": {
     "build": "bun scripts/build-package.ts",
-    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run generation:plan -- --check && bun run release:artifact:check",
+    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run sdk-semver:check && bun run generation:plan -- --check && bun run release:artifact:check",
     "check:tsgo": "tsgo --noEmit",
     "test": "bun test",
     "contracts:check": "bun scripts/check-client-sdk-contracts.ts",
@@ -61,8 +61,9 @@
     "api-operations:check": "bun scripts/sync-api-operations.ts --api-contracts-root ../zdp-api-contracts --check",
     "typescript-models:sync": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts",
     "typescript-models:check": "bun scripts/sync-typescript-api-models.ts --api-contracts-root ../zdp-api-contracts --check",
+    "sdk-semver:check": "bun scripts/check-sdk-semver.ts",
     "release:artifact:check": "bun run build && bun scripts/build-release-artifact.ts --check",
-    "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run typescript-models:check && bun run release:artifact:check && bun run smoke:package",
+    "release:check": "tsc --noEmit && bun test tests/release-workflow.test.ts && bun run api-contracts-lock:check && bun run typescript-models:check && bun run sdk-semver:check && bun run release:artifact:check && bun run smoke:package",
     "smoke:package": "bun run build && bun scripts/smoke-packed-package.ts",
     "smoke:vite": "bun run build && bun scripts/smoke-packed-package.ts --vite",
     "smoke:published": "bun scripts/smoke-published-package.ts"
