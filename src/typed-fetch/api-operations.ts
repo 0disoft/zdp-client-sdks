@@ -225,6 +225,40 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "secretFields": [],
     "sessionEffect": "none"
   },
+  "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest": {
+    "schemaRef": "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest",
+    "schemaId": "AccountSettingsOverviewGetRequest",
+    "sourceContract": "contracts/apis/core-api/account-settings-overview.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse": {
+    "schemaRef": "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse",
+    "schemaId": "AccountSettingsOverviewGetResponse",
+    "sourceContract": "contracts/apis/core-api/account-settings-overview.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "account",
+      "workspace",
+      "session",
+      "connected_products",
+      "notification_preferences"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
   "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest": {
     "schemaRef": "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest",
     "schemaId": "AuthSessionCurrentGetRequest",
@@ -1180,6 +1214,8 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     ],
     "optionalFields": [
       "product_id",
+      "topic_code",
+      "subject",
       "privacy_action",
       "account_ref"
     ],
@@ -1250,6 +1286,8 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     ],
     "optionalFields": [
       "product_id",
+      "topic_code",
+      "subject",
       "privacy_action"
     ],
     "secretFields": [],
@@ -1630,6 +1668,28 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "session_expired",
       "session_compromised",
       "account_restricted"
+    ]
+  },
+  "core.account.settings_overview.get": {
+    "operationId": "core.account.settings_overview.get",
+    "method": "GET",
+    "path": "/v1/account-settings/overview",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest",
+    "responseSchemaRef": "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "session_revoked",
+      "session_expired",
+      "account_restricted",
+      "workspace_access_denied"
     ]
   },
   "core.admin.operator_session_context.get": {

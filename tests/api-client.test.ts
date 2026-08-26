@@ -152,6 +152,41 @@ describe('generated TypeScript API client', () => {
     });
   });
 
+  it('reads the authenticated account settings overview without a request body', async () => {
+    const captured: { readonly requests: Array<{ url: URL; init?: RequestInit }> } = {
+      requests: []
+    };
+    const overview = {
+      account: { actor_ref: 'actor_123', display_name: 'Synthetic User' },
+      workspace: { workspace_ref: 'workspace_123', display_name: 'Synthetic Workspace' },
+      session: {
+        session_ref: 'session_123',
+        expires_at: '2026-08-20T12:00:00Z'
+      },
+      connected_products: [
+        { product_ref: 'product_123', connection_state: 'connected' }
+      ],
+      notification_preferences: [
+        { category: 'security', state: 'required' }
+      ]
+    } as const;
+    const client = createZdpClient({
+      baseUrl: 'https://api.example.test',
+      fetch: captureFetch(captured, overview, 200),
+      getAccessToken: () => 'synthetic-access-token',
+      requestIdFactory: () => 'request_123',
+      traceIdFactory: () => 'trace_123'
+    });
+
+    await expect(client.core.account.settingsOverview.get()).resolves.toEqual(
+      overview
+    );
+    expect(captured.requests[0]?.url.toString()).toBe(
+      'https://api.example.test/v1/account-settings/overview'
+    );
+    expect(captured.requests[0]?.init?.body).toBeUndefined();
+  });
+
   it('rejects request values that do not match generated field types', async () => {
     const client = createZdpClient({
       baseUrl: 'https://api.example.test',

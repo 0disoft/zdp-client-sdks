@@ -30,6 +30,7 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/apis/abuse-api/challenge.yaml',
   'contracts/apis/abuse-api/health.yaml',
   'contracts/apis/core-api/access-decision.yaml',
+  'contracts/apis/core-api/account-settings-overview.yaml',
   'contracts/apis/core-api/auth-session-consumer.yaml',
   'contracts/apis/core-api/auth-session.yaml',
   'contracts/apis/core-api/customer-policy-registry.yaml',

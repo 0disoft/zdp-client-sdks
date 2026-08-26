@@ -34,6 +34,7 @@ describe('SDK generation plan', () => {
         'contracts/apis/abuse-api/challenge.yaml',
         'contracts/apis/abuse-api/health.yaml',
         'contracts/apis/core-api/access-decision.yaml',
+        'contracts/apis/core-api/account-settings-overview.yaml',
         'contracts/apis/core-api/auth-session-consumer.yaml',
         'contracts/apis/core-api/auth-session.yaml',
         'contracts/apis/core-api/customer-policy-registry.yaml',
@@ -86,6 +87,7 @@ describe('SDK generation plan', () => {
         'core.auth.sessions.refresh',
         'core.auth.sessions.revoke_current',
         'core.auth.sessions.get_current',
+        'core.account.settings_overview.get',
         'core.admin.operator_session_context.get',
         'core.access.authorization_decisions.create',
         'core.auth.product_link_challenges.create',
@@ -147,6 +149,17 @@ describe('SDK generation plan', () => {
           path: '/v1/auth/sessions/current',
           authRequired: true,
           idempotency: 'not_required'
+        }),
+        'core.account.settings_overview.get': expect.objectContaining({
+          operationId: 'core.account.settings_overview.get',
+          method: 'GET',
+          path: '/v1/account-settings/overview',
+          authRequired: true,
+          idempotency: 'not_required',
+          requestSchemaRef:
+            'contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest',
+          responseSchemaRef:
+            'contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse'
         }),
         'core.auth.product_link_challenges.create': expect.objectContaining({
           operationId: 'core.auth.product_link_challenges.create',

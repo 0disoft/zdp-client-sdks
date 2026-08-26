@@ -1,5 +1,12 @@
 typescript_sdk_models:
   schema_field_types:
+    contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest: {}
+    contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse:
+      account: json_object
+      workspace: json_object
+      session: json_object
+      connected_products: json_object[]
+      notification_preferences: json_object[]
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest: {}
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse:
       operator_ref: string
@@ -380,6 +387,8 @@ typescript_sdk_models:
       locale: locale
       abuse_verification_ref: string
       product_id: string
+      topic_code: string
+      subject: string
       privacy_action: string
       account_ref: string
     contracts/apis/support-api/intake.yaml#SupportCaseCreateResponse:
@@ -405,6 +414,8 @@ typescript_sdk_models:
       last_activity_at: datetime
       content_access: string
       product_id: string
+      topic_code: string
+      subject: string
       privacy_action: string
     contracts/apis/support-api/intake.yaml#SupportCaseStatusChangeRequest:
       expected_source_version: integer

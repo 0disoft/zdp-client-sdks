@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.17.0
+
+### Added
+
+- 공통 계정 설정 화면을 위한 `core.account.settings_overview.get` operation과 TypeScript request/response model을 추가했다.
+- 계정, 현재 workspace, session, 연결 제품, 알림 설정 overview를 인증된 GET 호출 하나로 읽을 수 있다.
+- 최신 Support 문의 계약의 선택적 `topic_code`와 `subject` 필드를 TypeScript model에 동기화했다.
+
+### Changed
+
+- API 계약 lock과 CI·release checkout을 `zdp-api-contracts@0.37.0`의 account-settings overview 계약 commit으로 갱신했다.
+
 ## 0.16.0
 
 ### Added
