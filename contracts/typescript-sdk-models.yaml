@@ -2,11 +2,16 @@ typescript_sdk_models:
   schema_field_types:
     contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest: {}
     contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse:
-      account: json_object
-      workspace: json_object
-      session: json_object
-      connected_products: json_object[]
-      notification_preferences: json_object[]
+      account:
+        object_model: AccountSettingsOverviewAccount
+      workspace:
+        object_model: AccountSettingsOverviewWorkspace
+      session:
+        object_model: AccountSettingsOverviewSession
+      connected_products:
+        object_array_model: AccountSettingsOverviewConnectedProduct
+      notification_preferences:
+        object_array_model: AccountSettingsOverviewNotificationPreference
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest: {}
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse:
       operator_ref: string

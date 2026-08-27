@@ -32,7 +32,26 @@ interface EnumFieldType {
   readonly enum: readonly string[];
 }
 
-type FieldType = SimpleFieldType | EnumFieldType;
+interface ObjectModelFieldType {
+  readonly object_model: string;
+}
+
+interface ObjectArrayModelFieldType {
+  readonly object_array_model: string;
+}
+
+type FieldType =
+  | SimpleFieldType
+  | EnumFieldType
+  | ObjectModelFieldType
+  | ObjectArrayModelFieldType;
+
+interface InlineObjectModel {
+  readonly name: string;
+  readonly requiredFields: readonly string[];
+  readonly optionalFields: readonly string[];
+  readonly fieldTypes: Readonly<Record<string, FieldType>>;
+}
 
 type SchemaFieldTypeMap = Readonly<
   Record<string, Readonly<Record<string, FieldType>>>
@@ -67,7 +86,16 @@ export async function renderTypescriptApiModels(
     resolve(options.contractFile)
   );
   const models = selectOperationSchemaModels(apiExportPlan, schemaFieldTypes);
-  const modelsSource = renderModelsSource(models, schemaFieldTypes);
+  const inlineObjectModels = await loadInlineObjectModels(
+    resolve(options.apiContractsRoot),
+    models,
+    schemaFieldTypes
+  );
+  const modelsSource = renderModelsSource(
+    models,
+    schemaFieldTypes,
+    inlineObjectModels
+  );
   const runtimeSource = renderRuntimeSource(models, schemaFieldTypes);
   const [currentModelsSource, currentRuntimeSource] = await Promise.all([
     readOptionalFile(modelsOutputPath),
@@ -140,9 +168,183 @@ function parseFieldType(
     }
   }
 
+  if (isRecord(value)) {
+    if (
+      typeof value.object_model === 'string' &&
+      isTypescriptIdentifier(value.object_model) &&
+      Object.keys(value).length === 1
+    ) {
+      return { object_model: value.object_model };
+    }
+    if (
+      typeof value.object_array_model === 'string' &&
+      isTypescriptIdentifier(value.object_array_model) &&
+      Object.keys(value).length === 1
+    ) {
+      return { object_array_model: value.object_array_model };
+    }
+  }
+
   throw new Error(
     `Unsupported TypeScript field type for ${schemaRef}#${field}.`
   );
+}
+
+async function loadInlineObjectModels(
+  apiContractsRoot: string,
+  models: readonly ApiSchemaModelHandoff[],
+  schemaFieldTypes: SchemaFieldTypeMap
+): Promise<readonly InlineObjectModel[]> {
+  const contracts = new Map<string, Record<string, unknown>>();
+  const result: InlineObjectModel[] = [];
+  const modelNames = new Set(models.map((model) => model.schemaId));
+
+  for (const model of models) {
+    const fieldTypes = readFieldTypes(schemaFieldTypes, model.schemaRef);
+    for (const [field, fieldType] of Object.entries(fieldTypes)) {
+      if (!isObjectModelFieldType(fieldType) && !isObjectArrayModelFieldType(fieldType)) {
+        continue;
+      }
+
+      let contract = contracts.get(model.sourceContract);
+      if (contract === undefined) {
+        contract = readRecord(
+          Bun.YAML.parse(
+            await readFile(resolve(apiContractsRoot, model.sourceContract), 'utf8')
+          ),
+          `API contract ${model.sourceContract}`
+        );
+        contracts.set(model.sourceContract, contract);
+      }
+
+      const schemaBundle = readRecord(
+        contract.schema_bundle,
+        `${model.sourceContract} schema_bundle`
+      );
+      const schemas = readRecordArray(
+        schemaBundle.schemas,
+        `${model.sourceContract} schemas`
+      );
+      const schema = schemas.find((candidate) => candidate.id === model.schemaId);
+      if (schema === undefined) {
+        throw new Error(
+          `API contract ${model.sourceContract} lacks schema ${model.schemaId}.`
+        );
+      }
+
+      const properties = readRecord(
+        schema.properties,
+        `${model.schemaRef} properties`
+      );
+      const property = readRecord(
+        properties[field],
+        `${model.schemaRef}#${field}`
+      );
+      const objectSchema = isObjectArrayModelFieldType(fieldType)
+        ? readArrayObjectSchema(property, model.schemaRef, field)
+        : readObjectSchema(property, model.schemaRef, field);
+      const name = isObjectArrayModelFieldType(fieldType)
+        ? fieldType.object_array_model
+        : fieldType.object_model;
+
+      if (modelNames.has(name)) {
+        throw new Error(`Duplicate TypeScript model name ${name}.`);
+      }
+      modelNames.add(name);
+      result.push(parseInlineObjectModel(name, objectSchema, model.schemaRef, field));
+    }
+  }
+
+  return result;
+}
+
+function readObjectSchema(
+  property: Record<string, unknown>,
+  schemaRef: string,
+  field: string
+): Record<string, unknown> {
+  if (property.type !== 'object') {
+    throw new Error(`${schemaRef}#${field} must be an object.`);
+  }
+  return property;
+}
+
+function readArrayObjectSchema(
+  property: Record<string, unknown>,
+  schemaRef: string,
+  field: string
+): Record<string, unknown> {
+  if (property.type !== 'array') {
+    throw new Error(`${schemaRef}#${field} must be an array.`);
+  }
+  return readObjectSchema(
+    readRecord(property.items, `${schemaRef}#${field} items`),
+    schemaRef,
+    `${field}[]`
+  );
+}
+
+function parseInlineObjectModel(
+  name: string,
+  schema: Record<string, unknown>,
+  parentSchemaRef: string,
+  parentField: string
+): InlineObjectModel {
+  const properties = readRecord(
+    schema.properties,
+    `${parentSchemaRef}#${parentField} properties`
+  );
+  const requiredFields = readStringArray(
+    schema.required,
+    `${parentSchemaRef}#${parentField} required`
+  );
+  const optionalFields = Object.keys(properties).filter(
+    (field) => !requiredFields.includes(field)
+  );
+  const missing = requiredFields.filter((field) => !Object.hasOwn(properties, field));
+  if (missing.length > 0) {
+    throw new Error(
+      `${parentSchemaRef}#${parentField} requires undeclared fields: ${missing.join(', ')}.`
+    );
+  }
+
+  const fieldTypes: Record<string, FieldType> = {};
+  for (const [field, rawProperty] of Object.entries(properties)) {
+    fieldTypes[field] = parseApiPropertyFieldType(
+      readRecord(rawProperty, `${parentSchemaRef}#${parentField}.${field}`),
+      parentSchemaRef,
+      `${parentField}.${field}`
+    );
+  }
+
+  return { name, requiredFields, optionalFields, fieldTypes };
+}
+
+function parseApiPropertyFieldType(
+  property: Record<string, unknown>,
+  schemaRef: string,
+  field: string
+): FieldType {
+  if (Array.isArray(property.enum)) {
+    return parseFieldType({ enum: property.enum }, schemaRef, field);
+  }
+  if (property.type === 'string') {
+    return property.format === 'date-time' ? 'datetime' : 'string';
+  }
+  if (property.type === 'boolean') {
+    return 'boolean';
+  }
+  if (property.type === 'integer') {
+    return 'integer';
+  }
+  if (
+    property.type === 'array' &&
+    isRecord(property.items) &&
+    property.items.type === 'string'
+  ) {
+    return 'string[]';
+  }
+  throw new Error(`Unsupported API field type for ${schemaRef}#${field}.`);
 }
 
 function selectOperationSchemaModels(
@@ -235,7 +437,8 @@ function validateSchemaFieldCoverage(
 
 function renderModelsSource(
   models: readonly ApiSchemaModelHandoff[],
-  schemaFieldTypes: SchemaFieldTypeMap
+  schemaFieldTypes: SchemaFieldTypeMap,
+  inlineObjectModels: readonly InlineObjectModel[]
 ): string {
   const lines: string[] = [
     '/* Generated by scripts/sync-typescript-api-models.ts. Do not edit. */',
@@ -259,27 +462,25 @@ function renderModelsSource(
     ''
   ];
 
+  for (const model of inlineObjectModels) {
+    lines.push(renderInterface(model.name, model.requiredFields, model.optionalFields, model.fieldTypes, model.name));
+  }
+
+  if (inlineObjectModels.length > 0) {
+    lines.push('');
+  }
+
   for (const model of models) {
     const fieldTypes = readFieldTypes(schemaFieldTypes, model.schemaRef);
-    const fields = [
-      ...model.requiredFields.map(
-        (field) =>
-          `readonly ${field}: ${renderTypescriptFieldType(
-            fieldTypes[field],
-            model.schemaRef,
-            field
-          )};`
-      ),
-      ...model.optionalFields.map(
-        (field) =>
-          `readonly ${field}?: ${renderTypescriptFieldType(
-            fieldTypes[field],
-            model.schemaRef,
-            field
-          )};`
+    lines.push(
+      renderInterface(
+        model.schemaId,
+        model.requiredFields,
+        model.optionalFields,
+        fieldTypes,
+        model.schemaRef
       )
-    ];
-    lines.push(`export interface ${model.schemaId} { ${fields.join(' ')} }`);
+    );
   }
 
   lines.push('');
@@ -293,6 +494,34 @@ function renderModelsSource(
   lines.push('');
 
   return lines.join('\n');
+}
+
+function renderInterface(
+  name: string,
+  requiredFields: readonly string[],
+  optionalFields: readonly string[],
+  fieldTypes: Readonly<Record<string, FieldType>>,
+  schemaRef: string
+): string {
+  const fields = [
+    ...requiredFields.map(
+      (field) =>
+        `readonly ${field}: ${renderTypescriptFieldType(
+          fieldTypes[field],
+          schemaRef,
+          field
+        )};`
+    ),
+    ...optionalFields.map(
+      (field) =>
+        `readonly ${field}?: ${renderTypescriptFieldType(
+          fieldTypes[field],
+          schemaRef,
+          field
+        )};`
+    )
+  ];
+  return `export interface ${name} { ${fields.join(' ')} }`;
 }
 
 function renderRuntimeSource(
@@ -310,7 +539,11 @@ function renderRuntimeSource(
   models.forEach((model, index) => {
     const descriptor = {
       requiredFields: model.requiredFields,
-      fieldTypes: readFieldTypes(schemaFieldTypes, model.schemaRef)
+      fieldTypes: Object.fromEntries(
+        Object.entries(readFieldTypes(schemaFieldTypes, model.schemaRef)).map(
+          ([field, fieldType]) => [field, renderRuntimeFieldType(fieldType)]
+        )
+      )
     };
     const suffix = index === models.length - 1 ? '' : ',';
     lines.push(
@@ -346,7 +579,13 @@ function renderTypescriptFieldType(
     throw new Error(`Missing field type for ${schemaRef}#${field}.`);
   }
   if (typeof fieldType !== 'string') {
-    return fieldType.enum.map((value) => JSON.stringify(value)).join(' | ');
+    if ('enum' in fieldType) {
+      return fieldType.enum.map((value) => JSON.stringify(value)).join(' | ');
+    }
+    if ('object_model' in fieldType) {
+      return fieldType.object_model;
+    }
+    return `readonly ${fieldType.object_array_model}[]`;
   }
 
   const rendered: Record<SimpleFieldType, string> = {
@@ -365,6 +604,30 @@ function renderTypescriptFieldType(
   };
 
   return rendered[fieldType];
+}
+
+function renderRuntimeFieldType(
+  fieldType: FieldType
+): SimpleFieldType | EnumFieldType {
+  if (isObjectModelFieldType(fieldType)) {
+    return 'json_object';
+  }
+  if (isObjectArrayModelFieldType(fieldType)) {
+    return 'json_object[]';
+  }
+  return fieldType;
+}
+
+function isObjectModelFieldType(
+  fieldType: FieldType
+): fieldType is ObjectModelFieldType {
+  return typeof fieldType !== 'string' && 'object_model' in fieldType;
+}
+
+function isObjectArrayModelFieldType(
+  fieldType: FieldType
+): fieldType is ObjectArrayModelFieldType {
+  return typeof fieldType !== 'string' && 'object_array_model' in fieldType;
 }
 
 function parseOptions(args: readonly string[]): SyncOptions {
@@ -432,6 +695,23 @@ async function readOptionalFile(path: string): Promise<string> {
 function readRecord(value: unknown, label: string): Record<string, unknown> {
   if (!isRecord(value)) {
     throw new Error(`${label} must be an object.`);
+  }
+  return value;
+}
+
+function readRecordArray(
+  value: unknown,
+  label: string
+): readonly Record<string, unknown>[] {
+  if (!Array.isArray(value) || !value.every(isRecord)) {
+    throw new Error(`${label} must be an array of objects.`);
+  }
+  return value;
+}
+
+function readStringArray(value: unknown, label: string): readonly string[] {
+  if (!Array.isArray(value) || !value.every((entry) => typeof entry === 'string')) {
+    throw new Error(`${label} must be an array of strings.`);
   }
   return value;
 }

@@ -15,6 +15,12 @@ export interface ZdpApiRuntimeEnumFieldType { readonly enum: readonly string[]; 
 export type ZdpApiRuntimeFieldDescriptor = ZdpApiRuntimeFieldType | ZdpApiRuntimeEnumFieldType;
 export interface ZdpApiRuntimeSchemaDescriptor { readonly requiredFields: readonly string[]; readonly fieldTypes: Readonly<Record<string, ZdpApiRuntimeFieldDescriptor>>; }
 
+export interface AccountSettingsOverviewAccount { readonly actor_ref: string; readonly display_name: string; }
+export interface AccountSettingsOverviewWorkspace { readonly workspace_ref: string; readonly display_name: string; }
+export interface AccountSettingsOverviewSession { readonly session_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
+export interface AccountSettingsOverviewConnectedProduct { readonly product_ref: string; readonly connection_state: "connected" | "disconnected" | "unavailable"; }
+export interface AccountSettingsOverviewNotificationPreference { readonly category: string; readonly state: "enabled" | "disabled" | "required" | "unavailable"; }
+
 export interface AbuseChallengeIssueRequest { readonly product_ref: string; readonly environment: string; readonly action: string; }
 export interface AbuseChallengeIssueResponse { readonly challenge_ref: string; readonly challenge_kind: string; readonly widget_bootstrap: ZdpJsonObject; readonly expires_at: ZdpIsoDateTimeString; }
 export interface AbuseChallengeRedeemRequest { readonly product_ref: string; readonly environment: string; readonly action: string; readonly challenge_response: ZdpJsonValue; }
@@ -26,7 +32,7 @@ export interface AbuseHealthGetResponse { readonly status: string; readonly chec
 export interface AccessAuthorizationDecisionCreateRequest { readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly requested_scope_type: string; readonly requested_scope_ref: string; }
 export interface AccessAuthorizationDecisionCreateResponse { readonly decision_ref: string; readonly decision: "allow" | "deny"; readonly reason_code: string; readonly policy_version: string; readonly data_revision: string; readonly subject_ref: string; readonly session_ref: string; readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly scope_type: string; readonly scope_ref: string; readonly decided_at: ZdpIsoDateTimeString; readonly decision_expires_at: ZdpIsoDateTimeString; readonly session_expires_at: ZdpIsoDateTimeString; readonly obligations: readonly string[]; }
 export interface AccountSettingsOverviewGetRequest {  }
-export interface AccountSettingsOverviewGetResponse { readonly account: ZdpJsonObject; readonly workspace: ZdpJsonObject; readonly session: ZdpJsonObject; readonly connected_products: readonly ZdpJsonObject[]; readonly notification_preferences: readonly ZdpJsonObject[]; }
+export interface AccountSettingsOverviewGetResponse { readonly account: AccountSettingsOverviewAccount; readonly workspace: AccountSettingsOverviewWorkspace; readonly session: AccountSettingsOverviewSession; readonly connected_products: readonly AccountSettingsOverviewConnectedProduct[]; readonly notification_preferences: readonly AccountSettingsOverviewNotificationPreference[]; }
 export interface AuthSessionCurrentGetRequest {  }
 export interface AuthSessionCurrentGetResponse { readonly session_ref: string; readonly actor_ref: string; readonly tenant_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface AuthRecoveryRequestCreateRequest { readonly login_identifier: string; readonly locale: ZdpLocaleString; }

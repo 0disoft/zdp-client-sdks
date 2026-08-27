@@ -1,5 +1,17 @@
 # CHANGELOG.md
 
+## 0.18.0
+
+### Added
+
+- 공통 계정 설정 overview의 account, workspace, session, 연결 제품, 알림 설정을 명시적인 TypeScript interface로 공개한다.
+- TypeScript 표현 계약의 object model 이름을 API 원본의 inline object schema와 결합하는 생성기 검증을 추가했다.
+
+### Changed
+
+- account settings overview 응답의 중첩 필드를 범용 `ZdpJsonObject` 대신 API enum과 필수 필드를 보존하는 읽기 전용 타입으로 좁혔다.
+- 런타임 검증은 기존 JSON object 경계를 유지해 wire 호환성을 바꾸지 않는다.
+
 ## 0.17.0
 
 ### Added

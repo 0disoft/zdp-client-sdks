@@ -7,9 +7,51 @@ import {
   ZdpProtocolError,
   createZdpClient
 } from '../src/index';
-import type { ZdpApiRequest, ZdpFetchLike } from '../src/index';
+import type {
+  AccountSettingsOverviewAccount,
+  AccountSettingsOverviewConnectedProduct,
+  AccountSettingsOverviewGetResponse,
+  AccountSettingsOverviewNotificationPreference,
+  AccountSettingsOverviewSession,
+  AccountSettingsOverviewWorkspace,
+  ZdpApiRequest,
+  ZdpFetchLike
+} from '../src/index';
 
 describe('generated TypeScript API client', () => {
+  it('exports explicit account settings overview nested models', () => {
+    const account: AccountSettingsOverviewAccount = {
+      actor_ref: 'actor_123',
+      display_name: 'Synthetic Account'
+    };
+    const workspace: AccountSettingsOverviewWorkspace = {
+      workspace_ref: 'workspace_123',
+      display_name: 'Synthetic Workspace'
+    };
+    const session: AccountSettingsOverviewSession = {
+      session_ref: 'session_123',
+      expires_at: '2026-08-20T12:00:00Z'
+    };
+    const connectedProduct: AccountSettingsOverviewConnectedProduct = {
+      product_ref: 'product_123',
+      connection_state: 'connected'
+    };
+    const notificationPreference: AccountSettingsOverviewNotificationPreference = {
+      category: 'security',
+      state: 'required'
+    };
+    const overview: AccountSettingsOverviewGetResponse = {
+      account,
+      workspace,
+      session,
+      connected_products: [connectedProduct],
+      notification_preferences: [notificationPreference]
+    };
+
+    expect(overview.connected_products[0]?.connection_state).toBe('connected');
+    expect(overview.notification_preferences[0]?.state).toBe('required');
+  });
+
   it('exposes nested operation methods and encodes POST bodies', async () => {
     const captured: { readonly requests: Array<{ url: URL; init?: RequestInit }> } = {
       requests: []
