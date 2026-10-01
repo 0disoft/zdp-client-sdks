@@ -1,5 +1,32 @@
 typescript_sdk_models:
   schema_field_types:
+    contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetRequest: {}
+    contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetResponse:
+      session_ref: string
+      subject_ref: string
+      tenant_ref: string
+      personal_account_ref: string
+      expires_at: datetime
+    contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeRequest:
+      operation:
+        enum: [register, revoke]
+    contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeResponse:
+      personal_account_ref: string
+      status:
+        enum: [active, revoked]
+      replayed: boolean
+    contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginRequest: {}
+    contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginResponse:
+      ceremony_id: string
+      options: json_object
+    contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteRequest:
+      ceremony_id: string
+      credential: json_object
+    contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteResponse:
+      session_ref: string
+      actor_ref: string
+      tenant_ref: string
+      expires_at: datetime
     contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest: {}
     contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse:
       account:
@@ -128,6 +155,7 @@ typescript_sdk_models:
       data_revision: string
       subject_ref: string
       session_ref: string
+      tenant_ref: string
       product_ref: string
       action: string
       resource_type: string

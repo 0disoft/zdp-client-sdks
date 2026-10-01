@@ -1,5 +1,13 @@
 # CHANGELOG.md
 
+## 0.19.0
+
+- 패스키 로그인 시작·완료의 generated model과 namespace operation을 추가했다. 기존 패스키 challenge·assertion operation은 유지한다.
+- 새 두 operation은 요청 키가 있어도 자동 재시도하지 않으며 브라우저 바인딩과 세션 원문을 payload에 포함하지 않는다.
+- API 계약 revision과 CI·release의 checkout revision을 함께 갱신했다. 운영 경로 활성화나 패키지 게시는 포함하지 않는다.
+- 갱신된 revision에 이미 있던 개인 계정 scope 조회와 Orchid 방문자 접근 변경 operation의 누락된 representation을 함께 맞췄다.
+- 접근 판정 응답의 기존 필수 tenant binding을 SDK model에 반영하고 빈 POST 요청도 JSON `{}`로 직렬화하도록 수정했다.
+
 ## 0.18.0
 
 ### Added

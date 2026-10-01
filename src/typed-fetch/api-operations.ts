@@ -210,6 +210,7 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "data_revision",
       "subject_ref",
       "session_ref",
+      "tenant_ref",
       "product_ref",
       "action",
       "resource_type",
@@ -567,6 +568,40 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "secretFields": [],
     "sessionEffect": "none"
   },
+  "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetRequest": {
+    "schemaRef": "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetRequest",
+    "schemaId": "CurrentPersonalAccountScopeGetRequest",
+    "sourceContract": "contracts/apis/core-api/current-personal-account-scope.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "accounts",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetResponse": {
+    "schemaRef": "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetResponse",
+    "schemaId": "CurrentPersonalAccountScopeGetResponse",
+    "sourceContract": "contracts/apis/core-api/current-personal-account-scope.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "accounts",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "session_ref",
+      "subject_ref",
+      "tenant_ref",
+      "personal_account_ref",
+      "expires_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
   "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyDocumentProjectionGetResponse": {
     "schemaRef": "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicyDocumentProjectionGetResponse",
     "schemaId": "CustomerPolicyDocumentProjectionGetResponse",
@@ -739,6 +774,109 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "secretFields": [],
     "sessionEffect": "none"
   },
+  "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeRequest": {
+    "schemaRef": "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeRequest",
+    "schemaId": "OrchidVisitorAccessChangeRequest",
+    "sourceContract": "contracts/apis/core-api/orchid-visitor-access.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "accounts",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "operation"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeResponse": {
+    "schemaRef": "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeResponse",
+    "schemaId": "OrchidVisitorAccessChangeResponse",
+    "sourceContract": "contracts/apis/core-api/orchid-visitor-access.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "accounts",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "personal_account_ref",
+      "status",
+      "replayed"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginRequest": {
+    "schemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginRequest",
+    "schemaId": "PasskeyLoginBeginRequest",
+    "sourceContract": "contracts/apis/core-api/passkey-login.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginResponse": {
+    "schemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginResponse",
+    "schemaId": "PasskeyLoginBeginResponse",
+    "sourceContract": "contracts/apis/core-api/passkey-login.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "ceremony_id",
+      "options"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteRequest": {
+    "schemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteRequest",
+    "schemaId": "PasskeyLoginCompleteRequest",
+    "sourceContract": "contracts/apis/core-api/passkey-login.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "ceremony_id",
+      "credential"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "credential"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteResponse": {
+    "schemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteResponse",
+    "schemaId": "PasskeyLoginCompleteResponse",
+    "sourceContract": "contracts/apis/core-api/passkey-login.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "session_ref",
+      "actor_ref",
+      "tenant_ref",
+      "expires_at"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "issue"
+  },
   "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest": {
     "schemaRef": "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest",
     "schemaId": "ProductLinkChallengeCompleteRequest",
@@ -884,6 +1022,269 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
       "referral_status",
       "reward_status",
       "money_reward_status_ref"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalCompleteRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalCompleteRequest",
+    "schemaId": "DoubloonApprovalCompleteRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "command_key",
+      "receipt_ref",
+      "confirmed_binding",
+      "accepted",
+      "password"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "password"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalCompleteResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalCompleteResponse",
+    "schemaId": "DoubloonApprovalCompleteResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "command_key",
+      "receipt_ref",
+      "confirmation_binding",
+      "approval_revision",
+      "audit_event_ref",
+      "state",
+      "execution_authorized"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalStatusRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalStatusRequest",
+    "schemaId": "DoubloonApprovalStatusRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalStatusResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalStatusResponse",
+    "schemaId": "DoubloonApprovalStatusResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref",
+      "confirmation_binding",
+      "state",
+      "execution_authorized"
+    ],
+    "optionalFields": [
+      "approval_revision",
+      "audit_event_ref"
+    ],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalVerifyRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalVerifyRequest",
+    "schemaId": "DoubloonApprovalVerifyRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref",
+      "expected_approval_revision",
+      "transaction_binding_digest",
+      "evidence_manifest_digest",
+      "network",
+      "full_chain_identifier",
+      "audience_product_ref",
+      "action_ref",
+      "resource_type",
+      "resource_ref"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalVerifyResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonApprovalVerifyResponse",
+    "schemaId": "DoubloonApprovalVerifyResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref",
+      "transaction_binding_digest",
+      "evidence_manifest_digest",
+      "network",
+      "full_chain_identifier",
+      "audience_product_ref",
+      "action_ref",
+      "resource_type",
+      "resource_ref",
+      "issuer_ref",
+      "verification_result",
+      "verified_at",
+      "expires_at",
+      "policy_ref",
+      "policy_revision",
+      "actor_authority_revision",
+      "revocation_revision",
+      "audit_ref",
+      "execution_authorized",
+      "approval_revision"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentConfirmRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentConfirmRequest",
+    "schemaId": "DoubloonConsentConfirmRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": true,
+    "requiredFields": [
+      "receipt_ref",
+      "confirmed_binding",
+      "accepted",
+      "password"
+    ],
+    "optionalFields": [],
+    "secretFields": [
+      "password"
+    ],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentConfirmResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentConfirmResponse",
+    "schemaId": "DoubloonConsentConfirmResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref",
+      "confirmation_binding",
+      "audit_event_ref",
+      "actor_id",
+      "assignment_id",
+      "assignment_event_count",
+      "execution_authorized"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentReviewRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentReviewRequest",
+    "schemaId": "DoubloonConsentReviewRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentReviewResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonConsentReviewResponse",
+    "schemaId": "DoubloonConsentReviewResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "receipt_ref",
+      "tenant",
+      "requester_id",
+      "policy_ref",
+      "approval_revision",
+      "confirmation_binding",
+      "transaction_json",
+      "evidence_json",
+      "execution_authorized"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonProposalCreateRequest": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonProposalCreateRequest",
+    "schemaId": "DoubloonProposalCreateRequest",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "command_key",
+      "transaction_json",
+      "evidence_json"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonProposalCreateResponse": {
+    "schemaRef": "contracts/apis/core-api/sensitive-action-authorization.yaml#DoubloonProposalCreateResponse",
+    "schemaId": "DoubloonProposalCreateResponse",
+    "sourceContract": "contracts/apis/core-api/sensitive-action-authorization.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "access",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "command_key",
+      "receipt_ref",
+      "confirmation_binding",
+      "state",
+      "execution_authorized"
     ],
     "optionalFields": [],
     "secretFields": [],
@@ -1877,6 +2278,46 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "idempotency_conflict"
     ]
   },
+  "core.auth.passkey_login_begin.create": {
+    "operationId": "core.auth.passkey_login_begin.create",
+    "method": "POST",
+    "path": "/v1/auth/passkey/login/begin",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginRequest",
+    "responseSchemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "authentication_unavailable"
+    ]
+  },
+  "core.auth.passkey_login_complete.create": {
+    "operationId": "core.auth.passkey_login_complete.create",
+    "method": "POST",
+    "path": "/v1/auth/passkey/login/complete",
+    "successStatuses": [
+      201
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteRequest",
+    "responseSchemaRef": "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteResponse",
+    "responseBodyMode": "schema",
+    "authRequired": false,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "validation_failed",
+      "authentication_failed",
+      "authentication_unavailable"
+    ]
+  },
   "core.auth.oauth_callbacks.accept": {
     "operationId": "core.auth.oauth_callbacks.accept",
     "method": "POST",
@@ -2135,6 +2576,52 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "authentication_failed",
       "scope_access_denied",
       "provider_unavailable"
+    ]
+  },
+  "core.accounts.personal_scope.get_current": {
+    "operationId": "core.accounts.personal_scope.get_current",
+    "method": "GET",
+    "path": "/v1/accounts/personal-scope/current",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetRequest",
+    "responseSchemaRef": "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "invalid_request",
+      "invalid_request_metadata",
+      "scope_lookup_unavailable"
+    ]
+  },
+  "core.accounts.orchid_visitor_access.change": {
+    "operationId": "core.accounts.orchid_visitor_access.change",
+    "method": "POST",
+    "path": "/v1/accounts/orchid-visitor-access",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeRequest",
+    "responseSchemaRef": "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "idempotency_conflict",
+      "invalid_request",
+      "invalid_request_metadata",
+      "policy_unavailable",
+      "provider_unavailable",
+      "visitor_access_conflict",
+      "visitor_access_revoked"
     ]
   }
 } as const satisfies ZdpGeneratedOperationMetadataMap;

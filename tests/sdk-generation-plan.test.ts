@@ -17,8 +17,8 @@ describe('SDK generation plan', () => {
       apiExportPlanSourceFile: '../zdp-api-contracts/src/api-export-plan/plan.ts'
     });
 
-    expect(result.ok).toBe(true);
     expect(result.diagnostics).toEqual([]);
+    expect(result.ok).toBe(true);
     expect(result.plan).toEqual({
       status: 'plan-only',
       writesArtifacts: false,
@@ -35,8 +35,11 @@ describe('SDK generation plan', () => {
         'contracts/apis/abuse-api/health.yaml',
         'contracts/apis/core-api/access-decision.yaml',
         'contracts/apis/core-api/account-settings-overview.yaml',
+        'contracts/apis/core-api/current-personal-account-scope.yaml',
+        'contracts/apis/core-api/orchid-visitor-access.yaml',
         'contracts/apis/core-api/auth-session-consumer.yaml',
         'contracts/apis/core-api/auth-session.yaml',
+        'contracts/apis/core-api/passkey-login.yaml',
         'contracts/apis/core-api/customer-policy-registry.yaml',
         'contracts/apis/core-api/oidc-client-registry.yaml',
         'contracts/apis/core-api/oidc-product-session.yaml',
@@ -96,6 +99,8 @@ describe('SDK generation plan', () => {
         'core.auth.recovery_requests.create',
         'core.auth.passkey_challenges.create',
         'core.auth.passkey_assertions.verify',
+        'core.auth.passkey_login_begin.create',
+        'core.auth.passkey_login_complete.create',
         'core.auth.oauth_callbacks.accept',
         'core.referral.uses.create',
         'money.referral_rewards.status.get',
@@ -106,7 +111,9 @@ describe('SDK generation plan', () => {
         'platform.abuse.challenges.issue',
         'platform.abuse.challenges.redeem',
         'platform.abuse.verifications.verify',
-        'platform.abuse.health.get'
+        'platform.abuse.health.get',
+        'core.accounts.personal_scope.get_current',
+        'core.accounts.orchid_visitor_access.change'
       ],
       apiTypedFetchOperationMap: expect.objectContaining({
         'core.auth.registrations.create': expect.objectContaining({

@@ -30,7 +30,7 @@ export interface AbuseVerificationVerifyResponse { readonly verification_state: 
 export interface AbuseHealthGetRequest {  }
 export interface AbuseHealthGetResponse { readonly status: string; readonly checked_at: ZdpIsoDateTimeString; readonly adapter_status: string; readonly state_store_status: string; }
 export interface AccessAuthorizationDecisionCreateRequest { readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly requested_scope_type: string; readonly requested_scope_ref: string; }
-export interface AccessAuthorizationDecisionCreateResponse { readonly decision_ref: string; readonly decision: "allow" | "deny"; readonly reason_code: string; readonly policy_version: string; readonly data_revision: string; readonly subject_ref: string; readonly session_ref: string; readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly scope_type: string; readonly scope_ref: string; readonly decided_at: ZdpIsoDateTimeString; readonly decision_expires_at: ZdpIsoDateTimeString; readonly session_expires_at: ZdpIsoDateTimeString; readonly obligations: readonly string[]; }
+export interface AccessAuthorizationDecisionCreateResponse { readonly decision_ref: string; readonly decision: "allow" | "deny"; readonly reason_code: string; readonly policy_version: string; readonly data_revision: string; readonly subject_ref: string; readonly session_ref: string; readonly tenant_ref: string; readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly scope_type: string; readonly scope_ref: string; readonly decided_at: ZdpIsoDateTimeString; readonly decision_expires_at: ZdpIsoDateTimeString; readonly session_expires_at: ZdpIsoDateTimeString; readonly obligations: readonly string[]; }
 export interface AccountSettingsOverviewGetRequest {  }
 export interface AccountSettingsOverviewGetResponse { readonly account: AccountSettingsOverviewAccount; readonly workspace: AccountSettingsOverviewWorkspace; readonly session: AccountSettingsOverviewSession; readonly connected_products: readonly AccountSettingsOverviewConnectedProduct[]; readonly notification_preferences: readonly AccountSettingsOverviewNotificationPreference[]; }
 export interface AuthSessionCurrentGetRequest {  }
@@ -50,10 +50,18 @@ export interface PasskeyAssertionVerifyRequest { readonly challenge_ref: string;
 export interface PasskeyAssertionVerifyResponse { readonly session_ref: string; readonly actor_ref: string; readonly tenant_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface PasskeyChallengeCreateRequest { readonly ceremony: string; readonly login_identifier: string; }
 export interface PasskeyChallengeCreateResponse { readonly challenge_ref: string; readonly public_key_options_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
+export interface CurrentPersonalAccountScopeGetRequest {  }
+export interface CurrentPersonalAccountScopeGetResponse { readonly session_ref: string; readonly subject_ref: string; readonly tenant_ref: string; readonly personal_account_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface CustomerPolicySetResolveRequest { readonly product_ref: string; readonly environment: string; readonly capability: string; readonly locale: ZdpLocaleString; readonly jurisdiction_profile_ref?: string; readonly channel_ref?: string; readonly seller_role_ref?: string; }
 export interface CustomerPolicySetResolveResponse { readonly policy_set_resolution_ref: string; readonly resolution_status: "resolved" | "unavailable" | "review_required"; readonly required_user_action: "no_user_action" | "notice" | "acknowledgement" | "explicit_consent" | "feature_restriction"; readonly policy_set_id: string; readonly policy_set_revision: string; readonly ordered_document_revision_ids: readonly string[]; readonly ordered_content_digests: readonly string[]; readonly presentation_rule_version: string; readonly document_projections: readonly ZdpJsonObject[]; readonly resolved_at: ZdpIsoDateTimeString; readonly expires_at: ZdpIsoDateTimeString; }
 export interface OperatorSessionContextGetRequest {  }
 export interface OperatorSessionContextGetResponse { readonly operator_ref: string; readonly organization_ref: string; readonly role: string; readonly capabilities: readonly string[]; readonly expires_at: ZdpIsoDateTimeString; readonly policy_version: string; }
+export interface OrchidVisitorAccessChangeRequest { readonly operation: "register" | "revoke"; }
+export interface OrchidVisitorAccessChangeResponse { readonly personal_account_ref: string; readonly status: "active" | "revoked"; readonly replayed: boolean; }
+export interface PasskeyLoginBeginRequest {  }
+export interface PasskeyLoginBeginResponse { readonly ceremony_id: string; readonly options: ZdpJsonObject; }
+export interface PasskeyLoginCompleteRequest { readonly ceremony_id: string; readonly credential: ZdpJsonObject; }
+export interface PasskeyLoginCompleteResponse { readonly session_ref: string; readonly actor_ref: string; readonly tenant_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface ProductLinkChallengeCompleteRequest { readonly challenge_ref: string; readonly approval_decision: string; }
 export interface ProductLinkChallengeCompleteResponse { readonly challenge_ref: string; readonly state: "pending" | "approved" | "denied" | "expired" | "consumed"; readonly expires_at: ZdpIsoDateTimeString; }
 export interface ProductLinkChallengeCreateRequest { readonly product_ref: string; readonly client_instance_ref: string; readonly client_correlation_ref: string; readonly proof_challenge: string; readonly requested_scope_refs: readonly string[]; }
@@ -113,10 +121,18 @@ export interface ZdpApiSchemaTypeMap {
   readonly "contracts/apis/core-api/auth-session.yaml#PasskeyAssertionVerifyResponse": PasskeyAssertionVerifyResponse;
   readonly "contracts/apis/core-api/auth-session.yaml#PasskeyChallengeCreateRequest": PasskeyChallengeCreateRequest;
   readonly "contracts/apis/core-api/auth-session.yaml#PasskeyChallengeCreateResponse": PasskeyChallengeCreateResponse;
+  readonly "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetRequest": CurrentPersonalAccountScopeGetRequest;
+  readonly "contracts/apis/core-api/current-personal-account-scope.yaml#CurrentPersonalAccountScopeGetResponse": CurrentPersonalAccountScopeGetResponse;
   readonly "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveRequest": CustomerPolicySetResolveRequest;
   readonly "contracts/apis/core-api/customer-policy-registry.yaml#CustomerPolicySetResolveResponse": CustomerPolicySetResolveResponse;
   readonly "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest": OperatorSessionContextGetRequest;
   readonly "contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse": OperatorSessionContextGetResponse;
+  readonly "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeRequest": OrchidVisitorAccessChangeRequest;
+  readonly "contracts/apis/core-api/orchid-visitor-access.yaml#OrchidVisitorAccessChangeResponse": OrchidVisitorAccessChangeResponse;
+  readonly "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginRequest": PasskeyLoginBeginRequest;
+  readonly "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginBeginResponse": PasskeyLoginBeginResponse;
+  readonly "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteRequest": PasskeyLoginCompleteRequest;
+  readonly "contracts/apis/core-api/passkey-login.yaml#PasskeyLoginCompleteResponse": PasskeyLoginCompleteResponse;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteRequest": ProductLinkChallengeCompleteRequest;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCompleteResponse": ProductLinkChallengeCompleteResponse;
   readonly "contracts/apis/core-api/product-link.yaml#ProductLinkChallengeCreateRequest": ProductLinkChallengeCreateRequest;

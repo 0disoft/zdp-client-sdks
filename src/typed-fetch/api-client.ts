@@ -377,7 +377,9 @@ function encodeDomainRequest(
     if (Object.keys(payload).length > 0) {
       encoded.query = encodeQuery(payload);
     }
-  } else if (Object.keys(payload).length > 0) {
+  } else if (method === 'POST' || Object.keys(payload).length > 0) {
+    // A bodyless schema can still require an explicit JSON object (e.g. begin
+    // a cookie-bound ceremony); do not silently turn {} into no request body.
     encoded.body = payload;
   }
 

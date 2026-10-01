@@ -7,6 +7,10 @@ import {
 } from '../scripts/release-helpers';
 
 const workflowPath = join(process.cwd(), '.github', 'workflows', 'release.yml');
+const apiContractsLock = readRecord(
+  JSON.parse(readFileSync(join(process.cwd(), 'contracts/api-contracts.lock.json'), 'utf8')),
+  'API contracts lock'
+);
 const workflowSource = readFileSync(workflowPath, 'utf8');
 const workflow = readRecord(Bun.YAML.parse(workflowSource), 'workflow');
 const jobs = readRecord(workflow.jobs, 'workflow.jobs');
@@ -71,7 +75,7 @@ describe('npm Trusted Publisher release workflow', () => {
     });
     expect(stepWith(buildSteps, 'Checkout API contracts')).toMatchObject({
       'persist-credentials': false,
-      ref: 'aa1af64e0ce43a8288fcf3bd91700411d70a4b3d'
+      ref: apiContractsLock.revision
     });
     expect(stepWith(buildSteps, 'Set up Node')['node-version']).toBe('24.18.0');
     expect(stepWith(buildSteps, 'Set up Bun')['bun-version']).toBe('1.3.14');
