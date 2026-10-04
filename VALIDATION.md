@@ -1,16 +1,16 @@
 # VALIDATION.md
 
-이 문서는 `zdp-client-sdks` 변경 후 확인할 기준을 모은다. 실행 권한은 mustflow command contract가 소유한다.
+이 문서는 `zdp-client-sdks` 변경 후 확인할 기준을 모은다. 관련 package scripts와 저장소 명령을 직접 실행한다.
 
-## Configured Validation
+## Direct Validation Commands
 
 | 변경 범위 | 확인 기준 |
 | --- | --- |
-| TypeScript models, domain client, typed fetch, auth helper, upload client, generation plan | `zdp_client_sdks_check` |
-| npm package contents or release readiness | `zdp_client_sdks_npm_pack_dry_run` |
-| tokenless npm publish metadata dry-run | `zdp_client_sdks_npm_publish_dry_run` |
-| repository architecture contract | `zdp_architecture_validate_client_sdks_repository` |
-| architecture catalog or linter rule changes | `zdp_architecture_validate_fast` |
+| TypeScript models, domain client, typed fetch, auth helper, upload client, generation plan | `bun run check` |
+| npm package contents or release readiness | `npm.cmd pack --dry-run --json` |
+| tokenless npm publish metadata dry-run | `bun scripts/publish-dry-run.ts` |
+| repository architecture contract | `bun src/cli.ts validate --architecture ../../docs/zdp-architecture --repository ../../contracts/zdp-client-sdks` (cwd: `projects/zdp-platforms/architecture-tools/zdp-architecture-linter`) |
+| architecture catalog or linter rule changes | `bun run validate:architecture` (cwd: `projects/zdp-platforms/architecture-tools/zdp-architecture-linter`) |
 | agent docs only | `docs_validate_fast` |
 
 `zdp_client_sdks_install_frozen`은 dependency나 package metadata 변경으로 install evidence가 필요할 때만 쓴다. 실제 public publish는 승인된 exact version tag가 시작하는 GitHub Actions Trusted Publisher workflow만 사용한다.
