@@ -42,7 +42,7 @@
 
 ## 검증
 
-Agent가 실행하는 검증은 root mustflow command contract에 등록된 intent만 사용한다.
+package scripts, 저장소 도구 또는 CI에 정의된 관련 검증 명령을 직접 실행한다. 별도의 명령 계약 등록은 필요하지 않다.
 
 - 저장소 architecture contract: `zdp_architecture_validate_client_sdks_repository`
 - SDK surface, TypeScript models, domain client, typed fetch, auth helper, upload client, generation plan: `zdp_client_sdks_check`
