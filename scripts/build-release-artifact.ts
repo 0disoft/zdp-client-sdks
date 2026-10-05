@@ -13,17 +13,13 @@ import { tmpdir } from 'node:os';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { parsePackResult } from './npm-pack-result';
 
 interface PackageManifest {
   readonly name: string;
   readonly version: string;
   readonly files: readonly string[];
   readonly [key: string]: unknown;
-}
-
-interface PackResult {
-  readonly filename: string;
-  readonly integrity: string;
 }
 
 interface ReleaseArtifact {
@@ -197,20 +193,6 @@ function parsePackageManifest(value: unknown): PackageManifest {
     version,
     files
   };
-}
-
-function parsePackResult(value: unknown): PackResult {
-  assert.ok(Array.isArray(value), 'npm pack output must be an array.');
-  assert.equal(value.length, 1, 'npm pack must create exactly one tarball.');
-  const result = value[0];
-  assert.ok(isRecord(result), 'npm pack result must be an object.');
-  const filename = result.filename;
-  const integrity = result.integrity;
-  if (typeof filename !== 'string' || typeof integrity !== 'string') {
-    throw new Error('npm pack result must contain filename and integrity.');
-  }
-  assert.equal(basename(filename), filename);
-  return { filename, integrity };
 }
 
 function readTarEntry(archive: Buffer, expectedName: string): Buffer {
