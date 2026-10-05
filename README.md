@@ -16,6 +16,7 @@ ZDP API 계약을 실제 제품 코드에서 바로 사용할 수 있는 TypeScr
 - access token attachment와 표준 error envelope 정규화
 - current-session, product-link, credit purchase, referral, abuse challenge operation
 - signed upload authorization, provider transfer, completion TypeScript runtime
+- 서버 전용 쿠폰 사용 확정 호출과 금액 정밀도·미확정 결과 처리 ([연결 안내](docs/server-coupon-usage.md))
 - upload file size·MIME 제한, SHA-256 checksum, 진행률, 취소, replay-safe 제한적 재시도
 - compiled ESM runtime과 TypeScript declaration package output
 - Node, Bun, TypeScript NodeNext packed consumer smoke와 Vite current-major CI smoke

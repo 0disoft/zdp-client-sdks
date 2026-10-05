@@ -19,6 +19,7 @@
 - schema required/optional field metadata handoff
 - minimal TypeScript typed fetch runtime foundation
 - signed upload authorization, provider transfer, completion runtime
+- 별도 서버 subpath의 내부 쿠폰 capture 전송과 정밀도·응답 연결 검증
 - request, trace, and idempotency propagation contract
 - SDK contract checker
 - SDK generation input source handoff

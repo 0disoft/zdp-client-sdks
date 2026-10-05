@@ -1,6 +1,6 @@
 # Package Surface Checklist
 
-- Root, `./typed-fetch`, `./typed-fetch/api-operations`, and `./upload` are the only public exports.
+- Root, `./typed-fetch`, `./typed-fetch/api-operations`, `./upload` and the separate server-only `./server-coupon-usage` are the reviewed public exports.
 - Runtime exports resolve to compiled `dist/**/*.js` and type exports resolve to matching `dist/**/*.d.ts`.
 - `files` includes `dist/` and excludes `src/`, tests, checker implementations, and generated language-specific runtime artifacts.
 - Packed consumers pass Node and Bun direct ESM imports plus TypeScript `NodeNext` declaration resolution.

@@ -12,6 +12,13 @@ Provider transfer 재시도는 authorization boundary가 `replaySafe: true`를 �
 
 ## 금지 항목
 
+`server-coupon-usage`는 별도 서버 전용 subpath다. 루트 export와 브라우저
+client에 서비스 인증을 추가하지 않는다. 인증정보는 호출마다 서버 callback에서
+받고 로그·결과·영속 저장소에 남기지 않는다. 요청에는 저장된 이용 요청과 예약
+참조만 보낸다. redirect를 거부하며 Cookie와 Origin을 설정하지 않는다.
+미확정 응답은 재시도·예약 취소·결과 제공을 자동 실행하지 않는다.
+제품은 확정 영수증을 먼저 저장하고, 같은 이용 요청으로 결과 제공을 복구한다.
+
 다음 값은 SDK source, 계약, 테스트 fixture, 문서, package output에 넣지 않는다.
 
 - 실제 access token, refresh token, session token, session cookie

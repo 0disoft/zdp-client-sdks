@@ -58,9 +58,10 @@
 
 ## Package Surface
 
-- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`, `./upload`이다.
-- `files` whitelist는 `src/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다.
-- Generated TypeScript source는 package에 포함하고 Dart/Rust runtime artifact는 포함하지 않는다.
+- Public exports는 package root, `./typed-fetch`, `./typed-fetch/api-operations`, `./upload`, 서버 전용 `./server-coupon-usage`이다.
+- `files` whitelist는 `dist/`, `contracts/`, 운영 문서, `LICENSE`만 포함한다.
+- Generated TypeScript의 compiled ESM과 선언은 package에 포함하고 source, 테스트, Dart/Rust runtime artifact는 포함하지 않는다.
+- 서버 쿠폰 client는 브라우저·루트 export에 노출하지 않고, 저장된 예약·이용 요청만 보내며 미확정 결과에서 자동 재시도나 결과 제공을 하지 않는다.
 - Package publish 전에는 check, npm pack dry-run, packed consumer evidence가 필요하다.
 - `contracts/api-contracts.lock.json`, CI checkout, release checkout은 동일한 full API contract Git SHA를 가리킨다.
 - 공개 릴리스는 exact version tag와 npm Trusted Publisher OIDC만 사용하고, 공개 후 npm `gitHead`, integrity, registry signature, provenance, GitHub Release 자산을 대조한다.

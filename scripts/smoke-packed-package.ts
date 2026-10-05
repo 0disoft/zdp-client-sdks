@@ -36,7 +36,8 @@ const PUBLIC_EXPORTS = [
   '.',
   './typed-fetch',
   './typed-fetch/api-operations',
-  './upload'
+  './upload',
+  './server-coupon-usage'
 ] as const;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const smokeRoot = await mkdtemp(join(tmpdir(), 'zdp-client-sdks-pack-smoke-'));
@@ -164,6 +165,7 @@ import {
   createZdpSignedUploadClient,
   createZdpXhrUploadTransport
 } from 'zdp-client-sdks/upload';
+import { createServerCouponUsageClient } from 'zdp-client-sdks/server-coupon-usage';
 
 const expectedVersion = process.argv[2];
 const manifest = JSON.parse(
@@ -184,7 +186,8 @@ if (
   typeof defineZdpOperations !== 'function' ||
   typeof createZdpSignedUploadClient !== 'function' ||
   typeof createZdpFetchUploadTransport !== 'function' ||
-  typeof createZdpXhrUploadTransport !== 'function'
+  typeof createZdpXhrUploadTransport !== 'function' ||
+  typeof createServerCouponUsageClient !== 'function'
 ) {
   throw new Error('Compiled runtime exports were not consumable.');
 }
@@ -200,6 +203,22 @@ const client = createZdpClient({
 });
 if (typeof client.call !== 'function') {
   throw new Error('Compiled API client factory returned an invalid client.');
+}
+const couponClient = createServerCouponUsageClient({
+  environment: 'local', origin: 'http://127.0.0.1:1',
+  getServiceCredential: async () => 'x'.repeat(40),
+  fetch: async () => new Response(JSON.stringify({
+    settlement_id: 'settlement_smoke', source_kind: 'usage', source_ref: 'hold_smoke',
+    inventory_id: null, original_credit_unit: '9007199254740993', benefit_credit_unit: '0',
+    settled_credit_unit: '9007199254740993', effect_ledger_transaction_id: 'ledger_smoke',
+    bonus_credit_lot_id: null, replayed: false
+  }), { headers: { 'content-type': 'application/json', 'cache-control': 'no-store',
+    'x-request-id': 'request_smoke', 'x-trace-id': 'trace_smoke' } })
+});
+const capture = await couponClient.capture({ usageRef: 'usage_smoke', holdRef: 'hold_smoke',
+  requestId: 'request_smoke', traceId: 'trace_smoke' });
+if (capture.state !== 'captured' || capture.receipt.settled_credit_unit !== '9007199254740993') {
+  throw new Error('Compiled coupon capture transport or exact amount handling failed.');
 }
 console.log(\`zdp-client-sdks@\${expectedVersion} runtime smoke passed.\`);
 `,
@@ -233,6 +252,14 @@ import type {
 import {
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from 'zdp-client-sdks/typed-fetch/api-operations';
+
+import { createServerCouponUsageClient, type CouponUsageCaptureResult } from 'zdp-client-sdks/server-coupon-usage';
+const couponClient = createServerCouponUsageClient({ environment: 'local', origin: 'http://127.0.0.1:1',
+  getServiceCredential: async () => 'x'.repeat(40) });
+const couponResult: Promise<CouponUsageCaptureResult> = couponClient.capture({
+  usageRef: 'usage_smoke', holdRef: 'hold_smoke', requestId: 'request_smoke', traceId: 'trace_smoke'
+});
+void couponResult;
 
 const operationId =
   'core.auth.sessions.get_current' satisfies ZdpApiOperationId;

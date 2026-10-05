@@ -25,6 +25,9 @@ sdk_surface:
     - pagination handling
     - upload handoff
     - signed upload runtime foundation
+    - server-only private coupon capture transport
+    - contract-derived exact credit strings and bound capture receipt
+    - no automatic retry or delivery on unknown capture outcome
   must_not_own:
     - API contract source
     - refresh token storage

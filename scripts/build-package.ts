@@ -19,7 +19,8 @@ const PUBLIC_EXPORTS = [
   '.',
   './typed-fetch',
   './typed-fetch/api-operations',
-  './upload'
+  './upload',
+  './server-coupon-usage'
 ] as const;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const distRoot = join(repositoryRoot, 'dist');

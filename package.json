@@ -29,6 +29,11 @@
       "import": "./dist/typed-fetch/api-operations.js",
       "default": "./dist/typed-fetch/api-operations.js"
     },
+    "./server-coupon-usage": {
+      "types": "./dist/server-coupon-usage/index.d.ts",
+      "import": "./dist/server-coupon-usage/index.js",
+      "default": "./dist/server-coupon-usage/index.js"
+    },
     "./upload": {
       "types": "./dist/upload/index.d.ts",
       "import": "./dist/upload/index.js",
@@ -51,8 +56,10 @@
   "sideEffects": false,
   "scripts": {
     "build": "bun scripts/build-package.ts",
-    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run sdk-semver:check && bun run generation:plan -- --check && bun run release:artifact:check",
+    "check": "tsc --noEmit && bun test && bun run contracts:check && bun run api-contracts-lock:check && bun run api-operations:check && bun run typescript-models:check && bun run server-coupon-usage:check && bun run sdk-semver:check && bun run generation:plan -- --check && bun run release:artifact:check",
     "check:tsgo": "tsgo --noEmit",
+    "server-coupon-usage:sync": "bun scripts/sync-server-coupon-usage.ts",
+    "server-coupon-usage:check": "bun scripts/sync-server-coupon-usage.ts --check",
     "test": "bun test",
     "contracts:check": "bun scripts/check-client-sdk-contracts.ts",
     "generation:plan": "bun scripts/plan-sdk-generation.ts --api-contracts-root ../zdp-api-contracts",
