@@ -207,7 +207,10 @@ if (typeof client.call !== 'function') {
 const couponClient = createServerCouponUsageClient({
   environment: 'local', origin: 'http://127.0.0.1:1',
   getServiceCredential: async () => 'x'.repeat(40),
-  fetch: async () => new Response(JSON.stringify({
+  fetch: async (url) => new Response(JSON.stringify(url.endsWith('/compensate') ? {
+    settlement_id:'settlement_smoke',failure_ref:'failure_smoke',reversal_transaction_id:'reversal_smoke',
+    restored_credit_unit:'9007199254740993',restored_benefit_credit_unit:'0',replayed:false
+  } : {
     settlement_id: 'settlement_smoke', source_kind: 'usage', source_ref: 'hold_smoke',
     inventory_id: null, original_credit_unit: '9007199254740993', benefit_credit_unit: '0',
     settled_credit_unit: '9007199254740993', effect_ledger_transaction_id: 'ledger_smoke',
@@ -219,6 +222,11 @@ const capture = await couponClient.capture({ usageRef: 'usage_smoke', holdRef: '
   requestId: 'request_smoke', traceId: 'trace_smoke' });
 if (capture.state !== 'captured' || capture.receipt.settled_credit_unit !== '9007199254740993') {
   throw new Error('Compiled coupon capture transport or exact amount handling failed.');
+}
+const compensation=await couponClient.compensate({usageRef:'usage_smoke',holdRef:'hold_smoke',failureRef:'failure_smoke',
+  requestId:'request_smoke',traceId:'trace_smoke',captureReceipt:capture.receipt});
+if(compensation.state!=='compensated'||compensation.receipt.restored_credit_unit!=='9007199254740993') {
+  throw new Error('Compiled coupon compensation transport or exact amount handling failed.');
 }
 console.log(\`zdp-client-sdks@\${expectedVersion} runtime smoke passed.\`);
 `,
@@ -253,13 +261,17 @@ import {
   ZDP_TYPED_FETCH_OPERATION_MAP
 } from 'zdp-client-sdks/typed-fetch/api-operations';
 
-import { createServerCouponUsageClient, type CouponUsageCaptureResult } from 'zdp-client-sdks/server-coupon-usage';
+import { createServerCouponUsageClient, type CouponUsageCaptureResult, type CouponUsageCompensationResult } from 'zdp-client-sdks/server-coupon-usage';
 const couponClient = createServerCouponUsageClient({ environment: 'local', origin: 'http://127.0.0.1:1',
   getServiceCredential: async () => 'x'.repeat(40) });
 const couponResult: Promise<CouponUsageCaptureResult> = couponClient.capture({
   usageRef: 'usage_smoke', holdRef: 'hold_smoke', requestId: 'request_smoke', traceId: 'trace_smoke'
 });
 void couponResult;
+const compensationResult:Promise<CouponUsageCompensationResult|undefined>=couponResult.then(result=>result.state==='captured'
+  ?couponClient.compensate({usageRef:'usage_smoke',holdRef:'hold_smoke',failureRef:'failure_smoke',requestId:'request_smoke',traceId:'trace_smoke',captureReceipt:result.receipt})
+  :undefined);
+void compensationResult;
 
 const operationId =
   'core.auth.sessions.get_current' satisfies ZdpApiOperationId;

@@ -1,5 +1,7 @@
 import { COUPON_USAGE_RECEIPT_RULES, COUPON_USAGE_TRANSPORT as wire } from './models';
 import type { CouponUsageCaptureReceipt } from './models';
+import {COUPON_COMPENSATION_TRANSPORT,COUPON_COMPENSATION_RECEIPT_RULES} from './compensation-models';
+import type {CouponUsageCompensationReceipt} from './compensation-models';
 
 export interface DurableCouponUsage {
   readonly usageRef: string;
@@ -22,7 +24,19 @@ export type CouponUsageCaptureResult =
   | { readonly state: 'not_submitted'; readonly code: 'capture_not_submitted'; readonly retry: 'same_operation' };
 export interface ServerCouponUsageClient {
   capture(operation: DurableCouponUsage, options?: { readonly signal?: AbortSignal }): Promise<CouponUsageCaptureResult>;
+  compensate(operation:DurableFailedCouponUsage,options?:{readonly signal?:AbortSignal}):Promise<CouponUsageCompensationResult>;
 }
+export interface DurableFailedCouponUsage extends DurableCouponUsage {
+  readonly failureRef:string;
+  readonly captureReceipt:CouponUsageCaptureReceipt;
+}
+export type CouponUsageCompensationResult=
+  | {readonly state:'compensated';readonly receipt:CouponUsageCompensationReceipt}
+  | {readonly state:'rejected';readonly status:number;readonly code:string}
+  | {readonly state:'unknown';readonly code:'compensation_result_unknown';readonly retry:'same_operation'}
+  | {readonly state:'not_submitted';readonly code:'compensation_not_submitted';readonly retry:'same_operation'};
+type AttemptResult<R>= {state:'confirmed';receipt:R}|{state:'rejected';status:number;code:string}|{state:'unknown'|'not_submitted'};
+type TransportSpec={readonly path:string;readonly method:string;readonly successStatus:number;readonly maxResponseBytes:number;readonly rejections:Readonly<Record<string,string>>};
 export class CouponUsageConfigurationError extends Error {
   constructor(message: string) { super(message); this.name = 'CouponUsageConfigurationError'; }
 }
@@ -32,7 +46,6 @@ interface Rule {
   readonly pattern?: string;
 }
 const rules: Readonly<Record<string, Rule>> = COUPON_USAGE_RECEIPT_RULES;
-const unknown = (): CouponUsageCaptureResult => ({ state: 'unknown', code: 'capture_result_unknown', retry: 'same_operation' });
 
 /** One attempt only. The product must persist operation/hold and the returned receipt. */
 export function createServerCouponUsageClient(config: ServerCouponUsageOptions): ServerCouponUsageClient {
@@ -52,14 +65,11 @@ export function createServerCouponUsageClient(config: ServerCouponUsageOptions):
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) throw new CouponUsageConfigurationError('Timeout must be 1–60000 ms.');
   const transport = config.fetch ?? globalThis.fetch;
   if (typeof transport !== 'function') throw new CouponUsageConfigurationError('Fetch transport is required.');
-  const endpoint = new URL(wire.path, origin).href;
   // Capture configuration once; changing the caller's object cannot redirect a credential.
   const credential = config.getServiceCredential;
-  return {
-    async capture(operation, options = {}) {
-      // Copy the durable pair before asynchronous credential lookup.
-      const pair = { ...operation };
-      validateOperation(pair);
+  async function send<R>(pair:DurableCouponUsage,fields:Record<string,string>,spec:TransportSpec,
+    decode:(value:unknown)=>R|null,options:{readonly signal?:AbortSignal}):Promise<AttemptResult<R>> {
+      const endpoint=new URL(spec.path,origin).href;
       const controller = new AbortController();
       const abort = () => controller.abort();
       if (options.signal?.aborted) abort();
@@ -71,16 +81,16 @@ export function createServerCouponUsageClient(config: ServerCouponUsageOptions):
         controller.signal.throwIfAborted();
         const token = await wait(credential(controller.signal), controller.signal);
         if (typeof token !== 'string' || !/^[A-Za-z0-9\-._~+/=]{32,4096}$/.test(token)) {
-          return { state: 'not_submitted', code: 'capture_not_submitted', retry: 'same_operation' };
+          return { state: 'not_submitted' };
         }
         controller.signal.throwIfAborted();
         submitted = true;
         const received = await wait<Response>(transport(endpoint, {
-          method: wire.method, redirect: 'error', credentials: 'omit', cache: 'no-store',
+          method: spec.method, redirect: 'error', credentials: 'omit', cache: 'no-store',
           signal: controller.signal,
           headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json',
             accept: 'application/json', 'x-request-id': pair.requestId, 'x-trace-id': pair.traceId },
-          body: JSON.stringify({ hold_ref: pair.holdRef, usage_ref: pair.usageRef })
+          body: JSON.stringify(fields)
         }).then((returned) => {
           if (controller.signal.aborted && returned.body && !returned.bodyUsed) {
             void returned.body.cancel().catch(() => undefined);
@@ -91,25 +101,49 @@ export function createServerCouponUsageClient(config: ServerCouponUsageOptions):
         if (received.headers.get('x-request-id') !== pair.requestId
           || received.headers.get('x-trace-id') !== pair.traceId
           || received.headers.get('content-type')?.split(';')[0]?.trim() !== 'application/json'
-          || !received.headers.get('cache-control')?.split(',').some((v) => v.trim().toLowerCase() === 'no-store')) return unknown();
-        const body: unknown = JSON.parse(await readBody(received, controller.signal));
-        if (received.status === wire.successStatus) {
-          const receipt = decodeReceipt(body, pair.holdRef);
-          return receipt ? { state: 'captured', receipt } : unknown();
+          || !received.headers.get('cache-control')?.split(',').some((v) => v.trim().toLowerCase() === 'no-store')) return {state:'unknown'};
+        const body: unknown = JSON.parse(await readBody(received, controller.signal,spec.maxResponseBytes));
+        if (received.status === spec.successStatus) {
+          const receipt = decode(body);
+          return receipt ? { state: 'confirmed', receipt } : {state:'unknown'};
         }
-        const code = (wire.rejections as Readonly<Record<string, string>>)[String(received.status)];
+        const code = spec.rejections[String(received.status)];
         if (code && record(body) && Object.keys(body).length === 1 && body.code === code) {
           return { state: 'rejected', status: received.status, code };
         }
-        return unknown();
+        return {state:'unknown'};
       } catch {
         // Submitted timeouts/abort/protocol errors are not evidence of rollback.
-        return submitted ? unknown() : { state: 'not_submitted', code: 'capture_not_submitted', retry: 'same_operation' };
+        return {state:submitted?'unknown':'not_submitted'};
       } finally {
         clearTimeout(timer);
         options.signal?.removeEventListener('abort', abort);
         if (response?.body && !response.bodyUsed) void response.body.cancel().catch(() => undefined);
       }
+  }
+  return {
+    async capture(operation,options={}) {
+      const pair={...operation};validateOperation(pair);
+      const result=await send(pair,{hold_ref:pair.holdRef,usage_ref:pair.usageRef},wire,value=>decodeReceipt(value,pair.holdRef),options);
+      if(result.state==='confirmed')return {state:'captured',receipt:result.receipt};
+      if(result.state==='rejected')return result;
+      return result.state==='unknown'?{state:'unknown',code:'capture_result_unknown',retry:'same_operation'}
+        :{state:'not_submitted',code:'capture_not_submitted',retry:'same_operation'};
+    },
+    async compensate(operation,options={}) {
+      if(!record(operation)||Object.keys(operation).length!==6)throw new CouponUsageConfigurationError('Compensation requires a confirmed capture receipt and durable terminal failure.');
+      const pair={usageRef:operation.usageRef,holdRef:operation.holdRef,requestId:operation.requestId,traceId:operation.traceId};
+      validateOperation(pair);
+      const failure=operation.failureRef;
+      const captured=decodeReceipt(operation.captureReceipt,pair.holdRef);
+      if(typeof failure!=='string'||!new RegExp(COUPON_COMPENSATION_TRANSPORT.referencePattern).test(failure)||!captured)
+        throw new CouponUsageConfigurationError('Only a confirmed, saved capture may be compensated.');
+      const result=await send(pair,{hold_ref:pair.holdRef,usage_ref:pair.usageRef,failure_ref:failure},COUPON_COMPENSATION_TRANSPORT,
+        value=>decodeCompensationReceipt(value,failure,captured),options);
+      if(result.state==='confirmed')return {state:'compensated',receipt:result.receipt};
+      if(result.state==='rejected')return result;
+      return result.state==='unknown'?{state:'unknown',code:'compensation_result_unknown',retry:'same_operation'}
+        :{state:'not_submitted',code:'compensation_not_submitted',retry:'same_operation'};
     }
   };
 }
@@ -126,6 +160,18 @@ function validateOperation(op: DurableCouponUsage): void {
 }
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function decodeCompensationReceipt(value:unknown,failure:string,captured:CouponUsageCaptureReceipt):CouponUsageCompensationReceipt|null {
+  const schema:Readonly<Record<string,Rule>>=COUPON_COMPENSATION_RECEIPT_RULES;
+  if(!record(value)||Object.keys(value).length!==Object.keys(schema).length)return null;
+  for(const [key,rule] of Object.entries(schema)) {
+    const field=value[key];
+    if(typeof field!==rule.type || (typeof field==='string' && rule.pattern && !new RegExp(rule.pattern).test(field)))return null;
+  }
+  const receipt=value as unknown as CouponUsageCompensationReceipt;
+  if(receipt.failure_ref!==failure||receipt.settlement_id!==captured.settlement_id
+    ||receipt.restored_credit_unit!==captured.settled_credit_unit||receipt.restored_benefit_credit_unit!==captured.benefit_credit_unit)return null;
+  return Object.freeze({...receipt});
 }
 function decodeReceipt(value: unknown, hold: string): CouponUsageCaptureReceipt | null {
   if (!record(value) || Object.keys(value).length !== Object.keys(rules).length) return null;
@@ -158,7 +204,7 @@ function wait<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
       (error: unknown) => { signal.removeEventListener('abort', abort); reject(error); });
   });
 }
-async function readBody(response: Response, signal: AbortSignal): Promise<string> {
+async function readBody(response: Response, signal: AbortSignal,maxBytes:number): Promise<string> {
   if (!response.body) throw new Error('Missing capture body.');
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -169,7 +215,7 @@ async function readBody(response: Response, signal: AbortSignal): Promise<string
       const result = await wait(reader.read(), signal);
       if (result.done) { complete = true; break; }
       length += result.value.byteLength;
-      if (length > wire.maxResponseBytes) throw new Error('Capture response too large.');
+      if (length > maxBytes) throw new Error('Coupon response too large.');
       chunks.push(result.value);
     }
     const bytes = new Uint8Array(length);
