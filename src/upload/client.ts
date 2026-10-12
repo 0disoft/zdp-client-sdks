@@ -8,6 +8,7 @@ import {
   ZdpUploadValidationError
 } from './errors';
 import { createZdpFetchUploadTransport } from './transports';
+import { awaitUploadStep } from './abortable';
 import type {
   ZdpPreparedUpload,
   ZdpProviderUploadReceipt,
@@ -140,11 +141,11 @@ export function createZdpSignedUploadClient(
           totalBytes: normalizedInput.source.size,
           attempt: null
         });
-        const checksum = await resolveChecksum(
+        const checksum = await awaitUploadStep(resolveChecksum(
           normalizedInput,
           checksumProvider,
           merged.signal
-        );
+        ), merged.signal);
         throwIfAborted(activeContext, uploadRef);
         emitProgress(callOptions.onProgress, {
           phase: 'hashing',
@@ -159,7 +160,7 @@ export function createZdpSignedUploadClient(
           attempt: null
         });
 
-        const prepared = await options.authorize(
+        const prepared = await awaitUploadStep(options.authorize(
           {
             fileName: normalizedInput.fileName,
             contentType: normalizedInput.contentType,
@@ -168,7 +169,7 @@ export function createZdpSignedUploadClient(
             metadata: normalizedInput.metadata
           },
           callbackContext
-        );
+        ), merged.signal);
         uploadRef = validatePreparedUpload(prepared, normalizedInput, limits);
         throwIfAborted(activeContext, uploadRef);
 
@@ -188,7 +189,7 @@ export function createZdpSignedUploadClient(
           attempt: null
         });
 
-        const completion = await prepared.complete(
+        const completion = await awaitUploadStep(prepared.complete(
           {
             uploadRef,
             contentType: normalizedInput.contentType,
@@ -197,7 +198,7 @@ export function createZdpSignedUploadClient(
             provider
           },
           callbackContext
-        );
+        ), merged.signal);
         const validatedCompletion = validateCompletion(completion, uploadRef);
         throwIfAborted(activeContext, uploadRef);
         emitProgress(callOptions.onProgress, {
@@ -502,19 +503,25 @@ async function uploadWithRetry(input: {
     );
 
     try {
-      const response = await input.transfer({
+      const response = await awaitUploadStep(input.transfer({
         request,
         body: input.body,
         signal: input.context.signal,
         totalBytes: input.body.size,
-        onProgress: (loadedBytes, totalBytes) =>
+        onProgress: (loadedBytes, totalBytes) => {
+          if (input.context.signal.aborted) return;
           emitProgress(input.onProgress, {
             phase: 'uploading',
             loadedBytes: clampProgress(loadedBytes, input.body.size),
             totalBytes: normalizeProgressTotal(totalBytes, input.body.size),
             attempt
-          })
-      });
+          });
+        }
+      }), input.context.signal, late => { if (late instanceof Response) void cancelResponseBody(late); });
+      if (input.context.signal.aborted) {
+        if (response instanceof Response) void cancelResponseBody(response);
+        throwIfAborted(input.context, input.prepared.uploadRef);
+      }
       if (!(response instanceof Response)) {
         throw new ZdpUploadProtocolError(
           'Upload transport must resolve with a Response.',
@@ -530,7 +537,7 @@ async function uploadWithRetry(input: {
           attempt
         });
         const receipt = readProviderReceipt(response);
-        await cancelResponseBody(response);
+        await awaitUploadStep(cancelResponseBody(response), input.context.signal);
         return receipt;
       }
 
@@ -541,7 +548,7 @@ async function uploadWithRetry(input: {
         attempt,
         response.headers.get('retry-after')
       );
-      await cancelResponseBody(response);
+      await awaitUploadStep(cancelResponseBody(response), input.context.signal);
       if (
         input.prepared.replaySafe &&
         retryable &&
