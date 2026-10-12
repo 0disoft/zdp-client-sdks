@@ -222,7 +222,18 @@ function compareFieldType(
   }
 
   const target = `${schemaRef}#${field}`;
-  if (typeof baseline === 'string' || typeof current === 'string') {
+  if (typeof baseline !== 'string' && typeof current !== 'string') {
+    if ('nullable' in baseline && 'nullable' in current) {
+      compareFieldType(kind, schemaRef, field, baseline.nullable, current.nullable, changes);
+      return;
+    }
+    if ('array' in baseline && 'array' in current) {
+      compareFieldType(kind, schemaRef, `${field}[]`, baseline.array, current.array, changes);
+      return;
+    }
+  }
+  if (typeof baseline === 'string' || typeof current === 'string' ||
+      !('enum' in baseline) || !('enum' in current)) {
     addChange(changes, {
       level: 'breaking',
       code: 'schema.field-type.changed',
@@ -265,9 +276,10 @@ function fieldPresence(schema: SchemaSurface, field: string): FieldPresence {
 }
 
 function fieldDescriptorKey(descriptor: RuntimeFieldDescriptor): string {
-  return typeof descriptor === 'string'
-    ? descriptor
-    : `enum:${[...descriptor.enum].sort().join('|')}`;
+  if (typeof descriptor === 'string') return descriptor;
+  if ('nullable' in descriptor) return `nullable(${fieldDescriptorKey(descriptor.nullable)})`;
+  if ('array' in descriptor) return `array(${fieldDescriptorKey(descriptor.array)})`;
+  return `enum:${descriptor.enum.map(value => JSON.stringify(value)).sort().join('|')}`;
 }
 
 function collectReferencedSchemaRefs(

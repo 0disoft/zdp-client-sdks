@@ -35,7 +35,7 @@ jobs:
         with:
           persist-credentials: false
           repository: 0disoft/zdp-api-contracts
-          ref: fea0428cceaa56b05b5bdfe388370ce8e640c5bd
+          ref: c8dfab7949b4b0fc41e6e6cd43a0a0b018eb6f8f
           path: projects/zdp-platforms/contracts/zdp-api-contracts
 
       - name: Setup Node

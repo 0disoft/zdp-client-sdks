@@ -260,6 +260,59 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "secretFields": [],
     "sessionEffect": "none"
   },
+  "contracts/apis/core-api/account-settings-preferences-update.yaml#AccountPreferencesUpdateRequest": {
+    "schemaRef": "contracts/apis/core-api/account-settings-preferences-update.yaml#AccountPreferencesUpdateRequest",
+    "schemaId": "AccountPreferencesUpdateRequest",
+    "sourceContract": "contracts/apis/core-api/account-settings-preferences-update.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "birth_year",
+      "interests"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetRequest": {
+    "schemaRef": "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetRequest",
+    "schemaId": "AccountPreferencesGetRequest",
+    "sourceContract": "contracts/apis/core-api/account-settings-preferences.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "request",
+    "carriesSecretMaterial": false,
+    "requiredFields": [],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": null
+  },
+  "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetResponse": {
+    "schemaRef": "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetResponse",
+    "schemaId": "AccountPreferencesGetResponse",
+    "sourceContract": "contracts/apis/core-api/account-settings-preferences.yaml",
+    "serviceId": "core-api",
+    "ownerBoundary": "identity",
+    "status": "contract-only",
+    "kind": "response",
+    "carriesSecretMaterial": false,
+    "requiredFields": [
+      "birth_year",
+      "interests",
+      "age_status",
+      "age_source",
+      "age_verified",
+      "age_as_of_year",
+      "interest_catalog_version"
+    ],
+    "optionalFields": [],
+    "secretFields": [],
+    "sessionEffect": "none"
+  },
   "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest": {
     "schemaRef": "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest",
     "schemaId": "AuthSessionCurrentGetRequest",
@@ -339,7 +392,9 @@ export const ZDP_API_SCHEMA_MODEL_MAP = {
     "requiredFields": [
       "login_id",
       "password",
-      "policy_set_resolution_ref"
+      "policy_set_resolution_ref",
+      "minimum_age_confirmed",
+      "age_policy_ref"
     ],
     "optionalFields": [
       "locale"
@@ -2091,6 +2146,48 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = {
       "session_expired",
       "account_restricted",
       "workspace_access_denied"
+    ]
+  },
+  "core.account.preferences.get": {
+    "operationId": "core.account.preferences.get",
+    "method": "GET",
+    "path": "/v1/account-settings/preferences",
+    "successStatuses": [
+      200
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetRequest",
+    "responseSchemaRef": "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetResponse",
+    "responseBodyMode": "schema",
+    "authRequired": true,
+    "idempotency": "not_required",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "session_revoked",
+      "session_expired",
+      "account_restricted"
+    ]
+  },
+  "core.account.preferences.update": {
+    "operationId": "core.account.preferences.update",
+    "method": "POST",
+    "path": "/v1/account-settings/preferences",
+    "successStatuses": [
+      204
+    ],
+    "requestSchemaRef": "contracts/apis/core-api/account-settings-preferences-update.yaml#AccountPreferencesUpdateRequest",
+    "responseSchemaRef": null,
+    "responseBodyMode": "none",
+    "authRequired": true,
+    "idempotency": "required_idempotency_key",
+    "requestIdRequired": true,
+    "traceIdRequired": true,
+    "errorCodes": [
+      "authentication_failed",
+      "session_revoked",
+      "session_expired",
+      "account_restricted"
     ]
   },
   "core.admin.operator_session_context.get": {

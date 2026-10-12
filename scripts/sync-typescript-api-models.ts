@@ -29,8 +29,11 @@ const SIMPLE_FIELD_TYPES = [
 type SimpleFieldType = (typeof SIMPLE_FIELD_TYPES)[number];
 
 interface EnumFieldType {
-  readonly enum: readonly string[];
+  readonly enum: readonly (string | boolean)[];
 }
+
+interface NullableFieldType { readonly nullable: FieldType; }
+interface ArrayFieldType { readonly array: FieldType; }
 
 interface ObjectModelFieldType {
   readonly object_model: string;
@@ -43,6 +46,8 @@ interface ObjectArrayModelFieldType {
 type FieldType =
   | SimpleFieldType
   | EnumFieldType
+  | NullableFieldType
+  | ArrayFieldType
   | ObjectModelFieldType
   | ObjectArrayModelFieldType;
 
@@ -160,7 +165,7 @@ function parseFieldType(
     if (
       values.length > 0 &&
       values.every(
-        (entry) => typeof entry === 'string' && entry.trim().length > 0
+        (entry) => typeof entry === 'boolean' || typeof entry === 'string' && entry.trim().length > 0
       ) &&
       new Set(values).size === values.length
     ) {
@@ -169,6 +174,12 @@ function parseFieldType(
   }
 
   if (isRecord(value)) {
+    if (Object.keys(value).length === 1 && Object.hasOwn(value, 'nullable')) {
+      return { nullable: parseFieldType(value.nullable, schemaRef, field) };
+    }
+    if (Object.keys(value).length === 1 && Object.hasOwn(value, 'array')) {
+      return { array: parseFieldType(value.array, schemaRef, field) };
+    }
     if (
       typeof value.object_model === 'string' &&
       isTypescriptIdentifier(value.object_model) &&
@@ -456,8 +467,10 @@ function renderModelsSource(
     `export type ZdpApiRuntimeFieldType = ${SIMPLE_FIELD_TYPES.map((fieldType) =>
       JSON.stringify(fieldType)
     ).join(' | ')};`,
-    'export interface ZdpApiRuntimeEnumFieldType { readonly enum: readonly string[]; }',
-    'export type ZdpApiRuntimeFieldDescriptor = ZdpApiRuntimeFieldType | ZdpApiRuntimeEnumFieldType;',
+    'export interface ZdpApiRuntimeEnumFieldType { readonly enum: readonly (string | boolean)[]; }',
+    'export interface ZdpApiRuntimeNullableFieldType { readonly nullable: ZdpApiRuntimeFieldDescriptor; }',
+    'export interface ZdpApiRuntimeArrayFieldType { readonly array: ZdpApiRuntimeFieldDescriptor; }',
+    'export type ZdpApiRuntimeFieldDescriptor = ZdpApiRuntimeFieldType | ZdpApiRuntimeEnumFieldType | ZdpApiRuntimeNullableFieldType | ZdpApiRuntimeArrayFieldType;',
     'export interface ZdpApiRuntimeSchemaDescriptor { readonly requiredFields: readonly string[]; readonly fieldTypes: Readonly<Record<string, ZdpApiRuntimeFieldDescriptor>>; }',
     ''
   ];
@@ -579,6 +592,8 @@ function renderTypescriptFieldType(
     throw new Error(`Missing field type for ${schemaRef}#${field}.`);
   }
   if (typeof fieldType !== 'string') {
+    if ('nullable' in fieldType) return `${renderTypescriptFieldType(fieldType.nullable, schemaRef, field)} | null`;
+    if ('array' in fieldType) return `readonly (${renderTypescriptFieldType(fieldType.array, schemaRef, field)})[]`;
     if ('enum' in fieldType) {
       return fieldType.enum.map((value) => JSON.stringify(value)).join(' | ');
     }
@@ -608,15 +623,19 @@ function renderTypescriptFieldType(
 
 function renderRuntimeFieldType(
   fieldType: FieldType
-): SimpleFieldType | EnumFieldType {
+): RuntimeFieldType {
   if (isObjectModelFieldType(fieldType)) {
     return 'json_object';
   }
   if (isObjectArrayModelFieldType(fieldType)) {
     return 'json_object[]';
   }
+  if (typeof fieldType !== 'string' && 'nullable' in fieldType) return { nullable: renderRuntimeFieldType(fieldType.nullable) };
+  if (typeof fieldType !== 'string' && 'array' in fieldType) return { array: renderRuntimeFieldType(fieldType.array) };
   return fieldType;
 }
+
+type RuntimeFieldType = SimpleFieldType | EnumFieldType | { readonly nullable: RuntimeFieldType } | { readonly array: RuntimeFieldType };
 
 function isObjectModelFieldType(
   fieldType: FieldType

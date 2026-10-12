@@ -523,7 +523,9 @@ function matchesFieldType(
   descriptor: ZdpApiRuntimeFieldDescriptor
 ): boolean {
   if (typeof descriptor !== 'string') {
-    return typeof value === 'string' && descriptor.enum.includes(value);
+    if ('nullable' in descriptor) return value === null || matchesFieldType(value, descriptor.nullable);
+    if ('array' in descriptor) return Array.isArray(value) && Array.from(value).every(item => matchesFieldType(item, descriptor.array));
+    return descriptor.enum.some(item => item === value);
   }
 
   switch (descriptor) {
@@ -552,9 +554,10 @@ function matchesFieldType(
 function describeFieldType(
   descriptor: ZdpApiRuntimeFieldDescriptor
 ): string {
-  return typeof descriptor === 'string'
-    ? descriptor
-    : `enum(${descriptor.enum.join(', ')})`;
+  if (typeof descriptor === 'string') return descriptor;
+  if ('nullable' in descriptor) return `${describeFieldType(descriptor.nullable)} | null`;
+  if ('array' in descriptor) return `array(${describeFieldType(descriptor.array)})`;
+  return `enum(${descriptor.enum.join(', ')})`;
 }
 
 function isJsonValue(value: unknown, seen: Set<object>): value is ZdpJsonValue {

@@ -2,6 +2,9 @@
 
 ## 0.19.0
 
+- 계정 선택 정보 조회·교체 operation, nullable 출생연도, 관심사 enum 배열과 `age_verified: false` 타입을 현재 API 계약에 맞췄다.
+- 가입 요청의 최소 연령 확인·정책 참조 필수 입력을 동기화했다. 기존 호출 변경은 [이전 안내](docs/migrations/v0.18.0-to-v0.19.0.md)를 따른다.
+- signed upload의 checksum·인증·전송·응답 정리·완료 단계가 취소 신호에 응답하지 않아도 SDK 호출은 제한 시간과 취소에 따라 종료한다. 늦게 끝난 단계로 다음 작업을 진행하지 않는다.
 - 패스키 로그인 시작·완료의 generated model과 namespace operation을 추가했다. 기존 패스키 challenge·assertion operation은 유지한다.
 - 새 두 operation은 요청 키가 있어도 자동 재시도하지 않으며 브라우저 바인딩과 세션 원문을 payload에 포함하지 않는다.
 - API 계약 revision과 CI·release의 checkout revision을 함께 갱신했다. 운영 경로 활성화나 패키지 게시는 포함하지 않는다.

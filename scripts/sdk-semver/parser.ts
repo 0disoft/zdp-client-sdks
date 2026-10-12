@@ -214,20 +214,7 @@ function parseRuntimeSchemaMap(
     const fieldTypes: Record<string, RuntimeFieldDescriptor> = {};
 
     for (const [field, rawType] of Object.entries(rawFieldTypes)) {
-      if (typeof rawType === 'string') {
-        fieldTypes[field] = rawType;
-        continue;
-      }
-      const enumDescriptor = readRecord(
-        rawType,
-        `${schemaRef}.${field} enum descriptor`
-      );
-      fieldTypes[field] = {
-        enum: readStringArray(
-          enumDescriptor.enum,
-          `${schemaRef}.${field}.enum`
-        )
-      };
+      fieldTypes[field] = parseRuntimeFieldType(rawType, `${schemaRef}.${field}`);
     }
 
     result[schemaRef] = {
@@ -240,6 +227,26 @@ function parseRuntimeSchemaMap(
   }
 
   return result;
+}
+
+function parseRuntimeFieldType(value: unknown, label: string): RuntimeFieldDescriptor {
+  if (typeof value === 'string') return value;
+  const descriptor = readRecord(value, label);
+  if (Object.keys(descriptor).length !== 1) {
+    throw new Error(`${label} must contain exactly one descriptor.`);
+  }
+  if ('nullable' in descriptor) {
+    return { nullable: parseRuntimeFieldType(descriptor.nullable, `${label}.nullable`) };
+  }
+  if ('array' in descriptor) {
+    return { array: parseRuntimeFieldType(descriptor.array, `${label}.array`) };
+  }
+  const values = descriptor.enum;
+  if (!Array.isArray(values) || values.length === 0 ||
+      !values.every(value => typeof value === 'string' || typeof value === 'boolean')) {
+    throw new Error(`${label}.enum must contain strings or booleans.`);
+  }
+  return { enum: values };
 }
 
 function readRecord(value: unknown, label: string): Record<string, unknown> {

@@ -40,6 +40,28 @@ typescript_sdk_models:
       notification_preferences:
         object_array_model: AccountSettingsOverviewNotificationPreference
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetRequest: {}
+    contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetRequest: {}
+    contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetResponse:
+      birth_year:
+        nullable: integer
+      interests:
+        array:
+          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art]
+      age_status:
+        enum: [unknown, under_14, minor, adult, needs_confirmation]
+      age_source:
+        enum: [unknown, self_reported]
+      age_verified:
+        enum: [false]
+      age_as_of_year: integer
+      interest_catalog_version:
+        enum: [account-interests-v1]
+    contracts/apis/core-api/account-settings-preferences-update.yaml#AccountPreferencesUpdateRequest:
+      birth_year:
+        nullable: integer
+      interests:
+        array:
+          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art]
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse:
       operator_ref: string
       organization_ref: string
@@ -81,6 +103,8 @@ typescript_sdk_models:
       login_id: string
       password: string
       policy_set_resolution_ref: string
+      minimum_age_confirmed: boolean
+      age_policy_ref: string
       locale: locale
     contracts/apis/core-api/auth-session.yaml#AuthRegistrationCreateResponse:
       registration_request_id: string

@@ -41,10 +41,14 @@ export interface SchemaSurface {
 }
 
 export interface EnumFieldDescriptor {
-  readonly enum: readonly string[];
+  readonly enum: readonly (string | boolean)[];
 }
 
-export type RuntimeFieldDescriptor = string | EnumFieldDescriptor;
+export type RuntimeFieldDescriptor =
+  | string
+  | EnumFieldDescriptor
+  | { readonly nullable: RuntimeFieldDescriptor }
+  | { readonly array: RuntimeFieldDescriptor };
 
 export interface RuntimeSchemaSurface {
   readonly requiredFields: readonly string[];

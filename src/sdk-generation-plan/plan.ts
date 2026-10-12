@@ -31,6 +31,8 @@ const REQUIRED_API_INPUT_SOURCE_CONTRACTS = [
   'contracts/apis/abuse-api/health.yaml',
   'contracts/apis/core-api/access-decision.yaml',
   'contracts/apis/core-api/account-settings-overview.yaml',
+  'contracts/apis/core-api/account-settings-preferences.yaml',
+  'contracts/apis/core-api/account-settings-preferences-update.yaml',
   'contracts/apis/core-api/current-personal-account-scope.yaml',
   'contracts/apis/core-api/orchid-visitor-access.yaml',
   'contracts/apis/core-api/auth-session-consumer.yaml',

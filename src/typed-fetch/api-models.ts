@@ -11,8 +11,10 @@ export type ZdpJsonValue = ZdpJsonPrimitive | readonly ZdpJsonValue[] | { readon
 export type ZdpJsonObject = Readonly<Record<string, ZdpJsonValue>>;
 
 export type ZdpApiRuntimeFieldType = "string" | "boolean" | "integer" | "datetime" | "locale" | "uri" | "currency" | "decimal" | "json" | "json_object" | "string[]" | "json_object[]";
-export interface ZdpApiRuntimeEnumFieldType { readonly enum: readonly string[]; }
-export type ZdpApiRuntimeFieldDescriptor = ZdpApiRuntimeFieldType | ZdpApiRuntimeEnumFieldType;
+export interface ZdpApiRuntimeEnumFieldType { readonly enum: readonly (string | boolean)[]; }
+export interface ZdpApiRuntimeNullableFieldType { readonly nullable: ZdpApiRuntimeFieldDescriptor; }
+export interface ZdpApiRuntimeArrayFieldType { readonly array: ZdpApiRuntimeFieldDescriptor; }
+export type ZdpApiRuntimeFieldDescriptor = ZdpApiRuntimeFieldType | ZdpApiRuntimeEnumFieldType | ZdpApiRuntimeNullableFieldType | ZdpApiRuntimeArrayFieldType;
 export interface ZdpApiRuntimeSchemaDescriptor { readonly requiredFields: readonly string[]; readonly fieldTypes: Readonly<Record<string, ZdpApiRuntimeFieldDescriptor>>; }
 
 export interface AccountSettingsOverviewAccount { readonly actor_ref: string; readonly display_name: string; }
@@ -33,11 +35,14 @@ export interface AccessAuthorizationDecisionCreateRequest { readonly product_ref
 export interface AccessAuthorizationDecisionCreateResponse { readonly decision_ref: string; readonly decision: "allow" | "deny"; readonly reason_code: string; readonly policy_version: string; readonly data_revision: string; readonly subject_ref: string; readonly session_ref: string; readonly tenant_ref: string; readonly product_ref: string; readonly action: string; readonly resource_type: string; readonly resource_ref: string; readonly scope_type: string; readonly scope_ref: string; readonly decided_at: ZdpIsoDateTimeString; readonly decision_expires_at: ZdpIsoDateTimeString; readonly session_expires_at: ZdpIsoDateTimeString; readonly obligations: readonly string[]; }
 export interface AccountSettingsOverviewGetRequest {  }
 export interface AccountSettingsOverviewGetResponse { readonly account: AccountSettingsOverviewAccount; readonly workspace: AccountSettingsOverviewWorkspace; readonly session: AccountSettingsOverviewSession; readonly connected_products: readonly AccountSettingsOverviewConnectedProduct[]; readonly notification_preferences: readonly AccountSettingsOverviewNotificationPreference[]; }
+export interface AccountPreferencesUpdateRequest { readonly birth_year: number | null; readonly interests: readonly ("technology" | "programming" | "design" | "science" | "business" | "productivity" | "education" | "books" | "music" | "gaming" | "sports" | "travel" | "cooking" | "art")[]; }
+export interface AccountPreferencesGetRequest {  }
+export interface AccountPreferencesGetResponse { readonly birth_year: number | null; readonly interests: readonly ("technology" | "programming" | "design" | "science" | "business" | "productivity" | "education" | "books" | "music" | "gaming" | "sports" | "travel" | "cooking" | "art")[]; readonly age_status: "unknown" | "under_14" | "minor" | "adult" | "needs_confirmation"; readonly age_source: "unknown" | "self_reported"; readonly age_verified: false; readonly age_as_of_year: number; readonly interest_catalog_version: "account-interests-v1"; }
 export interface AuthSessionCurrentGetRequest {  }
 export interface AuthSessionCurrentGetResponse { readonly session_ref: string; readonly actor_ref: string; readonly tenant_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
 export interface AuthRecoveryRequestCreateRequest { readonly login_identifier: string; readonly locale: ZdpLocaleString; }
 export interface AuthRecoveryRequestCreateResponse { readonly recovery_request_id: string; readonly next_step: string; }
-export interface AuthRegistrationCreateRequest { readonly login_id: string; readonly password: string; readonly policy_set_resolution_ref: string; readonly locale?: ZdpLocaleString; }
+export interface AuthRegistrationCreateRequest { readonly login_id: string; readonly password: string; readonly policy_set_resolution_ref: string; readonly minimum_age_confirmed: boolean; readonly age_policy_ref: string; readonly locale?: ZdpLocaleString; }
 export interface AuthRegistrationCreateResponse { readonly registration_request_id: string; readonly next_step: string; }
 export interface AuthSessionCreateRequest { readonly login_identifier: string; readonly verifier: string; }
 export interface AuthSessionCreateResponse { readonly session_ref: string; readonly actor_ref: string; readonly tenant_ref: string; readonly expires_at: ZdpIsoDateTimeString; }
@@ -104,6 +109,9 @@ export interface ZdpApiSchemaTypeMap {
   readonly "contracts/apis/core-api/access-decision.yaml#AccessAuthorizationDecisionCreateResponse": AccessAuthorizationDecisionCreateResponse;
   readonly "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetRequest": AccountSettingsOverviewGetRequest;
   readonly "contracts/apis/core-api/account-settings-overview.yaml#AccountSettingsOverviewGetResponse": AccountSettingsOverviewGetResponse;
+  readonly "contracts/apis/core-api/account-settings-preferences-update.yaml#AccountPreferencesUpdateRequest": AccountPreferencesUpdateRequest;
+  readonly "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetRequest": AccountPreferencesGetRequest;
+  readonly "contracts/apis/core-api/account-settings-preferences.yaml#AccountPreferencesGetResponse": AccountPreferencesGetResponse;
   readonly "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetRequest": AuthSessionCurrentGetRequest;
   readonly "contracts/apis/core-api/auth-session-consumer.yaml#AuthSessionCurrentGetResponse": AuthSessionCurrentGetResponse;
   readonly "contracts/apis/core-api/auth-session.yaml#AuthRecoveryRequestCreateRequest": AuthRecoveryRequestCreateRequest;

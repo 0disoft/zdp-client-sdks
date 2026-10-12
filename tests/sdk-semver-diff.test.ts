@@ -28,7 +28,11 @@ export const ZDP_TYPED_FETCH_OPERATION_MAP = ${JSON.stringify({
 export const ZDP_API_SCHEMA_RUNTIME_TYPE_MAP = ${JSON.stringify({
       [REQUEST_REF]: {
         requiredFields: ['name'],
-        fieldTypes: { name: { enum: ['plain', 'value}with-brace'] } }
+        fieldTypes: {
+          name: { enum: ['plain', 'value}with-brace'] },
+          year: { nullable: 'integer' },
+          flags: { array: { enum: [false, 'false'] } }
+        }
       },
       [RESPONSE_REF]: {
         requiredFields: ['id'],
@@ -47,10 +51,24 @@ export const ZDP_API_SCHEMA_RUNTIME_TYPE_MAP = ${JSON.stringify({
     expect(parsed.runtimeSchemas[REQUEST_REF]?.fieldTypes.name).toEqual({
       enum: ['plain', 'value}with-brace']
     });
+    expect(parsed.runtimeSchemas[REQUEST_REF]?.fieldTypes.year).toEqual({ nullable: 'integer' });
+    expect(parsed.runtimeSchemas[REQUEST_REF]?.fieldTypes.flags).toEqual({ array: { enum: [false, 'false'] } });
   });
 });
 
 describe('generated SDK compatibility diff', () => {
+  it('compares enum values inside nullable array descriptors with their wire types', () => {
+    const withDescriptor = (values: readonly (string | boolean)[]) => surface({
+      runtimeSchemas: {
+        [REQUEST_REF]: runtimeSchema({ name: { nullable: { array: { enum: values } } } }, ['name']),
+        [RESPONSE_REF]: runtimeSchema({ id: 'string' }, ['id'])
+      }
+    });
+    expect(diffGeneratedPublicSurface(withDescriptor([false]), withDescriptor(['false'])).classification).toBe('breaking');
+    expect(diffGeneratedPublicSurface(withDescriptor(['plain', false]), withDescriptor([false, 'plain'])).classification).toBe('none');
+    expect(diffGeneratedPublicSurface(withDescriptor([false]), withDescriptor([false, 'plain'])).classification).toBe('additive');
+  });
+
   it('classifies operation removal and transport identity changes as breaking', () => {
     const baseline = surface();
     const removed = surface({ operations: {} });
