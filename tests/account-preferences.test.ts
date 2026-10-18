@@ -43,13 +43,13 @@ describe('account preferences contract sync', () => {
       }
     });
     await client.core.account.preferences.update(
-      { birth_year: 1998, interests: ['programming'] },
+      { birth_year: 1998, interests: ['personal_finance', 'foreign_languages', 'beauty', 'pets'] },
       { idempotencyKey: 'profile-update', headers: { 'x-zdp-profile-consent': 'account-optional-profile-v1' } }
     );
     await client.core.account.preferences.update(
       { birth_year: null, interests: [] }, { idempotencyKey: 'profile-clear' }
     );
-    expect(JSON.parse(String(requests[0]?.body))).toEqual({ birth_year: 1998, interests: ['programming'] });
+    expect(JSON.parse(String(requests[0]?.body))).toEqual({ birth_year: 1998, interests: ['personal_finance', 'foreign_languages', 'beauty', 'pets'] });
     expect(new Headers(requests[0]?.headers).get('x-zdp-profile-consent')).toBe('account-optional-profile-v1');
     expect(new Headers(requests[1]?.headers).has('x-zdp-profile-consent')).toBe(false);
     expect(JSON.parse(String(requests[1]?.body))).toEqual({ birth_year: null, interests: [] });

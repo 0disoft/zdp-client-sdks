@@ -46,7 +46,7 @@ typescript_sdk_models:
         nullable: integer
       interests:
         array:
-          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art]
+          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art, personal_finance, foreign_languages, beauty, pets]
       age_status:
         enum: [unknown, under_14, minor, adult, needs_confirmation]
       age_source:
@@ -61,7 +61,7 @@ typescript_sdk_models:
         nullable: integer
       interests:
         array:
-          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art]
+          enum: [technology, programming, design, science, business, productivity, education, books, music, gaming, sports, travel, cooking, art, personal_finance, foreign_languages, beauty, pets]
     contracts/apis/core-api/operator-session-context.yaml#OperatorSessionContextGetResponse:
       operator_ref: string
       organization_ref: string
