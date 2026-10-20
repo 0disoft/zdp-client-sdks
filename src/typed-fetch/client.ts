@@ -134,29 +134,31 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
               'maxResponseBodyBytes'
             );
       const url = buildUrl(baseUrl, operation.path, encoded);
-      const headers = await buildHeaders({
-        operation,
-        encoded,
-        options,
-        callOptions,
-        requestId,
-        traceId,
-        idempotencyKey
-      });
       const timeoutMs =
         callOptions.timeoutMs === undefined
           ? defaultTimeoutMs
           : validateTimeout(callOptions.timeoutMs, 'timeoutMs');
-      const body = encodeBody(encoded, headers);
       return performFetchWithRetry({
         fetchLike,
         url,
-        init: buildRequestInit({
-          method: operation.method,
-          headers,
-          body,
-          signal: callOptions.signal
-        }),
+        callerSignal: callOptions.signal ?? null,
+        createRequestInit: async () => {
+          const headers = await buildHeaders({
+            operation,
+            encoded,
+            options,
+            callOptions,
+            requestId,
+            traceId,
+            idempotencyKey
+          });
+          return buildRequestInit({
+            method: operation.method,
+            headers,
+            body: encodeBody(encoded, headers),
+            signal: callOptions.signal
+          });
+        },
         timeoutMs,
         maxResponseBodyBytes,
         retryPolicy,
@@ -301,7 +303,8 @@ function encodeBody(
 async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition>(input: {
   readonly fetchLike: ZdpFetchLike;
   readonly url: URL;
-  readonly init: RequestInit;
+  readonly createRequestInit: () => Promise<RequestInit>;
+  readonly callerSignal: AbortSignal | null;
   readonly timeoutMs: number;
   readonly maxResponseBodyBytes: number;
   readonly retryPolicy: ResolvedRetryPolicy;
@@ -309,6 +312,7 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
   readonly operation: Operation;
 }): Promise<ZdpOperationResponse<Operation>> {
   let attempt = 1;
+  let preparedInit: RequestInit | undefined;
 
   while (true) {
     let outcome:
@@ -318,7 +322,11 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
       outcome = await performFetch({
         fetchLike: input.fetchLike,
         url: input.url,
-        init: input.init,
+        createRequestInit: async () => {
+          preparedInit ??= await input.createRequestInit();
+          return preparedInit;
+        },
+        callerSignal: input.callerSignal,
         timeoutMs: input.timeoutMs,
         consumeResponse: async (response, signal) => {
           if (
@@ -346,12 +354,12 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
       });
     } catch (error) {
       if (
-        !shouldRetryTransportError({
+        preparedInit === undefined || !shouldRetryTransportError({
           error,
           attempt,
           retryPolicy: input.retryPolicy,
           retrySafe: input.retrySafe,
-          callerSignal: input.init.signal ?? null
+          callerSignal: input.callerSignal
         })
       ) {
         throw error;
@@ -359,7 +367,7 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
 
       await waitForRetry(
         calculateBackoffDelayMs(attempt, input.retryPolicy),
-        input.init.signal ?? null
+        input.callerSignal
       );
       attempt += 1;
       continue;
@@ -370,7 +378,7 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
     }
     await waitForRetry(
       outcome.retryDelayMs,
-      input.init.signal ?? null
+      input.callerSignal
     );
     attempt += 1;
   }
@@ -379,23 +387,28 @@ async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition
 async function performFetch<T>(input: {
   readonly fetchLike: ZdpFetchLike;
   readonly url: URL;
-  readonly init: RequestInit;
+  readonly createRequestInit: () => Promise<RequestInit>;
+  readonly callerSignal: AbortSignal | null;
   readonly timeoutMs: number;
   readonly consumeResponse: (response: Response, signal: AbortSignal) => Promise<T>;
 }): Promise<T> {
   const timeoutController = new AbortController();
   const mergedSignal = mergeAbortSignals(
-    input.init.signal ?? null,
+    input.callerSignal,
     timeoutController.signal
   );
   const timeout = setTimeout(() => timeoutController.abort(), input.timeoutMs);
   let response: Response | undefined;
+  let requestStarted = false;
 
   try {
     mergedSignal.signal.throwIfAborted();
+    const init = await awaitRequestStep(input.createRequestInit(), mergedSignal.signal);
+    mergedSignal.signal.throwIfAborted();
+    requestStarted = true;
     response = await awaitRequestStep<Response>(
       Promise.resolve().then(() => input.fetchLike(input.url, {
-        ...input.init,
+        ...init,
         signal: mergedSignal.signal
       })),
       mergedSignal.signal,
@@ -409,10 +422,10 @@ async function performFetch<T>(input: {
     if (timeoutController.signal.aborted) {
       throw new ZdpRequestTimeoutError('ZDP request timed out.', error);
     }
-    if (input.init.signal?.aborted === true) {
+    if (input.callerSignal?.aborted === true) {
       throw new ZdpRequestAbortedError('ZDP request was aborted.', error);
     }
-    if (response !== undefined) throw error;
+    if (!requestStarted || response !== undefined) throw error;
     throw new ZdpTransportError('ZDP request failed before a response.', error);
   } finally {
     clearTimeout(timeout);

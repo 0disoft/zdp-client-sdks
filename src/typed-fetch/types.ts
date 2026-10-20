@@ -130,7 +130,7 @@ export interface ZdpTypedFetchClientOptions {
   readonly baseUrl: string;
   readonly fetch?: ZdpFetchLike;
   readonly defaultHeaders?: Readonly<Record<string, string>>;
-  /** Per-attempt deadline covering fetch, response reading, and retry inspection. */
+  /** Per-attempt deadline covering initial token preparation, fetch, and response reading. */
   readonly defaultTimeoutMs?: number;
   /**
    * Maximum decoded response body bytes accepted before JSON parsing.
