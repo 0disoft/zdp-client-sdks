@@ -97,7 +97,9 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
       request: ZdpOperationRequest<Operations[OperationId]>,
       callOptions: ZdpCallOptions = {}
     ): Promise<ZdpOperationResponse<Operations[OperationId]>> {
-      const operation = operations[operationId];
+      const operation = Object.hasOwn(operations, operationId)
+        ? operations[operationId]
+        : undefined;
       if (operation === undefined) {
         throw new ZdpClientConfigurationError(
           `Unknown ZDP operation \`${operationId}\`.`

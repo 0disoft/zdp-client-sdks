@@ -176,6 +176,11 @@ export function createZdpClient(
     operationId: ZdpApiOperationId,
     args: readonly unknown[]
   ): PreparedApiCall => {
+    if (!Object.hasOwn(ZDP_TYPED_FETCH_OPERATION_MAP, operationId)) {
+      throw new ZdpClientConfigurationError(
+        `Unknown ZDP operation \`${operationId}\`.`
+      );
+    }
     const operation = ZDP_TYPED_FETCH_OPERATION_MAP[operationId];
     const requestSchema = ZDP_API_SCHEMA_MODEL_MAP[operation.requestSchemaRef];
     const pathParameters = readPathParameters(operation.path);

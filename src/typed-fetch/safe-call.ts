@@ -74,7 +74,9 @@ export function createZdpSafeTypedFetchClient<
         ZdpOperationErrorCode<Operations[OperationId]>
       >
     > {
-      const operation = operations[operationId];
+      const operation = Object.hasOwn(operations, operationId)
+        ? operations[operationId]
+        : undefined;
       if (operation === undefined) {
         throw new ZdpClientConfigurationError(
           `Unknown ZDP operation \`${operationId}\`.`
