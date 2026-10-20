@@ -9,7 +9,15 @@ import { buildSdkGenerationPlan } from './plan';
 export async function runSdkGenerationPlanCli(
   argv: readonly string[]
 ): Promise<number> {
-  const options = readOptions(argv);
+  let options: ReturnType<typeof readOptions>;
+  try {
+    options = readOptions(argv);
+  } catch (error) {
+    console.error(
+      `SDK_GENERATION_PLAN_INVALID_ARGUMENT ${error instanceof Error ? error.message : String(error)}`
+    );
+    return 2;
+  }
   const apiInputSourceFile = 'contracts/sdk-generation-input.yaml';
   const apiExportPlanSourceFile = 'src/api-export-plan/plan.ts';
   const result = buildSdkGenerationPlan(
@@ -93,7 +101,10 @@ function readStringOption(
     }
 
     const value = argv[index + 1];
-    return value === undefined || value.startsWith('--') ? null : value;
+    if (value === undefined || value.startsWith('--') || value.trim().length === 0) {
+      throw new Error(`${optionName} 옵션 뒤에 저장소 경로를 지정해야 합니다.`);
+    }
+    return value;
   }
 
   return null;
