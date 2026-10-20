@@ -529,7 +529,7 @@ function matchesFieldType(
 ): boolean {
   if (typeof descriptor !== 'string') {
     if ('nullable' in descriptor) return value === null || matchesFieldType(value, descriptor.nullable);
-    if ('array' in descriptor) return Array.isArray(value) && Array.from(value).every(item => matchesFieldType(item, descriptor.array));
+    if ('array' in descriptor) return matchesArrayFieldType(value, descriptor.array);
     return descriptor.enum.some(item => item === value);
   }
 
@@ -543,17 +543,24 @@ function matchesFieldType(
     case 'json_object':
       return isPlainRecord(value) && isJsonValue(value, new Set());
     case 'string[]':
-      return Array.isArray(value) && value.every((item) => typeof item === 'string');
+      return matchesArrayFieldType(value, 'string');
     case 'json_object[]':
-      return (
-        Array.isArray(value) &&
-        value.every(
-          (item) => isPlainRecord(item) && isJsonValue(item, new Set())
-        )
-      );
+      return matchesArrayFieldType(value, 'json_object');
     default:
       return typeof value === 'string';
   }
+}
+
+function matchesArrayFieldType(
+  value: unknown,
+  itemDescriptor: ZdpApiRuntimeFieldDescriptor
+): boolean {
+  if (!Array.isArray(value)) return false;
+  // JSON serialization reads indexed slots, including holes, without iterating.
+  for (let index = 0; index < value.length; index += 1) {
+    if (!matchesFieldType(value[index], itemDescriptor)) return false;
+  }
+  return true;
 }
 
 function describeFieldType(
