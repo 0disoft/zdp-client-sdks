@@ -32,19 +32,19 @@ export async function loadClientSdkContracts(
     authHelper,
     uploadClient
   ] = await Promise.all([
-    readContract(root, SDK_SURFACE_FILE),
-    readContract(root, SDK_GENERATION_SOURCE_FILE),
-    readContract(root, LIBS_EXPORT_SOURCE_FILE),
-    readContract(root, AUTH_HELPER_FILE),
-    readContract(root, UPLOAD_CLIENT_FILE)
+    readContract(root, SDK_SURFACE_FILE, parseSdkSurfaceContract),
+    readContract(root, SDK_GENERATION_SOURCE_FILE, parseSdkGenerationSourceContract),
+    readContract(root, LIBS_EXPORT_SOURCE_FILE, parseLibsExportSourceContract),
+    readContract(root, AUTH_HELPER_FILE, parseAuthHelperContract),
+    readContract(root, UPLOAD_CLIENT_FILE, parseUploadClientContract)
   ]);
 
   return {
-    sdkSurface: parseSdkSurfaceContract(sdkSurface),
-    sdkGenerationSource: parseSdkGenerationSourceContract(sdkGenerationSource),
-    libsExportSource: parseLibsExportSourceContract(libsExportSource),
-    authHelper: parseAuthHelperContract(authHelper),
-    uploadClient: parseUploadClientContract(uploadClient)
+    sdkSurface,
+    sdkGenerationSource,
+    libsExportSource,
+    authHelper,
+    uploadClient
   };
 }
 
@@ -139,8 +139,18 @@ export function parseUploadClientContract(source: string): UploadClientContract 
   };
 }
 
-async function readContract(root: string, fileName: string): Promise<string> {
-  return await readFile(join(root, 'contracts', fileName), 'utf8');
+async function readContract<Contract>(
+  root: string,
+  fileName: string,
+  parse: (source: string) => Contract
+): Promise<Contract> {
+  const path = join(root, 'contracts', fileName);
+  const source = await readFile(path, 'utf8');
+  try {
+    return parse(source);
+  } catch (cause) {
+    throw new Error(`계약 YAML 구문을 해석할 수 없습니다: ${path}`, { cause });
+  }
 }
 
 function parseYamlRecord(source: string): Record<string, unknown> {
