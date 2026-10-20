@@ -70,6 +70,7 @@ function transferWithXhr(
       xhr.removeEventListener('load', load);
       xhr.removeEventListener('error', fail);
       xhr.removeEventListener('abort', aborted);
+      xhr.removeEventListener('timeout', timedOut);
     };
     const finish = (action: () => void) => {
       if (settled) {
@@ -77,14 +78,26 @@ function transferWithXhr(
       }
       settled = true;
       cleanup();
-      action();
+      try {
+        action();
+      } catch (error) {
+        reject(error);
+      }
     };
-    const abort = () => xhr.abort();
+    const stop = (error: unknown) => finish(() => {
+      // Detach first: abort may synchronously emit an event, or emit none.
+      try { xhr.abort(); } finally { reject(error); }
+    });
+    const abort = () => stop(new DOMException('Upload aborted.', 'AbortError'));
     const progress = (event: ProgressEvent<EventTarget>) => {
-      input.onProgress(
-        event.loaded,
-        event.lengthComputable ? event.total : input.totalBytes
-      );
+      try {
+        input.onProgress(
+          event.loaded,
+          event.lengthComputable ? event.total : input.totalBytes
+        );
+      } catch (error) {
+        stop(error);
+      }
     };
     const load = () => {
       finish(() => {
@@ -109,6 +122,8 @@ function transferWithXhr(
       finish(() => reject(new TypeError('Signed upload transfer failed.')));
     const aborted = () =>
       finish(() => reject(new DOMException('Upload aborted.', 'AbortError')));
+    const timedOut = () =>
+      finish(() => reject(new DOMException('Upload transfer timed out.', 'TimeoutError')));
 
     try {
       xhr.open(input.request.method, input.request.url, true);
@@ -126,14 +141,19 @@ function transferWithXhr(
     xhr.addEventListener('load', load);
     xhr.addEventListener('error', fail);
     xhr.addEventListener('abort', aborted);
+    xhr.addEventListener('timeout', timedOut);
 
     if (input.signal.aborted) {
       abort();
       return;
     }
 
-    input.onProgress(0, input.totalBytes);
-    xhr.send(input.body);
+    try {
+      input.onProgress(0, input.totalBytes);
+      if (!settled) xhr.send(input.body);
+    } catch (error) {
+      stop(error);
+    }
   });
 }
 
