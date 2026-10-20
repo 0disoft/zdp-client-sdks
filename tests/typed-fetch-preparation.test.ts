@@ -84,6 +84,37 @@ test('provider failures keep their original error and are not retried', async ()
   expect(providers).toBe(1);
 });
 
+test('rejects default deadlines beyond the timer range at client creation', () => {
+  expect(() => createZdpTypedFetchClient(operations, {
+    baseUrl: 'https://api.example.test', defaultTimeoutMs: 2_147_483_648
+  })).toThrow(ZdpClientConfigurationError);
+});
+
+test('rejects overflowing call deadlines before token preparation or transport', async () => {
+  let providers = 0;
+  let fetches = 0;
+  const client = createZdpTypedFetchClient(operations, {
+    baseUrl: 'https://api.example.test',
+    getAccessToken: () => { providers++; return 'fixture-access-token'; },
+    fetch: async () => { fetches++; return Response.json({ ok: true }); }
+  });
+  await expect(client.call('profile', {}, { timeoutMs: 2_147_483_648 }))
+    .rejects.toBeInstanceOf(ZdpClientConfigurationError);
+  expect(providers).toBe(0);
+  expect(fetches).toBe(0);
+});
+
+test('accepts the maximum timer deadline as a default and a call override', async () => {
+  const client = createZdpTypedFetchClient(operations, {
+    baseUrl: 'https://api.example.test', defaultTimeoutMs: 2_147_483_647,
+    getAccessToken: () => 'fixture-access-token',
+    fetch: async () => Response.json({ ok: true })
+  });
+  await expect(client.call('profile', {})).resolves.toEqual({ ok: true });
+  await expect(client.call('profile', {}, { timeoutMs: 2_147_483_647 }))
+    .resolves.toEqual({ ok: true });
+});
+
 test('successful token preparation is reused across request retries', async () => {
   let providers = 0;
   let fetches = 0;

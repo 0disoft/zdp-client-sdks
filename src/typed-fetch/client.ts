@@ -979,11 +979,7 @@ function normalizeBaseUrl(baseUrl: string): URL {
 }
 
 function validateTimeout(value: number, label: string): number {
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new ZdpClientConfigurationError(`${label} must be a positive integer.`);
-  }
-
-  return value;
+  return validateIntegerInRange(value, label, 1, MAX_TIMER_DELAY_MS);
 }
 
 function validateMaxResponseBodyBytes(value: number, label: string): number {
