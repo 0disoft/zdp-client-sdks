@@ -3,6 +3,8 @@ import { getEventListeners } from 'node:events';
 import {
   ZdpClientConfigurationError,
   ZdpProtocolError,
+  ZdpRequestTimeoutError,
+  ZdpRequestAbortedError,
   createZdpTypedFetchClient,
   defineZdpOperation,
   defineZdpOperations
@@ -45,6 +47,58 @@ const operations = defineZdpOperations({
 });
 
 describe('typed fetch runtime hardening', () => {
+  for (const phase of ['fetch', 'body', 'retry-body', 'retry-cleanup'] as const) {
+    for (const mode of ['timeout', 'cancel'] as const) {
+      it(`${mode} settles an uncooperative ${phase}`, async () => {
+        const caller = new AbortController();
+        let enter!: () => void;
+        const entered = new Promise<void>(resolve => { enter = resolve; });
+        let release!: (response: Response) => void;
+        let signal!: AbortSignal;
+        let cancellations = 0;
+        let attempts = 0;
+        const makeStream = () => new ReadableStream<Uint8Array>({
+          pull() { enter(); },
+          cancel() { cancellations++; return new Promise<void>(() => {}); }
+        });
+        const client = createHealthClient({
+          defaultTimeoutMs: mode === 'timeout' ? 25 : 10_000,
+          ...(phase.startsWith('retry') ? { retry: { maxAttempts: 2, baseDelayMs: 0, maxDelayMs: 0 } } : {}),
+          fetch: async (_input, init) => {
+            attempts++;
+            signal = init!.signal!;
+            if (phase === 'fetch') return new Promise<Response>(resolve => { release = resolve; enter(); });
+            if (phase === 'retry-cleanup') return new Response(new ReadableStream({
+              cancel() { cancellations++; enter(); return new Promise<void>(() => {}); }
+            }), { status: 503, headers: { 'retry-after': '0' } });
+            return new Response(makeStream(), { status: phase === 'retry-body' ? 503 : 200 });
+          }
+        });
+        const pending = client.call('health', {}, { signal: caller.signal })
+          .then(value => value, error => error);
+        try {
+          await entered;
+          if (mode === 'cancel') caller.abort();
+          const ceiling = Symbol('deadline-exceeded');
+          const result = await Promise.race([pending, Bun.sleep(200).then(() => ceiling)]);
+          expect(result).not.toBe(ceiling);
+          expect(result).toBeInstanceOf(mode === 'timeout' ? ZdpRequestTimeoutError : ZdpRequestAbortedError);
+          expect(signal.aborted).toBe(true);
+          expect(getEventListeners(caller.signal, 'abort')).toHaveLength(0);
+          if (phase === 'fetch') {
+            release(new Response(makeStream()));
+            await Bun.sleep(0);
+          }
+          expect(attempts).toBeLessThanOrEqual(mode === 'cancel' ? 1 : 2);
+          expect(cancellations).toBeGreaterThan(0);
+        } finally {
+          caller.abort();
+          release?.(new Response(null));
+        }
+      });
+    }
+  }
+
   it('rejects base URLs with embedded credentials without echoing them', () => {
     for (const baseUrl of [
       'https://user@api.example.test',

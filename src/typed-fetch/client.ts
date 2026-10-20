@@ -148,7 +148,7 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
           ? defaultTimeoutMs
           : validateTimeout(callOptions.timeoutMs, 'timeoutMs');
       const body = encodeBody(encoded, headers);
-      const response = await performFetchWithRetry({
+      return performFetchWithRetry({
         fetchLike,
         url,
         init: buildRequestInit({
@@ -161,10 +161,8 @@ export function createZdpTypedFetchClient<const Operations extends ZdpOperationM
         maxResponseBodyBytes,
         retryPolicy,
         retrySafe: isRetrySafeOperation(operation, idempotencyKey),
-        successStatuses: operation.successStatuses
+        operation
       });
-
-      return decodeResponse(operation, response, maxResponseBodyBytes);
     }
   };
 }
@@ -300,7 +298,7 @@ function encodeBody(
   return JSON.stringify(encoded.body);
 }
 
-async function performFetchWithRetry(input: {
+async function performFetchWithRetry<Operation extends AnyZdpOperationDefinition>(input: {
   readonly fetchLike: ZdpFetchLike;
   readonly url: URL;
   readonly init: RequestInit;
@@ -308,18 +306,43 @@ async function performFetchWithRetry(input: {
   readonly maxResponseBodyBytes: number;
   readonly retryPolicy: ResolvedRetryPolicy;
   readonly retrySafe: boolean;
-  readonly successStatuses: readonly number[];
-}): Promise<Response> {
+  readonly operation: Operation;
+}): Promise<ZdpOperationResponse<Operation>> {
   let attempt = 1;
 
   while (true) {
-    let response: Response;
+    let outcome:
+      | { data: ZdpOperationResponse<Operation> }
+      | { retryDelayMs: number };
     try {
-      response = await performFetch({
+      outcome = await performFetch({
         fetchLike: input.fetchLike,
         url: input.url,
         init: input.init,
-        timeoutMs: input.timeoutMs
+        timeoutMs: input.timeoutMs,
+        consumeResponse: async (response, signal) => {
+          if (
+            input.retrySafe &&
+            attempt < input.retryPolicy.maxAttempts &&
+            !input.operation.successStatuses.includes(response.status) &&
+            RETRYABLE_RESPONSE_STATUSES.has(response.status)
+          ) {
+            const serverDelayMs = await readServerRetryDelayMs(
+              response, input.maxResponseBodyBytes, signal
+            );
+            if (serverDelayMs === null || serverDelayMs <= input.retryPolicy.maxRetryAfterMs) {
+              await awaitRequestStep(discardResponse(response), signal);
+              return {
+                retryDelayMs: serverDelayMs ?? calculateBackoffDelayMs(attempt, input.retryPolicy)
+              };
+            }
+          }
+          return {
+            data: await decodeResponse(
+              input.operation, response, input.maxResponseBodyBytes, signal
+            )
+          };
+        }
       });
     } catch (error) {
       if (
@@ -342,65 +365,86 @@ async function performFetchWithRetry(input: {
       continue;
     }
 
-    if (
-      !input.retrySafe ||
-      attempt >= input.retryPolicy.maxAttempts ||
-      input.successStatuses.includes(response.status) ||
-      !RETRYABLE_RESPONSE_STATUSES.has(response.status)
-    ) {
-      return response;
+    if ('data' in outcome) {
+      return outcome.data;
     }
-
-    const serverDelayMs = await readServerRetryDelayMs(
-      response,
-      input.maxResponseBodyBytes
-    );
-    if (
-      serverDelayMs !== null &&
-      serverDelayMs > input.retryPolicy.maxRetryAfterMs
-    ) {
-      return response;
-    }
-
-    await discardResponse(response);
     await waitForRetry(
-      serverDelayMs ?? calculateBackoffDelayMs(attempt, input.retryPolicy),
+      outcome.retryDelayMs,
       input.init.signal ?? null
     );
     attempt += 1;
   }
 }
 
-async function performFetch(input: {
+async function performFetch<T>(input: {
   readonly fetchLike: ZdpFetchLike;
   readonly url: URL;
   readonly init: RequestInit;
   readonly timeoutMs: number;
-}): Promise<Response> {
+  readonly consumeResponse: (response: Response, signal: AbortSignal) => Promise<T>;
+}): Promise<T> {
   const timeoutController = new AbortController();
   const mergedSignal = mergeAbortSignals(
     input.init.signal ?? null,
     timeoutController.signal
   );
   const timeout = setTimeout(() => timeoutController.abort(), input.timeoutMs);
+  let response: Response | undefined;
 
   try {
-    return await input.fetchLike(input.url, {
-      ...input.init,
-      signal: mergedSignal.signal
-    });
+    mergedSignal.signal.throwIfAborted();
+    response = await awaitRequestStep<Response>(
+      Promise.resolve().then(() => input.fetchLike(input.url, {
+        ...input.init,
+        signal: mergedSignal.signal
+      })),
+      mergedSignal.signal,
+      cancelResponseBody
+    );
+    return await awaitRequestStep(
+      input.consumeResponse(response, mergedSignal.signal), mergedSignal.signal
+    );
   } catch (error) {
+    if (response !== undefined) cancelResponseBody(response);
     if (timeoutController.signal.aborted) {
       throw new ZdpRequestTimeoutError('ZDP request timed out.', error);
     }
     if (input.init.signal?.aborted === true) {
       throw new ZdpRequestAbortedError('ZDP request was aborted.', error);
     }
+    if (response !== undefined) throw error;
     throw new ZdpTransportError('ZDP request failed before a response.', error);
   } finally {
     clearTimeout(timeout);
     mergedSignal.cleanup();
   }
+}
+
+/** Bound waits even when a custom fetch or stream ignores its abort signal. */
+function awaitRequestStep<T>(
+  pending: Promise<T>,
+  signal: AbortSignal,
+  discardLate?: (value: T) => void
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const finish = (action: () => void): void => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      action();
+    };
+    const abort = (): void => finish(() => reject(signal.reason));
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    pending.then(value => {
+      if (settled) {
+        discardLate?.(value);
+      } else {
+        finish(() => resolve(value));
+      }
+    }, error => finish(() => reject(error)));
+  });
 }
 
 function shouldRetryTransportError(input: {
@@ -519,7 +563,8 @@ function calculateBackoffDelayMs(
 
 async function readServerRetryDelayMs(
   response: Response,
-  maxResponseBodyBytes: number
+  maxResponseBodyBytes: number,
+  signal: AbortSignal
 ): Promise<number | null> {
   const headerDelayMs = parseRetryAfterHeaderMs(
     response.headers.get(RETRY_AFTER_HEADER)
@@ -531,7 +576,8 @@ async function readServerRetryDelayMs(
   try {
     const payload = await readJsonResponse(
       response.clone(),
-      maxResponseBodyBytes
+      maxResponseBodyBytes,
+      signal
     );
     if (!isRecord(payload)) {
       return null;
@@ -547,7 +593,8 @@ async function readServerRetryDelayMs(
     }
 
     return secondsToMilliseconds(seconds);
-  } catch {
+  } catch (error) {
+    if (signal.aborted) throw error;
     return null;
   }
 }
@@ -655,9 +702,10 @@ function buildRequestInit(input: {
 async function decodeResponse<Operation extends AnyZdpOperationDefinition>(
   operation: Operation,
   response: Response,
-  maxResponseBodyBytes: number
+  maxResponseBodyBytes: number,
+  signal: AbortSignal
 ): Promise<ZdpOperationResponse<Operation>> {
-  const payload = await readJsonResponse(response, maxResponseBodyBytes);
+  const payload = await readJsonResponse(response, maxResponseBodyBytes, signal);
 
   if (!operation.successStatuses.includes(response.status)) {
     try {
@@ -699,11 +747,13 @@ async function decodeResponse<Operation extends AnyZdpOperationDefinition>(
 
 async function readJsonResponse(
   response: Response,
-  maxResponseBodyBytes: number
+  maxResponseBodyBytes: number,
+  signal: AbortSignal
 ): Promise<unknown> {
   const text = await readBoundedResponseText(
     response,
-    maxResponseBodyBytes
+    maxResponseBodyBytes,
+    signal
   );
   if (text.trim().length === 0) {
     return null;
@@ -721,7 +771,8 @@ async function readJsonResponse(
 
 async function readBoundedResponseText(
   response: Response,
-  maxResponseBodyBytes: number
+  maxResponseBodyBytes: number,
+  signal: AbortSignal
 ): Promise<string> {
   if (response.body === null) {
     return '';
@@ -749,7 +800,7 @@ async function readBoundedResponseText(
 
   try {
     while (true) {
-      const chunk = await reader.read();
+      const chunk = await awaitRequestStep(reader.read(), signal);
       if (chunk.done) {
         break;
       }
@@ -769,6 +820,9 @@ async function readBoundedResponseText(
 
     textParts.push(decoder.decode());
     return textParts.join('');
+  } catch (error) {
+    cancelResponseReader(reader);
+    throw error;
   } finally {
     reader.releaseLock();
   }
