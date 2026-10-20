@@ -502,8 +502,9 @@ async function uploadWithRetry(input: {
       input.prepared.uploadRef
     );
 
+    let response: Response | undefined;
     try {
-      const response = await awaitUploadStep(input.transfer({
+      response = await awaitUploadStep(input.transfer({
         request,
         body: input.body,
         signal: input.context.signal,
@@ -568,6 +569,10 @@ async function uploadWithRetry(input: {
         uploadRef: input.prepared.uploadRef
       });
     } catch (error) {
+      if (response instanceof Response && !response.bodyUsed) {
+        // Do not let stalled provider cleanup delay a callback or protocol error.
+        void cancelResponseBody(response);
+      }
       if (error instanceof ZdpUploadError) {
         throw error;
       }

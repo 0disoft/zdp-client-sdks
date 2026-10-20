@@ -31,8 +31,16 @@ export function createZdpFetchUploadTransport(
       referrerPolicy: 'no-referrer',
       cache: 'no-store'
     });
-    input.onProgress(input.totalBytes, input.totalBytes);
-    return response;
+    try {
+      input.onProgress(input.totalBytes, input.totalBytes);
+      return response;
+    } catch (error) {
+      // The caller cannot dispose of a response that this transport never returns.
+      try { void response.body?.cancel().catch(() => undefined); } catch {
+        // Preserve the progress error even if cleanup fails synchronously.
+      }
+      throw error;
+    }
   };
 }
 
