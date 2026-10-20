@@ -4,7 +4,15 @@ import { validateClientSdkContracts } from './validator';
 export async function runClientSdkContractCheckCli(
   argv: readonly string[]
 ): Promise<number> {
-  const root = readRootOption(argv) ?? process.cwd();
+  let root: string;
+  try {
+    root = readRootOption(argv) ?? process.cwd();
+  } catch (error) {
+    console.error(
+      `CLIENT_SDK_INVALID_ARGUMENT ${error instanceof Error ? error.message : String(error)}`
+    );
+    return 2;
+  }
   const result = validateClientSdkContracts(await loadClientSdkContracts(root));
 
   if (result.ok) {
@@ -28,7 +36,10 @@ function readRootOption(argv: readonly string[]): string | null {
     }
 
     const value = argv[index + 1];
-    return value === undefined || value.startsWith('--') ? null : value;
+    if (value === undefined || value.startsWith('--') || value.trim().length === 0) {
+      throw new Error('--root 옵션 뒤에 저장소 경로를 지정해야 합니다.');
+    }
+    return value;
   }
 
   return null;
