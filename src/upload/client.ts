@@ -553,6 +553,7 @@ async function uploadWithRetry(input: {
       if (
         input.prepared.replaySafe &&
         retryable &&
+        delayMs <= input.retryPolicy.maxDelayMs &&
         attempt < input.retryPolicy.maxAttempts
       ) {
         await abortableDelay(delayMs, input.context.signal);
@@ -912,18 +913,19 @@ function retryDelayMs(
     policy.baseDelayMs * 2 ** Math.max(0, attempt - 1)
   );
   const serverDelay = parseRetryAfter(retryAfter);
-  return Math.min(policy.maxDelayMs, Math.max(exponential, serverDelay));
+  return Math.max(exponential, serverDelay);
 }
 
 function parseRetryAfter(value: string | null): number {
   if (value === null) {
     return 0;
   }
-  const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds >= 0) {
-    return Math.floor(seconds * 1_000);
+  const normalized = value.trim();
+  if (/^\d+$/.test(normalized)) {
+    // Infinity is intentionally over budget, never an immediate retry.
+    return Number(normalized) * 1_000;
   }
-  const date = Date.parse(value);
+  const date = Date.parse(normalized);
   return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
 }
 

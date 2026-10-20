@@ -91,6 +91,7 @@ export interface ZdpUploadLimits {
 export interface ZdpUploadRetryPolicy {
   readonly maxAttempts?: number;
   readonly baseDelayMs?: number;
+  /** Maximum automatic retry wait. Larger server Retry-After values stop retries. */
   readonly maxDelayMs?: number;
   readonly retryableStatuses?: readonly number[];
 }
