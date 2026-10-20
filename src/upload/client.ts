@@ -28,6 +28,7 @@ import type {
 } from './types';
 
 const DEFAULT_TIMEOUT_MS = 120_000;
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const DEFAULT_RETRYABLE_STATUSES = [408, 425, 429, 500, 502, 503, 504] as const;
 const FORBIDDEN_PROVIDER_HEADERS = [
   'authorization',
@@ -327,14 +328,14 @@ function normalizeRetryPolicy(
       'Upload retry maxAttempts must be an integer from 1 through 5.'
     );
   }
-  if (!Number.isInteger(baseDelayMs) || baseDelayMs < 0) {
+  if (!Number.isInteger(baseDelayMs) || baseDelayMs < 0 || baseDelayMs > MAX_TIMER_DELAY_MS) {
     throw new ZdpUploadConfigurationError(
-      'Upload retry baseDelayMs must be a non-negative integer.'
+      `Upload retry baseDelayMs must be an integer from 0 through ${MAX_TIMER_DELAY_MS}.`
     );
   }
-  if (!Number.isInteger(maxDelayMs) || maxDelayMs < baseDelayMs) {
+  if (!Number.isInteger(maxDelayMs) || maxDelayMs < baseDelayMs || maxDelayMs > MAX_TIMER_DELAY_MS) {
     throw new ZdpUploadConfigurationError(
-      'Upload retry maxDelayMs must be an integer not smaller than baseDelayMs.'
+      `Upload retry maxDelayMs must be an integer from baseDelayMs through ${MAX_TIMER_DELAY_MS}.`
     );
   }
 
@@ -868,9 +869,9 @@ function createRandomId(): string {
 }
 
 function validateTimeout(value: number, label: string): number {
-  if (!Number.isSafeInteger(value) || value <= 0) {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > MAX_TIMER_DELAY_MS) {
     throw new ZdpUploadConfigurationError(
-      `${label} must be a positive safe integer.`
+      `${label} must be an integer from 1 through ${MAX_TIMER_DELAY_MS}.`
     );
   }
   return value;
