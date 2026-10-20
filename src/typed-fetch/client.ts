@@ -904,6 +904,13 @@ function buildUrl(
 
     return encodeURIComponent(String(value));
   });
+  // URL parsing removes dot segments, including percent-encoded forms, which
+  // would silently route the request to a different API resource.
+  if (path.split('/').some(segment => /^(?:\.|%2e){1,2}$/i.test(segment))) {
+    throw new ZdpClientConfigurationError(
+      'Operation path must not contain dot segments.'
+    );
+  }
   const url = new URL(path, baseUrl);
   if (url.origin !== baseUrl.origin) {
     throw new ZdpClientConfigurationError(
