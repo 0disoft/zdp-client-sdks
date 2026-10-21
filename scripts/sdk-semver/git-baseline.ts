@@ -112,6 +112,7 @@ function hasWorkingTreeSurfaceChanges(
       [
         'diff',
         '--quiet',
+        'HEAD',
         '--',
         paths.packagePath,
         paths.apiLockPath,
