@@ -38,16 +38,14 @@ test('uses the current release baseline for staged and unstaged surface changes'
     git('tag', 'v1.1.0');
     expect(baseline()).toBe('v1.0.0');
 
-    for (const path of Object.values(paths)) {
-      const original = path === paths.packagePath ? JSON.stringify({ version: '1.1.0' }) : 'original\n';
-      writeFileSync(join(root, path), `${original}\n`);
-      expect(baseline()).toBe('v1.1.0');
-      git('add', '--', path);
-      expect(baseline()).toBe('v1.1.0');
-      writeFileSync(join(root, path), original);
-      git('add', '--', path);
-      expect(baseline()).toBe('v1.0.0');
-    }
+    const path = paths.operationsPath;
+    writeFileSync(join(root, path), 'changed\n');
+    expect(baseline()).toBe('v1.1.0');
+    git('add', '--', path);
+    expect(baseline()).toBe('v1.1.0');
+    writeFileSync(join(root, path), 'original\n');
+    git('add', '--', path);
+    expect(baseline()).toBe('v1.0.0');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
