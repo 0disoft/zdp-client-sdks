@@ -133,6 +133,11 @@ async function loadSchemaModels(
         status
       });
       if (model !== null) {
+        if (Object.hasOwn(schemaModels, model.schemaRef)) {
+          throw new Error(
+            `중복 API schema 참조 \`${model.schemaRef}\`: ${join(apiContractsRoot, sourceContract)}`
+          );
+        }
         schemaModels[model.schemaRef] = model;
       }
     }
@@ -179,7 +184,14 @@ async function buildApiExportPlanHandoff(
   for (const route of routes) {
     if (!isRecord(route)) continue;
     const operation = readRouteOperation(route);
-    if (operation !== null) operationMap[operation.operationId] = operation;
+    if (operation !== null) {
+      if (Object.hasOwn(operationMap, operation.operationId)) {
+        throw new Error(
+          `중복 API operation ID \`${operation.operationId}\`: ${join(apiContractsRoot, API_CATALOG_FILE)}`
+        );
+      }
+      operationMap[operation.operationId] = operation;
+    }
   }
 
   const schemaModelMap = await loadSchemaModels(apiContractsRoot, apiInput);
