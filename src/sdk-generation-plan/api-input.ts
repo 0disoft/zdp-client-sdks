@@ -32,11 +32,7 @@ export const REQUIRED_API_EXPORT_DOCS_METADATA = [
 export async function loadApiSdkGenerationInput(
   apiContractsRoot: string
 ): Promise<ApiSdkGenerationInputContract> {
-  const source = await readFile(
-    join(apiContractsRoot, SDK_GENERATION_INPUT_FILE),
-    'utf8'
-  );
-  const document = parseYamlRecord(source);
+  const document = await readYamlRecord(join(apiContractsRoot, SDK_GENERATION_INPUT_FILE));
   const input = readRecord(document, 'sdk_generation_input');
 
   return {
@@ -108,9 +104,7 @@ async function loadSchemaModels(
       continue;
     }
 
-    const document = parseYamlRecord(
-      await readFile(join(apiContractsRoot, sourceContract), 'utf8')
-    );
+    const document = await readYamlRecord(join(apiContractsRoot, sourceContract));
     const bundle = readRecord(document, 'schema_bundle');
     const serviceId = readString(bundle, 'service_id');
     const ownerBoundary = readString(bundle, 'owner_boundary');
@@ -152,31 +146,30 @@ async function loadSchemaModels(
 }
 
 async function readJsonRecord(path: string): Promise<Record<string, unknown>> {
+  const source = await readFile(path, 'utf8');
   try {
-    const parsed = JSON.parse(await readFile(path, 'utf8')) as unknown;
+    const parsed = JSON.parse(source) as unknown;
     return isRecord(parsed) ? parsed : {};
-  } catch {
-    return {};
+  } catch (cause) {
+    throw new Error(`API 입력 JSON 구문을 해석할 수 없습니다: ${path}`, { cause });
   }
 }
 
-function parseYamlRecord(source: string): Record<string, unknown> {
-  const parsed = Bun.YAML.parse(source) as unknown;
-
-  if (isRecord(parsed)) {
-    return parsed;
+async function readYamlRecord(path: string): Promise<Record<string, unknown>> {
+  const source = await readFile(path, 'utf8');
+  try {
+    const parsed = Bun.YAML.parse(source) as unknown;
+    return isRecord(parsed) ? parsed : {};
+  } catch (cause) {
+    throw new Error(`API 입력 YAML 구문을 해석할 수 없습니다: ${path}`, { cause });
   }
-
-  return {};
 }
 
 async function buildApiExportPlanHandoff(
   apiContractsRoot: string
 ): Promise<Record<string, unknown>> {
   const apiInput = await loadApiSdkGenerationInput(apiContractsRoot);
-  const catalogDocument = parseYamlRecord(
-    await readFile(join(apiContractsRoot, API_CATALOG_FILE), 'utf8')
-  );
+  const catalogDocument = await readYamlRecord(join(apiContractsRoot, API_CATALOG_FILE));
   const catalog = readRecord(catalogDocument, 'api_catalog');
   const routes = Array.isArray(catalogDocument.routes)
     ? catalogDocument.routes
@@ -191,15 +184,15 @@ async function buildApiExportPlanHandoff(
 
   const schemaModelMap = await loadSchemaModels(apiContractsRoot, apiInput);
   const routeContract = readRecord(
-    parseYamlRecord(await readFile(join(apiContractsRoot, ROUTE_CONTRACT_FILE), 'utf8')),
+    await readYamlRecord(join(apiContractsRoot, ROUTE_CONTRACT_FILE)),
     'route_contract'
   );
   const errorEnvelope = readRecord(
-    parseYamlRecord(await readFile(join(apiContractsRoot, ERROR_ENVELOPE_FILE), 'utf8')),
+    await readYamlRecord(join(apiContractsRoot, ERROR_ENVELOPE_FILE)),
     'error_envelope'
   );
   const webhookContract = readRecord(
-    parseYamlRecord(await readFile(join(apiContractsRoot, WEBHOOK_CONTRACT_FILE), 'utf8')),
+    await readYamlRecord(join(apiContractsRoot, WEBHOOK_CONTRACT_FILE)),
     'webhook_contract'
   );
   const forbiddenValues = uniqueSorted([
